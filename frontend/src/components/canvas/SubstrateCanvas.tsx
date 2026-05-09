@@ -14,6 +14,7 @@ import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
 import { CanvasControls } from "./CanvasControls";
 import { nodeTypes } from "./node-types";
+import { NodePalette } from "../sidebar/NodePalette";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   style: { strokeWidth: 2, stroke: "#525252" },
@@ -49,7 +50,11 @@ export function SubstrateCanvas() {
   }, [setSelectedNodeId, setConfigPanelNodeId]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative flex h-full w-full">
+      <div className="w-[180px] shrink-0 overflow-y-auto border-r border-neutral-800 bg-neutral-950">
+        <NodePalette />
+      </div>
+      <div className="relative flex-1">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -78,6 +83,7 @@ export function SubstrateCanvas() {
         />
       </ReactFlow>
       <CanvasControls />
+      </div>
     </div>
   );
 }

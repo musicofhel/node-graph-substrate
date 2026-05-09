@@ -109,42 +109,29 @@ export default function App() {
           await useCanvasStore.getState().loadGraph(graphId);
         } catch {
           setGraphMeta(graphId, 1);
-          addNode({
-            id: "prompt-1",
-            type: "prompt_input",
-            position: { x: 50, y: 50 },
-            data: { config: { prompt: "" } },
-          });
-          addNode({
-            id: "cloud-1",
-            type: "hidden_state_cloud",
-            position: { x: 400, y: 50 },
-            data: {},
-          });
-          addNode({
-            id: "features-1",
-            type: "feature_bars",
-            position: { x: 50, y: 350 },
-            data: {},
-          });
-          addNode({
-            id: "diagram-1",
-            type: "persistence_diagram",
-            position: { x: 400, y: 400 },
-            data: {},
-          });
-          addNode({
-            id: "gauge-1",
-            type: "confidence_gauge",
-            position: { x: 800, y: 50 },
-            data: {},
-          });
-          addNode({
-            id: "monitor-1",
-            type: "bridge_monitor",
-            position: { x: 800, y: 250 },
-            data: {},
-          });
+          const defaultNodes = [
+            { id: "prompt-1", type: "prompt_input", position: { x: 50, y: 150 }, data: { config: { prompt: "" } } },
+            { id: "cloud-1", type: "hidden_state_cloud", position: { x: 350, y: 20 }, data: {} },
+            { id: "features-1", type: "feature_bars", position: { x: 350, y: 350 }, data: {} },
+            { id: "diagram-1", type: "persistence_diagram", position: { x: 700, y: 20 }, data: {} },
+            { id: "gauge-1", type: "confidence_gauge", position: { x: 700, y: 350 }, data: {} },
+            { id: "monitor-1", type: "bridge_monitor", position: { x: 1050, y: 20 }, data: {} },
+            { id: "explain-1", type: "explain_waterfall", position: { x: 1050, y: 300 }, data: {} },
+          ];
+          for (const n of defaultNodes) addNode(n);
+
+          const { onConnect } = useCanvasStore.getState();
+          const edges = [
+            { source: "prompt-1", target: "cloud-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "features-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "diagram-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "gauge-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "monitor-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "explain-1", sourceHandle: "features_out", targetHandle: null },
+          ];
+          for (const e of edges) {
+            onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });
+          }
         }
       }
     })();

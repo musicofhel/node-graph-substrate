@@ -6,6 +6,7 @@ import { HiddenStateCloudNode } from "../nodes/HiddenStateCloudNode";
 import { PersistenceDiagramNode } from "../nodes/PersistenceDiagramNode";
 import { ConfidenceGaugeNode } from "../nodes/ConfidenceGaugeNode";
 import { BridgeMonitorNode } from "../nodes/BridgeMonitorNode";
+import { ExplainWaterfallNode } from "../nodes/ExplainWaterfallNode";
 
 export const nodeTypes: NodeTypes = {
   counter: CounterNode,
@@ -15,4 +16,5 @@ export const nodeTypes: NodeTypes = {
   persistence_diagram: PersistenceDiagramNode,
   confidence_gauge: ConfidenceGaugeNode,
   bridge_monitor: BridgeMonitorNode,
+  explain_waterfall: ExplainWaterfallNode,
 };
