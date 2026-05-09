@@ -12,7 +12,8 @@
     "@xyflow/react": "^12",
     "react": "^19",
     "react-dom": "^19",
-    "zustand": "^5"
+    "zustand": "^5",
+    "zundo": "^2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",

@@ -1,65 +1,84 @@
-import { memo, useCallback, useEffect, useRef } from "react";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  useReactFlow,
-  useNodesData,
-  type Node,
-  type NodeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import { useCallback, useEffect, useRef } from "react";
+import { useCanvasStore } from "./lib/store/canvas-store";
+import { SubstrateCanvas } from "./components/canvas/SubstrateCanvas";
 import { SubstrateWS } from "./lib/ws/client";
 
-type CounterData = { counter: number };
-
-const CounterNode = memo(({ id }: NodeProps) => {
-  const nodeData = useNodesData<Node<CounterData>>(id);
-  const counter = nodeData?.data?.counter ?? 0;
-
-  return (
-    <div className="rounded-lg border border-neutral-700 bg-neutral-900 px-6 py-4 shadow-lg">
-      <div className="mb-1 text-xs font-medium tracking-wide text-neutral-400 uppercase">
-        Counter
-      </div>
-      <div className="text-4xl font-bold tabular-nums text-emerald-400">
-        {counter}
-      </div>
-    </div>
-  );
-});
-CounterNode.displayName = "CounterNode";
-
-const nodeTypes = { counter: CounterNode };
-
-const initialNodes: Node<CounterData>[] = [
-  {
-    id: "n1",
-    type: "counter",
-    position: { x: 250, y: 200 },
-    data: { counter: 0 },
-  },
-];
+const API_BASE = `http://${window.location.hostname}:8080`;
 
 export default function App() {
-  const { setNodes } = useReactFlow();
+  const batchUpdateNodeData = useCanvasStore((s) => s.batchUpdateNodeData);
+  const setGraphMeta = useCanvasStore((s) => s.setGraphMeta);
+  const addNode = useCanvasStore((s) => s.addNode);
   const wsRef = useRef<SubstrateWS | null>(null);
+  const initRef = useRef(false);
 
   const handleMessage = useCallback(
     (msg: Record<string, unknown>) => {
       if (msg.type === "stream_event") {
         const nodeId = msg.node_id as string;
         const payload = msg.payload as Record<string, unknown>;
-        setNodes((prev) =>
-          prev.map((n) =>
-            n.id === nodeId ? { ...n, data: { ...n.data, ...payload } } : n,
-          ),
-        );
+        batchUpdateNodeData([[nodeId, payload]]);
       }
     },
-    [setNodes],
+    [batchUpdateNodeData],
   );
+
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      let graphId = params.get("graph");
+
+      if (!graphId) {
+        const cached = localStorage.getItem("substrate:lastGraphId");
+        if (cached) {
+          graphId = cached;
+        } else {
+          try {
+            const projResp = await fetch(`${API_BASE}/api/projects`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ slug: "default", display_name: "Default Project" }),
+            });
+            const proj = projResp.ok
+              ? await projResp.json()
+              : { id: (await (await fetch(`${API_BASE}/api/projects`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ slug: `proj-${Date.now()}`, display_name: "Default Project" }),
+                })).json()).id };
+
+            const graphResp = await fetch(`${API_BASE}/api/graphs`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ project_id: proj.id, name: "Main Canvas" }),
+            });
+            const graph = await graphResp.json();
+            graphId = graph.id;
+          } catch (e) {
+            console.error("Failed to create default graph:", e);
+          }
+        }
+      }
+
+      if (graphId) {
+        localStorage.setItem("substrate:lastGraphId", graphId);
+        try {
+          await useCanvasStore.getState().loadGraph(graphId);
+        } catch {
+          setGraphMeta(graphId, 1);
+          addNode({
+            id: "n1",
+            type: "counter",
+            position: { x: 250, y: 200 },
+            data: { counter: 0 },
+          });
+        }
+      }
+    })();
+  }, [setGraphMeta, addNode]);
 
   useEffect(() => {
     const ws = new SubstrateWS("demo");
@@ -71,20 +90,7 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen">
-      <ReactFlow
-        defaultNodes={initialNodes}
-        nodeTypes={nodeTypes}
-        fitView
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#333" gap={20} />
-        <Controls />
-        <MiniMap
-          nodeColor="#10b981"
-          maskColor="rgba(0,0,0,0.7)"
-          bgColor="#171717"
-        />
-      </ReactFlow>
+      <SubstrateCanvas />
     </div>
   );
 }
