@@ -10,9 +10,19 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from pydantic import TypeAdapter
+
 from substrate import crud
+import substrate.components  # noqa: F401 — registers components
 from substrate.db import close_pool, create_pool, run_migrations
+from substrate.messages import (
+    ClientMessage,
+    ComputeRequest,
+    ConfigUpdateMsg,
+)
+from substrate.registry import registry
 from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, ProjectCreate
+from substrate.sdk import Component
 from substrate.ws import ConnectionManager
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 manager = ConnectionManager()
 redis_client: aioredis.Redis | None = None
+client_msg_adapter = TypeAdapter(ClientMessage)
 
 
 @asynccontextmanager
@@ -111,6 +122,14 @@ async def update_config(node_id: str, body: ConfigUpdate):
     return {"ok": True}
 
 
+# --- Component manifests ---
+
+
+@app.get("/api/manifests")
+async def get_manifests():
+    return registry.manifests()
+
+
 # --- WebSocket ---
 
 
@@ -142,14 +161,118 @@ async def stream_reader(canvas_id: str, ws: WebSocket):
             await asyncio.sleep(1)
 
 
+async def handle_compute_request(
+    msg: ComputeRequest,
+    ws: WebSocket,
+    components: dict[str, Component],
+) -> None:
+    component = components.get(msg.node_id)
+    if not component:
+        await manager.send(ws, {
+            "type": "error",
+            "code": "unknown_node",
+            "message": f"No component for node {msg.node_id}",
+            "node_id": msg.node_id,
+        })
+        return
+
+    try:
+        result = await component.build(**msg.inputs)
+        await manager.send(ws, {
+            "type": "computation_result",
+            "request_id": msg.request_id,
+            "node_id": msg.node_id,
+            "ok": True,
+            "outputs": result,
+        })
+    except Exception as e:
+        logger.error("Compute error for %s: %s", msg.node_id, e)
+        await manager.send(ws, {
+            "type": "computation_result",
+            "request_id": msg.request_id,
+            "node_id": msg.node_id,
+            "ok": False,
+            "error": str(e),
+        })
+
+
+async def handle_config_update(
+    msg: ConfigUpdateMsg,
+    ws: WebSocket,
+    canvas_id: str,
+    components: dict[str, Component],
+) -> None:
+    component = components.get(msg.node_id)
+    if component:
+        await component.on_config_change(msg.config)
+
+    try:
+        await crud.update_node_config(msg.node_id, msg.config)
+    except Exception as e:
+        logger.warning("Config persist failed for %s: %s", msg.node_id, e)
+
+    await manager.broadcast(canvas_id, {
+        "type": "node_state_updated",
+        "node_id": msg.node_id,
+        "data_patch": {"config": msg.config},
+    })
+
+
 @app.websocket("/ws/canvas/{canvas_id}")
 async def ws_endpoint(ws: WebSocket, canvas_id: str):
     await manager.connect(canvas_id, ws)
     reader_task = asyncio.create_task(stream_reader(canvas_id, ws))
+
+    components: dict[str, Component] = {}
+
+    graph = await crud.get_graph(canvas_id) if canvas_id != "demo" else None
+    if graph:
+        await manager.send(ws, {
+            "type": "graph_loaded",
+            "graph_id": graph["id"],
+            "version": graph["current_version"],
+            "nodes": graph["nodes"],
+            "edges": graph["edges"],
+            "manifests": registry.manifests(),
+        })
+        for node_data in graph["nodes"]:
+            comp = registry.create_instance(
+                node_data.get("type_id", ""),
+                node_data["id"],
+                node_data.get("config"),
+            )
+            if comp:
+                await comp.on_init()
+                components[node_data["id"]] = comp
+
     try:
         while True:
-            data = await ws.receive_text()
-            logger.info("Received from client: %s", data[:200])
+            raw = await ws.receive_text()
+            try:
+                msg = client_msg_adapter.validate_json(raw)
+            except Exception as e:
+                logger.warning("Bad WS message: %s", e)
+                await manager.send(ws, {
+                    "type": "error",
+                    "code": "parse_error",
+                    "message": str(e),
+                })
+                continue
+
+            if isinstance(msg, ComputeRequest):
+                if msg.node_id not in components:
+                    comp = registry.create_instance(
+                        msg.inputs.get("type_id", "prompt_input"),
+                        msg.node_id,
+                        msg.inputs.get("config"),
+                    )
+                    if comp:
+                        await comp.on_init()
+                        components[msg.node_id] = comp
+                asyncio.create_task(handle_compute_request(msg, ws, components))
+            elif isinstance(msg, ConfigUpdateMsg):
+                await handle_config_update(msg, ws, canvas_id, components)
+
     except WebSocketDisconnect:
         pass
     finally:
@@ -158,4 +281,6 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
             await reader_task
         except asyncio.CancelledError:
             pass
+        for comp in components.values():
+            await comp.on_destroy()
         manager.disconnect(canvas_id, ws)

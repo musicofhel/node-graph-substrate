@@ -18,6 +18,35 @@ export default function App() {
         const nodeId = msg.node_id as string;
         const payload = msg.payload as Record<string, unknown>;
         batchUpdateNodeData([[nodeId, payload]]);
+      } else if (msg.type === "computation_result") {
+        const nodeId = msg.node_id as string;
+        const ok = msg.ok as boolean;
+        if (ok) {
+          batchUpdateNodeData([
+            [nodeId, { status: "idle", outputs: msg.outputs }],
+          ]);
+          const outputs = msg.outputs as Record<string, unknown> | undefined;
+          if (outputs?.features) {
+            const nodes = useCanvasStore.getState().nodes;
+            const featureNodes = nodes.filter(
+              (n) => n.type === "feature_bars",
+            );
+            const updates: [string, Record<string, unknown>][] =
+              featureNodes.map((n) => [
+                n.id,
+                { features: outputs.features },
+              ]);
+            if (updates.length > 0) {
+              batchUpdateNodeData(updates);
+            }
+          }
+        } else {
+          batchUpdateNodeData([[nodeId, { status: "error" }]]);
+        }
+      } else if (msg.type === "node_state_updated") {
+        const nodeId = msg.node_id as string;
+        const patch = msg.data_patch as Record<string, unknown>;
+        batchUpdateNodeData([[nodeId, patch]]);
       }
     },
     [batchUpdateNodeData],
@@ -40,20 +69,31 @@ export default function App() {
             const projResp = await fetch(`${API_BASE}/api/projects`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ slug: "default", display_name: "Default Project" }),
+              body: JSON.stringify({
+                slug: "default",
+                display_name: "Default Project",
+              }),
             });
             const proj = projResp.ok
               ? await projResp.json()
-              : { id: (await (await fetch(`${API_BASE}/api/projects`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ slug: `proj-${Date.now()}`, display_name: "Default Project" }),
-                })).json()).id };
+              : await (
+                  await fetch(`${API_BASE}/api/projects`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      slug: `proj-${Date.now()}`,
+                      display_name: "Default Project",
+                    }),
+                  })
+                ).json();
 
             const graphResp = await fetch(`${API_BASE}/api/graphs`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ project_id: proj.id, name: "Main Canvas" }),
+              body: JSON.stringify({
+                project_id: proj.id,
+                name: "Main Canvas",
+              }),
             });
             const graph = await graphResp.json();
             graphId = graph.id;
@@ -70,10 +110,16 @@ export default function App() {
         } catch {
           setGraphMeta(graphId, 1);
           addNode({
-            id: "n1",
-            type: "counter",
-            position: { x: 250, y: 200 },
-            data: { counter: 0 },
+            id: "prompt-1",
+            type: "prompt_input",
+            position: { x: 150, y: 100 },
+            data: { config: { prompt: "" } },
+          });
+          addNode({
+            id: "features-1",
+            type: "feature_bars",
+            position: { x: 150, y: 350 },
+            data: {},
           });
         }
       }
@@ -85,8 +131,25 @@ export default function App() {
     wsRef.current = ws;
     ws.onMessage(handleMessage);
     ws.connect();
-    return () => ws.disconnect();
-  }, [handleMessage]);
+
+    const handleComputeRequest = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      batchUpdateNodeData([[detail.node_id, { status: "computing" }]]);
+      ws.send(detail);
+    };
+    window.addEventListener(
+      "substrate:compute_request",
+      handleComputeRequest,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "substrate:compute_request",
+        handleComputeRequest,
+      );
+      ws.disconnect();
+    };
+  }, [handleMessage, batchUpdateNodeData]);
 
   return (
     <div className="h-screen w-screen">
