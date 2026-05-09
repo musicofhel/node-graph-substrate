@@ -1,24 +1,18 @@
 from __future__ import annotations
 
+import json
 import random
+import uuid
 from typing import Any
 
 from substrate.registry import registry
 from substrate.sdk import Component, NodeKind, Socket, SocketType
 
 FEATURE_NAMES = [
-    "H0_persistence_entropy",
-    "H1_max_lifetime",
-    "H0_total_persistence",
-    "H0_n_features",
-    "H1_persistence_entropy",
-    "H1_n_features",
-    "H2_n_features",
-    "H2_total_persistence",
-    "H2_persistence_entropy",
-    "bridge_silhouette",
-    "H0_ph_significance",
-    "H1_ph_significance",
+    "H0_persistence_entropy", "H1_max_lifetime", "H0_total_persistence",
+    "H0_n_features", "H1_persistence_entropy", "H1_n_features",
+    "H2_n_features", "H2_total_persistence", "H2_persistence_entropy",
+    "bridge_silhouette", "H0_ph_significance", "H1_ph_significance",
     "topological_sensitivity",
 ]
 
@@ -38,10 +32,23 @@ class PromptInputComponent(Component):
     ]
 
     async def build(self, **inputs: Any) -> dict[str, Any]:
-        prompt = self.config.get("prompt", "")
+        prompt = inputs.get("config", {}).get("prompt", "") or self.config.get("prompt", "")
+        run_id = uuid.uuid4().hex[:8]
+
+        # Try to publish to topoconf:control for real daemon
+        try:
+            from substrate.main import redis_client
+            if redis_client:
+                await redis_client.xadd(
+                    "topoconf:control",
+                    {"data": json.dumps({"command": "score", "prompt": prompt, "run_id": run_id})},
+                    maxlen=10000,
+                    approximate=True,
+                )
+                return {"status": "submitted", "run_id": run_id, "prompt": prompt}
+        except Exception:
+            pass
+
+        # Fallback: stub features
         features = {name: round(random.uniform(-2, 5), 4) for name in FEATURE_NAMES}
-        return {
-            "features": features,
-            "prompt": prompt,
-            "status": "stub",
-        }
+        return {"features": features, "prompt": prompt, "status": "stub"}

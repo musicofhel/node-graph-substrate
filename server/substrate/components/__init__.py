@@ -2,3 +2,5 @@ import substrate.components.prompt_input  # noqa: F401
 import substrate.components.hidden_state_cloud  # noqa: F401
 import substrate.components.feature_bars  # noqa: F401
 import substrate.components.persistence_diagram  # noqa: F401
+import substrate.components.confidence_gauge  # noqa: F401
+import substrate.components.bridge_monitor  # noqa: F401

@@ -133,6 +133,18 @@ export default function App() {
             position: { x: 400, y: 400 },
             data: {},
           });
+          addNode({
+            id: "gauge-1",
+            type: "confidence_gauge",
+            position: { x: 800, y: 50 },
+            data: {},
+          });
+          addNode({
+            id: "monitor-1",
+            type: "bridge_monitor",
+            position: { x: 800, y: 250 },
+            data: {},
+          });
         }
       }
     })();

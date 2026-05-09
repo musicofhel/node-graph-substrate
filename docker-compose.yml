@@ -63,5 +63,25 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html
 
+  topoconf_daemon:
+    build:
+      context: ./daemons/topoconf
+      dockerfile: Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MODEL_NAME: "Qwen/Qwen2.5-1.5B-Instruct"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ${HOME}/topo-confidence:/topo-confidence:ro
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+    profiles: ["topoconf"]
+    # GPU (uncomment for 2060 Super):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
 volumes:
   pgdata:
