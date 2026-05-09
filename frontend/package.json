@@ -9,16 +9,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "@xyflow/react": "^12",
     "react": "^19",
     "react-dom": "^19",
-    "zustand": "^5",
-    "zundo": "^2"
+    "three": "^0.184.0",
+    "zundo": "^2",
+    "zustand": "^5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^4",
     "tailwindcss": "^4",
     "typescript": "^5.7",

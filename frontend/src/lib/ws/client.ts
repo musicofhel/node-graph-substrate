@@ -1,4 +1,5 @@
 type MessageHandler = (msg: Record<string, unknown>) => void;
+type BatchUpdateFn = (updates: [string, Record<string, unknown>][]) => void;
 
 export class SubstrateWS {
   private ws: WebSocket | null = null;
@@ -8,11 +9,19 @@ export class SubstrateWS {
   private maxDelay = 10000;
   private shouldReconnect = true;
 
+  private pending = new Map<string, Record<string, unknown>>();
+  private rafScheduled = false;
+  private batchFn: BatchUpdateFn | null = null;
+
   constructor(canvasId: string) {
     const wsBase =
       (import.meta.env?.VITE_WS_URL as string | undefined) ??
       `ws://${window.location.hostname}:8080`;
     this.url = `${wsBase}/ws/canvas/${canvasId}`;
+  }
+
+  enableRAFCoalescing(batchFn: BatchUpdateFn): void {
+    this.batchFn = batchFn;
   }
 
   connect(): void {
@@ -33,6 +42,31 @@ export class SubstrateWS {
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+
+        if (
+          this.batchFn &&
+          (msg.type === "stream_event" || msg.type === "node_state_updated")
+        ) {
+          const nodeId = msg.node_id as string;
+          const payload =
+            msg.type === "stream_event"
+              ? (msg.payload as Record<string, unknown>)
+              : (msg.data_patch as Record<string, unknown>);
+          const existing = this.pending.get(nodeId) ?? {};
+          this.pending.set(nodeId, { ...existing, ...payload });
+
+          if (!this.rafScheduled) {
+            this.rafScheduled = true;
+            requestAnimationFrame(() => {
+              const updates = Array.from(this.pending.entries());
+              this.pending.clear();
+              this.rafScheduled = false;
+              this.batchFn!(updates);
+            });
+          }
+          return;
+        }
+
         this.handlers.forEach((h) => h(msg));
       } catch {
         console.warn("[WS] bad message", event.data);

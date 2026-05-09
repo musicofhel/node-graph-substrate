@@ -22,7 +22,8 @@ from substrate.messages import (
 )
 from substrate.registry import registry
 from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, ProjectCreate
-from substrate.sdk import Component
+from substrate.sdk import Component, NodeKind
+from substrate.streamhub import StreamHub
 from substrate.ws import ConnectionManager
 
 logging.basicConfig(level=logging.INFO)
@@ -30,22 +31,27 @@ logger = logging.getLogger(__name__)
 
 manager = ConnectionManager()
 redis_client: aioredis.Redis | None = None
+stream_hub: StreamHub | None = None
 client_msg_adapter = TypeAdapter(ClientMessage)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global redis_client
+    global redis_client, stream_hub
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
     redis_client = aioredis.from_url(redis_url, decode_responses=True)
     await redis_client.ping()
     logger.info("Redis connected")
+
+    stream_hub = StreamHub(redis_client, manager)
 
     await create_pool()
     await run_migrations()
 
     yield
 
+    if stream_hub:
+        await stream_hub.shutdown()
     await close_pool()
     if redis_client:
         await redis_client.aclose()
@@ -244,6 +250,9 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
             if comp:
                 await comp.on_init()
                 components[node_data["id"]] = comp
+                if comp.kind == NodeKind.SUBSCRIBER and stream_hub:
+                    for stream_name in comp.subscribed_streams:
+                        stream_hub.subscribe(stream_name, ws, node_data["id"])
 
     try:
         while True:
@@ -281,6 +290,8 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
             await reader_task
         except asyncio.CancelledError:
             pass
+        if stream_hub:
+            stream_hub.unsubscribe_all(ws)
         for comp in components.values():
             await comp.on_destroy()
         manager.disconnect(canvas_id, ws)

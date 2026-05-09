@@ -112,13 +112,25 @@ export default function App() {
           addNode({
             id: "prompt-1",
             type: "prompt_input",
-            position: { x: 150, y: 100 },
+            position: { x: 50, y: 50 },
             data: { config: { prompt: "" } },
+          });
+          addNode({
+            id: "cloud-1",
+            type: "hidden_state_cloud",
+            position: { x: 400, y: 50 },
+            data: {},
           });
           addNode({
             id: "features-1",
             type: "feature_bars",
-            position: { x: 150, y: 350 },
+            position: { x: 50, y: 350 },
+            data: {},
+          });
+          addNode({
+            id: "diagram-1",
+            type: "persistence_diagram",
+            position: { x: 400, y: 400 },
             data: {},
           });
         }
@@ -129,6 +141,7 @@ export default function App() {
   useEffect(() => {
     const ws = new SubstrateWS("demo");
     wsRef.current = ws;
+    ws.enableRAFCoalescing(batchUpdateNodeData);
     ws.onMessage(handleMessage);
     ws.connect();
 
