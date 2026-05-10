@@ -82,11 +82,12 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       batchUpdateNodeData: (updates) => {
+        const map = new Map(updates);
         set({
           nodes: get().nodes.map((node) => {
-            const patch = updates.find(([id]) => id === node.id);
+            const patch = map.get(node.id);
             if (!patch) return node;
-            return { ...node, data: { ...node.data, ...patch[1] } };
+            return { ...node, data: { ...node.data, ...patch } };
           }),
         });
       },

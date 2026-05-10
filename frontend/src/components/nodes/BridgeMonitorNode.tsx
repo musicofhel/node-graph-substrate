@@ -7,8 +7,8 @@ type BridgeData = {
   healthy?: boolean;
   bridge_at_pos0?: Record<string, boolean>;
   silhouette_by_layer?: Record<string, number>;
-  pos0_silhouette_by_layer?: Record<string, number>;
-  crystallized?: boolean;
+  mean_silhouette_by_layer?: Record<string, number>;
+  crystallization?: number;
   anomaly_reason?: string | null;
 };
 
@@ -32,9 +32,9 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
               <span className="text-sm font-medium text-neutral-200">
                 {data.healthy ? "HEALTHY" : "ANOMALY"}
               </span>
-              {data.crystallized !== undefined && (
+              {data.crystallization !== undefined && (
                 <span className="ml-auto text-[10px] text-neutral-500">
-                  {data.crystallized ? "crystallized" : "not crystallized"}
+                  cryst: {data.crystallization.toFixed(2)}
                 </span>
               )}
             </div>
@@ -64,10 +64,10 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
                         </span>
                       </td>
                       <td className="py-0.5 text-right font-mono">
-                        {(data.pos0_silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
                       </td>
                       <td className="py-0.5 text-right font-mono">
-                        {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        {(data.mean_silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
                       </td>
                     </tr>
                   ))}

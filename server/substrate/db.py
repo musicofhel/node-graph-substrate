@@ -59,8 +59,9 @@ async def run_migrations() -> None:
             logger.info("Applying migration: %s", filename)
             with open(path) as f:
                 sql = f.read()
-            await conn.execute(sql)
-            await conn.execute(
-                "INSERT INTO _migrations (filename) VALUES ($1)", filename
-            )
+            async with conn.transaction():
+                await conn.execute(sql)
+                await conn.execute(
+                    "INSERT INTO _migrations (filename) VALUES ($1)", filename
+                )
             logger.info("Migration applied: %s", filename)

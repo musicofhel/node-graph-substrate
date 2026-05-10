@@ -154,7 +154,7 @@ async def _upsert_node(conn: asyncpg.Connection, graph_id: str, data: dict) -> N
         """INSERT INTO nodes (id, graph_id, type_id, position_x, position_y, width, height, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
            ON CONFLICT (id) DO UPDATE SET
-             position_x = $4, position_y = $5, width = $6, height = $7, updated_at = NOW()""",
+             graph_id = $2, type_id = $3, position_x = $4, position_y = $5, width = $6, height = $7, updated_at = NOW()""",
         data["id"],
         graph_id,
         data.get("type_id", "unknown"),
@@ -183,7 +183,7 @@ async def _upsert_edge(conn: asyncpg.Connection, graph_id: str, data: dict) -> N
         """INSERT INTO edges (id, graph_id, source, target, source_handle, target_handle, data)
            VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT (id) DO UPDATE SET
-             source = $3, target = $4, source_handle = $5, target_handle = $6, data = $7""",
+             graph_id = $2, source = $3, target = $4, source_handle = $5, target_handle = $6, data = $7""",
         data["id"],
         graph_id,
         data["source"],

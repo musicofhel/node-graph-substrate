@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
@@ -13,7 +13,6 @@ export const PromptInputNode = memo(({ id }: NodeProps) => {
   const nodeData = useNodesData<Node<PromptData>>(id);
   const [localPrompt, setLocalPrompt] = useState("");
   const def = NODE_REGISTRY.prompt_input;
-  const wsRef = useRef<((msg: Record<string, unknown>) => void) | null>(null);
 
   const handleAnalyze = useCallback(() => {
     const event = new CustomEvent("substrate:compute_request", {

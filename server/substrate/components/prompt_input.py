@@ -32,10 +32,10 @@ class PromptInputComponent(Component):
     ]
 
     async def build(self, **inputs: Any) -> dict[str, Any]:
-        prompt = inputs.get("config", {}).get("prompt", "") or self.config.get("prompt", "")
+        prompt = inputs.get("config", {}).get("prompt", "") or inputs.get("prompt", "") or self.config.get("prompt", "")
         run_id = uuid.uuid4().hex[:8]
+        features = {name: round(random.uniform(-2, 5), 4) for name in FEATURE_NAMES}
 
-        # Try to publish to topoconf:control for real daemon
         try:
             from substrate.main import redis_client
             if redis_client:
@@ -45,10 +45,7 @@ class PromptInputComponent(Component):
                     maxlen=10000,
                     approximate=True,
                 )
-                return {"status": "submitted", "run_id": run_id, "prompt": prompt}
         except Exception:
             pass
 
-        # Fallback: stub features
-        features = {name: round(random.uniform(-2, 5), 4) for name in FEATURE_NAMES}
-        return {"features": features, "prompt": prompt, "status": "stub"}
+        return {"features": features, "prompt": prompt, "run_id": run_id, "status": "stub"}

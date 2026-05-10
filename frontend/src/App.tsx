@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCanvasStore } from "./lib/store/canvas-store";
 import { SubstrateCanvas } from "./components/canvas/SubstrateCanvas";
 import { SubstrateWS } from "./lib/ws/client";
+import { NODE_REGISTRY } from "./lib/nodes/registry";
 
 const API_BASE = `http://${window.location.hostname}:8080`;
 
@@ -133,39 +134,52 @@ export default function App() {
             onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });
           }
         }
+
+        // Connect WS to actual graphId, not "demo"
+        wsRef.current?.disconnect();
+        const ws = new SubstrateWS(graphId);
+        wsRef.current = ws;
+        ws.enableRAFCoalescing(batchUpdateNodeData);
+        ws.onMessage(handleMessage);
+
+        const subs = buildSubscriptions();
+        ws.setSubscriptions(subs);
+
+        ws.connect();
       }
     })();
-  }, [setGraphMeta, addNode]);
-
-  useEffect(() => {
-    const ws = new SubstrateWS("demo");
-    wsRef.current = ws;
-    ws.enableRAFCoalescing(batchUpdateNodeData);
-    ws.onMessage(handleMessage);
-    ws.connect();
 
     const handleComputeRequest = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       batchUpdateNodeData([[detail.node_id, { status: "computing" }]]);
-      ws.send(detail);
+      wsRef.current?.send(detail);
     };
-    window.addEventListener(
-      "substrate:compute_request",
-      handleComputeRequest,
-    );
+    window.addEventListener("substrate:compute_request", handleComputeRequest);
 
     return () => {
-      window.removeEventListener(
-        "substrate:compute_request",
-        handleComputeRequest,
-      );
-      ws.disconnect();
+      window.removeEventListener("substrate:compute_request", handleComputeRequest);
+      wsRef.current?.disconnect();
+      wsRef.current = null;
     };
-  }, [handleMessage, batchUpdateNodeData]);
+  }, [setGraphMeta, addNode, handleMessage, batchUpdateNodeData]);
 
   return (
     <div className="h-screen w-screen">
       <SubstrateCanvas />
     </div>
   );
+}
+
+function buildSubscriptions(): { stream: string; node_id: string }[] {
+  const nodes = useCanvasStore.getState().nodes;
+  const subs: { stream: string; node_id: string }[] = [];
+  for (const node of nodes) {
+    const def = NODE_REGISTRY[node.type ?? ""];
+    if (def?.subscribesTo) {
+      for (const stream of def.subscribesTo) {
+        subs.push({ stream, node_id: node.id });
+      }
+    }
+  }
+  return subs;
 }

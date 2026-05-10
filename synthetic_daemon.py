@@ -73,6 +73,44 @@ async def main():
                 "data": json.dumps({"prompt_id": pid, "features": features})
             }, maxlen=10000, approximate=True)
 
+            conf = random.uniform(0.2, 0.95)
+            await r.xadd("topoconf:scoring:confidence_scored", {
+                "data": json.dumps({"prompt_id": pid, "confidence": round(conf, 4), "mode": "heuristic"})
+            }, maxlen=10000, approximate=True)
+
+            layers = {"7": True, "14": True, "24": random.choice([True, False])}
+            await r.xadd("topoconf:scoring:bridge_health", {
+                "data": json.dumps({
+                    "prompt_id": pid,
+                    "healthy": all(layers.values()),
+                    "bridge_at_pos0": layers,
+                    "silhouette_by_layer": {k: round(random.uniform(-0.3, 0.9), 3) for k in layers},
+                    "mean_silhouette_by_layer": {k: round(random.uniform(0.1, 0.7), 3) for k in layers},
+                    "crystallization": round(random.uniform(0.3, 1.0), 3),
+                    "anomaly_reason": None if all(layers.values()) else "Layer 24 bridge missing",
+                })
+            }, maxlen=10000, approximate=True)
+
+            explain_features = {}
+            for name in FEATURE_NAMES:
+                raw = features[name]
+                coef = round(random.uniform(-1, 1), 3)
+                explain_features[name] = {
+                    "raw_value": raw,
+                    "scaled_value": round(raw * 0.3, 4),
+                    "coefficient": coef,
+                    "contribution": round(raw * 0.3 * coef, 4),
+                }
+            top = max(explain_features, key=lambda k: abs(explain_features[k]["contribution"]))
+            await r.xadd("topoconf:scoring:explain_result", {
+                "data": json.dumps({
+                    "prompt_id": pid,
+                    "confidence": round(conf, 4),
+                    "features": explain_features,
+                    "top_contributor": top,
+                })
+            }, maxlen=10000, approximate=True)
+
             if tick % 10 == 0:
                 print(f"Published tick {tick}")
             await asyncio.sleep(2)

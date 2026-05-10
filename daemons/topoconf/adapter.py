@@ -131,4 +131,33 @@ class TopoBridge:
         })
         logger.info("Stage 6: bridge health=%s", "HEALTHY" if health.healthy else health.anomaly_reason)
 
+        # Stage 7: explain result
+        explain_features = {}
+        if self.tc.calibrated:
+            try:
+                explain_out = self.tc.explain([prompt])
+                for name, detail in explain_out.get("features", {}).items():
+                    explain_features[name] = detail
+            except Exception:
+                logger.warning("Calibrated explain failed, falling back to heuristic")
+        if not explain_features:
+            for i, name in enumerate(FEATURE_NAMES):
+                raw = float(features_arr[i])
+                coef = 1.0 / len(FEATURE_NAMES)
+                scaled = raw * 0.3
+                explain_features[name] = {
+                    "raw_value": raw,
+                    "scaled_value": round(scaled, 4),
+                    "coefficient": round(coef, 3),
+                    "contribution": round(scaled * coef, 4),
+                }
+        top = max(explain_features, key=lambda k: abs(explain_features[k]["contribution"]))
+        await _xadd(self.redis, "topoconf:scoring:explain_result", {
+            "prompt_id": prompt_id,
+            "confidence": conf,
+            "features": explain_features,
+            "top_contributor": top,
+        })
+        logger.info("Stage 7: explain published (top=%s)", top)
+
         return {"prompt_id": prompt_id, "confidence": conf, "features": feature_dict}

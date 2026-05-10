@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -19,6 +18,7 @@ from substrate.messages import (
     ClientMessage,
     ComputeRequest,
     ConfigUpdateMsg,
+    Resubscribe,
 )
 from substrate.registry import registry
 from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, ProjectCreate
@@ -139,34 +139,6 @@ async def get_manifests():
 # --- WebSocket ---
 
 
-async def stream_reader(canvas_id: str, ws: WebSocket):
-    last_id = "$"
-    while True:
-        try:
-            result = await redis_client.xread(
-                {"demo:counter": last_id}, block=5000, count=10
-            )
-            if not result:
-                continue
-            for stream_name, entries in result:
-                for entry_id, fields in entries:
-                    last_id = entry_id
-                    try:
-                        payload = json.loads(fields.get("data", "{}"))
-                    except (json.JSONDecodeError, TypeError):
-                        payload = fields
-                    await manager.send(ws, {
-                        "type": "stream_event",
-                        "node_id": "n1",
-                        "payload": payload,
-                    })
-        except asyncio.CancelledError:
-            break
-        except Exception as e:
-            logger.error("Stream reader error: %s", e)
-            await asyncio.sleep(1)
-
-
 async def handle_compute_request(
     msg: ComputeRequest,
     ws: WebSocket,
@@ -227,7 +199,6 @@ async def handle_config_update(
 @app.websocket("/ws/canvas/{canvas_id}")
 async def ws_endpoint(ws: WebSocket, canvas_id: str):
     await manager.connect(canvas_id, ws)
-    reader_task = asyncio.create_task(stream_reader(canvas_id, ws))
 
     components: dict[str, Component] = {}
 
@@ -270,8 +241,10 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
 
             if isinstance(msg, ComputeRequest):
                 if msg.node_id not in components:
+                    node_meta = next((n for n in graph["nodes"] if n["id"] == msg.node_id), None) if graph else None
+                    type_id = node_meta["type_id"] if node_meta else "prompt_input"
                     comp = registry.create_instance(
-                        msg.inputs.get("type_id", "prompt_input"),
+                        type_id,
                         msg.node_id,
                         msg.inputs.get("config"),
                     )
@@ -281,15 +254,14 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
                 asyncio.create_task(handle_compute_request(msg, ws, components))
             elif isinstance(msg, ConfigUpdateMsg):
                 await handle_config_update(msg, ws, canvas_id, components)
+            elif isinstance(msg, Resubscribe):
+                if stream_hub:
+                    for sub in msg.subscriptions:
+                        stream_hub.subscribe(sub["stream"], ws, sub["node_id"])
 
     except WebSocketDisconnect:
         pass
     finally:
-        reader_task.cancel()
-        try:
-            await reader_task
-        except asyncio.CancelledError:
-            pass
         if stream_hub:
             stream_hub.unsubscribe_all(ws)
         for comp in components.values():

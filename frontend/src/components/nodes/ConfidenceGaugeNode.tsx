@@ -31,7 +31,8 @@ function describeArc(pct: number): string {
 
 export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
   const nodeData = useNodesData<Node<GaugeData>>(id);
-  const confidence = nodeData?.data?.confidence;
+  const rawConf = nodeData?.data?.confidence;
+  const confidence = rawConf !== undefined ? Math.max(0, Math.min(1, rawConf)) : undefined;
   const mode = nodeData?.data?.mode ?? "—";
   const def = NODE_REGISTRY.confidence_gauge;
 

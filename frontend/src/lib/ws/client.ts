@@ -11,7 +11,9 @@ export class SubstrateWS {
 
   private pending = new Map<string, Record<string, unknown>>();
   private rafScheduled = false;
+  private rafId: number | null = null;
   private batchFn: BatchUpdateFn | null = null;
+  private activeSubscriptions: { stream: string; node_id: string }[] = [];
 
   constructor(canvasId: string) {
     const wsBase =
@@ -37,6 +39,12 @@ export class SubstrateWS {
     this.ws.onopen = () => {
       console.log("[WS] connected to", this.url);
       this.reconnectDelay = 1000;
+      if (this.activeSubscriptions.length > 0) {
+        this.send({
+          type: "resubscribe",
+          subscriptions: this.activeSubscriptions,
+        });
+      }
     };
 
     this.ws.onmessage = (event) => {
@@ -57,10 +65,11 @@ export class SubstrateWS {
 
           if (!this.rafScheduled) {
             this.rafScheduled = true;
-            requestAnimationFrame(() => {
+            this.rafId = requestAnimationFrame(() => {
               const updates = Array.from(this.pending.entries());
               this.pending.clear();
               this.rafScheduled = false;
+              this.rafId = null;
               this.batchFn!(updates);
             });
           }
@@ -91,6 +100,10 @@ export class SubstrateWS {
     return () => this.handlers.delete(handler);
   }
 
+  setSubscriptions(subs: { stream: string; node_id: string }[]): void {
+    this.activeSubscriptions = subs;
+  }
+
   send(data: Record<string, unknown>): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
@@ -99,6 +112,12 @@ export class SubstrateWS {
 
   disconnect(): void {
     this.shouldReconnect = false;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.rafScheduled = false;
+    this.pending.clear();
     this.ws?.close();
     this.ws = null;
   }

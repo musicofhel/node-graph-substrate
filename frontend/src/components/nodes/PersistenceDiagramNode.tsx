@@ -79,9 +79,9 @@ export const PersistenceDiagramNode = memo(({ id }: NodeProps) => {
               strokeDasharray="4,4"
             />
             {/* Points */}
-            {points.map((p, i) => (
+            {points.map((p) => (
               <circle
-                key={i}
+                key={`${p.dim}-${p.b.toFixed(4)}-${p.d.toFixed(4)}`}
                 cx={toX(p.b)}
                 cy={toY(p.d)}
                 r={3}

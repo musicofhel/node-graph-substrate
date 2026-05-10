@@ -1,10 +1,30 @@
-import { memo, useMemo } from "react";
+import { Component, memo, useMemo, type ReactNode } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
 import * as THREE from "three";
+
+class R3FErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full items-center justify-center text-xs text-red-400">
+          Render error
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const CLUSTER_COLORS = [
   new THREE.Color("#3b82f6"), // blue
@@ -71,15 +91,17 @@ export const HiddenStateCloudNode = memo(({ id }: NodeProps) => {
     <BaseNodeShell label={def.label} category={def.category}>
       <div className="nodrag nowheel" style={{ width: 300, height: 250 }}>
         {hasData ? (
-          <Canvas
-            frameloop="demand"
-            camera={{ position: [5, 5, 5], fov: 50 }}
-            style={{ background: "#0a0a0a", borderRadius: 4 }}
-          >
-            <ambientLight intensity={0.6} />
-            <PointCloud data={data} />
-            <OrbitControls enablePan enableZoom enableRotate />
-          </Canvas>
+          <R3FErrorBoundary>
+            <Canvas
+              frameloop="demand"
+              camera={{ position: [5, 5, 5], fov: 50 }}
+              style={{ background: "#0a0a0a", borderRadius: 4 }}
+            >
+              <ambientLight intensity={0.6} />
+              <PointCloud data={data} />
+              <OrbitControls enablePan enableZoom enableRotate />
+            </Canvas>
+          </R3FErrorBoundary>
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-neutral-500">
             Waiting for hidden states...
