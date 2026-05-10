@@ -154,6 +154,15 @@ async def handle_compute_request(
         })
         return
 
+    if component.kind == NodeKind.SUBSCRIBER:
+        await manager.send(ws, {
+            "type": "error",
+            "code": "invalid_request",
+            "message": f"Node {msg.node_id} is a subscriber and does not support compute",
+            "node_id": msg.node_id,
+        })
+        return
+
     try:
         result = await component.build(**msg.inputs)
         await manager.send(ws, {
@@ -246,7 +255,7 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
                     comp = registry.create_instance(
                         type_id,
                         msg.node_id,
-                        msg.inputs.get("config"),
+                        node_meta.get("config") if node_meta else None,
                     )
                     if comp:
                         await comp.on_init()

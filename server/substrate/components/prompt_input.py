@@ -32,7 +32,7 @@ class PromptInputComponent(Component):
     ]
 
     async def build(self, **inputs: Any) -> dict[str, Any]:
-        prompt = inputs.get("config", {}).get("prompt", "") or inputs.get("prompt", "") or self.config.get("prompt", "")
+        prompt = inputs.get("config", {}).get("prompt", "") or self.config.get("prompt", "")
         run_id = uuid.uuid4().hex[:8]
         features = {name: round(random.uniform(-2, 5), 4) for name in FEATURE_NAMES}
 
