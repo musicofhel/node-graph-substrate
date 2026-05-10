@@ -1,0 +1,123 @@
+direction: down
+
+title: {
+  label: Node Registry — 7 Node Types
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+input: Input {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  prompt_input: prompt_input {
+    style.fill: "#313244"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Prompt Input**
+      Kind: COMPUTED
+      Outputs: features_out (features)
+      Config: prompt (text)
+      Subscribes: (none)
+    |
+  }
+}
+
+extraction: Extraction {
+  style.fill: "#1e1e2e"
+  style.stroke: "#3b82f6"
+  style.font-color: "#cdd6f4"
+
+  hidden_state_cloud: hidden_state_cloud {
+    style.fill: "#313244"
+    style.stroke: "#3b82f6"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Hidden State Cloud**
+      Kind: SUBSCRIBER
+      R3F 3D point cloud
+      Subscribes: topoconf:scoring:hidden_state_cloud
+    |
+  }
+}
+
+topology: Topology {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a78bfa"
+  style.font-color: "#cdd6f4"
+
+  feature_bars: feature_bars {
+    style.fill: "#313244"
+    style.stroke: "#22d3ee"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Feature Bars**
+      Kind: SUBSCRIBER
+      Inputs: features_in (features)
+      13 horizontal bars, 5 color groups
+      Subscribes: topoconf:scoring:features_computed
+    |
+  }
+
+  persistence_diagram: persistence_diagram {
+    style.fill: "#313244"
+    style.stroke: "#a78bfa"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Persistence Diagram**
+      Kind: SUBSCRIBER
+      SVG birth-death scatter (H0/H1/H2)
+      Subscribes: topoconf:scoring:persistence_computed
+    |
+  }
+}
+
+scoring: Scoring {
+  style.fill: "#1e1e2e"
+  style.stroke: "#4ade80"
+  style.font-color: "#cdd6f4"
+
+  confidence_gauge: confidence_gauge {
+    style.fill: "#313244"
+    style.stroke: "#4ade80"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Confidence Gauge**
+      Kind: SUBSCRIBER
+      SVG arc (green/yellow/red)
+      Subscribes: topoconf:scoring:confidence_scored
+    |
+  }
+
+  bridge_monitor: bridge_monitor {
+    style.fill: "#313244"
+    style.stroke: "#fbbf24"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Bridge Monitor**
+      Kind: SUBSCRIBER
+      Layer table + health badge
+      Subscribes: topoconf:scoring:bridge_health
+    |
+  }
+
+  explain_waterfall: explain_waterfall {
+    style.fill: "#313244"
+    style.stroke: "#f87171"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **Explain Waterfall**
+      Kind: SUBSCRIBER
+      13-bar contribution waterfall
+      Subscribes: topoconf:scoring:explain_result
+    |
+  }
+}
+
+input.prompt_input -> topology.feature_bars: "features_out → features_in" {
+  style.stroke: "#a6e3a1"
+}

@@ -1,0 +1,156 @@
+direction: down
+
+title: {
+  label: Frontend Component Tree
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+app: App.tsx {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  label: |md
+    **App.tsx**
+    - Graph init (project → graph → loadGraph)
+    - WS lifecycle (connect/reconnect/cleanup)
+    - compute_request CustomEvent handler
+    - computation_result → feature fan-out
+  |
+}
+
+canvas_wrapper: SubstrateCanvas {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  palette: NodePalette {
+    style.fill: "#313244"
+    style.stroke: "#cba6f7"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **NodePalette**
+      4 categories
+      7 node types
+      drag-to-add
+    |
+  }
+
+  rf: ReactFlow {
+    style.fill: "#313244"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
+
+    bg: Background {style.fill: "#45475a"; style.font-color: "#cdd6f4"}
+    controls: Controls {style.fill: "#45475a"; style.font-color: "#cdd6f4"}
+    minimap: MiniMap {style.fill: "#45475a"; style.font-color: "#cdd6f4"}
+  }
+
+  canvas_ctrl: CanvasControls {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **CanvasControls**
+      Save / Load buttons
+    |
+  }
+}
+
+nodes: Custom Nodes (memo'd) {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+
+  shell: BaseNodeShell {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **BaseNodeShell**
+      Border, header, handles
+      Category color coding
+    |
+  }
+
+  prompt: PromptInputNode {
+    style.fill: "#313244"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+    label: "COMPUTED"
+  }
+  features: FeatureBarsNode {
+    style.fill: "#313244"
+    style.stroke: "#22d3ee"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER"
+  }
+  cloud: HiddenStateCloudNode {
+    style.fill: "#313244"
+    style.stroke: "#3b82f6"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER + R3F Canvas"
+  }
+  persist: PersistenceDiagramNode {
+    style.fill: "#313244"
+    style.stroke: "#a78bfa"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER + SVG scatter"
+  }
+  gauge: ConfidenceGaugeNode {
+    style.fill: "#313244"
+    style.stroke: "#4ade80"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER + SVG arc"
+  }
+  bridge: BridgeMonitorNode {
+    style.fill: "#313244"
+    style.stroke: "#fbbf24"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER + table"
+  }
+  explain: ExplainWaterfallNode {
+    style.fill: "#313244"
+    style.stroke: "#f87171"
+    style.font-color: "#cdd6f4"
+    label: "SUBSCRIBER + waterfall"
+  }
+
+  prompt -> shell: wraps
+  features -> shell: wraps
+  cloud -> shell: wraps
+  persist -> shell: wraps
+  gauge -> shell: wraps
+  bridge -> shell: wraps
+  explain -> shell: wraps
+}
+
+stores: State Management {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+
+  canvas_store: "canvas-store (Zustand + zundo)\nnodes, edges, graphId, graphVersion\nsaveGraph(), loadGraph(), batchUpdateNodeData()" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  ui_store: "ui-store (Zustand)\nsidebarOpen" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+ws_client: "SubstrateWS (client.ts)\nExponential backoff (1s→10s)\nRAF coalescing\nAuto-resubscribe on reconnect" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+}
+
+app -> canvas_wrapper
+canvas_wrapper.rf -> nodes: renders
+app -> ws_client: creates
+app -> stores.canvas_store: reads/writes
+ws_client -> stores.canvas_store: "batchUpdateNodeData()\nvia RAF" {style.stroke-dash: 3}

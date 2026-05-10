@@ -1,0 +1,173 @@
+direction: right
+
+title: {
+  label: Project File Structure
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+root: "node-graph-substrate/" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  config: Config {
+    style.fill: "#313244"
+    style.font-color: "#585b70"
+    label: |md
+      docker-compose.yml
+      .env / .env.example
+      CLAUDE.md / SPEC.md
+      synthetic_daemon.py
+    |
+  }
+
+  migrations_dir: "migrations/" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+    label: |md
+      001_init.sql
+      002_schema_fixes.sql
+    |
+  }
+
+  server: "server/" {
+    style.fill: "#313244"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
+
+    infra: Infrastructure {
+      style.fill: "#45475a"
+      style.font-color: "#cdd6f4"
+      label: |md
+        Dockerfile
+        pyproject.toml
+      |
+    }
+
+    substrate: "substrate/" {
+      style.fill: "#45475a"
+      style.stroke: "#a6e3a1"
+      style.font-color: "#cdd6f4"
+
+      core: Core {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          main.py — FastAPI app + WS
+          db.py — asyncpg pool + migrations
+          crud.py — DB queries + optimistic lock
+          ws.py — ConnectionManager
+          streamhub.py — Redis stream readers
+          sdk.py — Component base class
+          registry.py — ComponentRegistry
+          schemas.py — Pydantic models
+          messages.py — WS message types
+        |
+      }
+
+      components: "components/" {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          prompt_input.py (COMPUTED)
+          feature_bars.py (SUBSCRIBER)
+          hidden_state_cloud.py (SUBSCRIBER)
+          persistence_diagram.py (SUBSCRIBER)
+          confidence_gauge.py (SUBSCRIBER)
+          bridge_monitor.py (SUBSCRIBER)
+          explain_waterfall.py (SUBSCRIBER)
+        |
+      }
+    }
+  }
+
+  frontend: "frontend/" {
+    style.fill: "#313244"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+
+    infra2: Infrastructure {
+      style.fill: "#45475a"
+      style.font-color: "#cdd6f4"
+      label: |md
+        Dockerfile
+        package.json
+        vite.config.ts
+        tsconfig.json
+        index.html
+      |
+    }
+
+    src: "src/" {
+      style.fill: "#45475a"
+      style.stroke: "#89b4fa"
+      style.font-color: "#cdd6f4"
+
+      entry: Entry {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          main.tsx
+          App.tsx
+          index.css
+        |
+      }
+
+      lib_dir: "lib/" {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          ws/client.ts — SubstrateWS
+          store/canvas-store.ts — Zustand+zundo
+          store/ui-store.ts
+          nodes/registry.ts — NODE_REGISTRY
+          nodes/handle-colors.ts
+        |
+      }
+
+      types_dir: "types/" {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          nodes.ts
+          messages.ts
+        |
+      }
+
+      components_dir: "components/" {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          canvas/SubstrateCanvas.tsx
+          canvas/CanvasControls.tsx
+          canvas/node-types.ts
+          sidebar/NodePalette.tsx
+          nodes/BaseNodeShell.tsx
+          nodes/PromptInputNode.tsx
+          nodes/FeatureBarsNode.tsx
+          nodes/HiddenStateCloudNode.tsx
+          nodes/PersistenceDiagramNode.tsx
+          nodes/ConfidenceGaugeNode.tsx
+          nodes/BridgeMonitorNode.tsx
+          nodes/ExplainWaterfallNode.tsx
+        |
+      }
+    }
+  }
+
+  daemons: "daemons/topoconf/" {
+    style.fill: "#313244"
+    style.stroke: "#cba6f7"
+    style.font-color: "#cdd6f4"
+    label: |md
+      Dockerfile
+      pyproject.toml
+      adapter.py — TopoBridge (7 stages)
+      topoconf_daemon.py — XREAD control loop
+    |
+  }
+}

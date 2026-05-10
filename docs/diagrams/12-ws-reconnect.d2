@@ -1,0 +1,125 @@
+direction: down
+
+title: {
+  label: "WebSocket Lifecycle & Reconnection"
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+connect: Initial Connect {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  init: "App.tsx resolves graphId\n(URL param / localStorage / create new)" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  create_ws: "new SubstrateWS(graphId)\nenableRAFCoalescing()\nonMessage(handler)\nsetSubscriptions(subs)" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  ws_connect: "ws.connect()\nWebSocket → ws://host:8080/ws/canvas/{id}" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  server_accept: "Server: manager.connect()\nLoad graph from Postgres\nSend graph_loaded\nInstantiate components\nSubscribe streams → StreamHub" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  init -> create_ws -> ws_connect -> server_accept
+}
+
+steady: Steady State {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  incoming: "stream_event / node_state_updated\n→ RAF coalescing → batchUpdateNodeData()" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  outgoing: "compute_request / config_update\n→ ws.send() → server handlers" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+disconnect: Disconnect {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+
+  ws_close: "WebSocket closes\n(network error / server restart)" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#f38ba8"
+  }
+  server_cleanup: "Server: unsubscribe_all(ws)\nDestroy components\nmanager.disconnect()" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#f38ba8"
+  }
+  client_cleanup: "Client: cancelAnimationFrame(rafId)\nClear pending map" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#f38ba8"
+  }
+
+  ws_close -> server_cleanup
+  ws_close -> client_cleanup
+}
+
+reconnect: Reconnect {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+
+  backoff: "Exponential backoff\n1s → 2s → 4s → 8s → 10s (cap)" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#f9e2af"
+  }
+  retry: "attemptConnect()\nnew WebSocket(url)" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#f9e2af"
+  }
+  resub: "onopen: send resubscribe\n{type: 'resubscribe',\n subscriptions: activeSubscriptions}\nReset backoff to 1s" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+  }
+  server_resub: "Server: StreamHub.subscribe()\nfor each {stream, node_id}\nResume XREAD from last cursor" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+  }
+
+  backoff -> retry -> resub -> server_resub
+}
+
+graceful: Graceful Disconnect {
+  style.fill: "#1e1e2e"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+
+  unmount: "React unmount / graphId change\nshouldReconnect = false\nws.disconnect()" {
+    shape: step
+    style.fill: "#313244"
+    style.font-color: "#585b70"
+  }
+}
+
+connect -> steady
+steady -> disconnect: "connection lost"
+disconnect -> reconnect: "shouldReconnect = true"
+reconnect.server_resub -> steady: "back to steady state"
+steady -> graceful: "component cleanup"

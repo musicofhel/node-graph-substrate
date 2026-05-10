@@ -1,0 +1,112 @@
+direction: right
+
+title: {
+  label: System Architecture
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+browser: Browser {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  react: React Flow Canvas {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  ws_client: SubstrateWS Client {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  react -> ws_client: state updates
+}
+
+docker: Docker Compose {
+  style.fill: "#11111b"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  frontend: Vite Dev Server\n:5173 {
+    style.fill: "#1e1e2e"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+    icon: https://vitejs.dev/logo.svg
+  }
+
+  server: FastAPI Server\n:8080 {
+    style.fill: "#1e1e2e"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
+
+    http: HTTP Routes {
+      style.fill: "#313244"
+      style.font-color: "#cdd6f4"
+    }
+    ws_handler: WS Handler {
+      style.fill: "#313244"
+      style.font-color: "#cdd6f4"
+    }
+    streamhub: StreamHub {
+      style.fill: "#313244"
+      style.stroke: "#f9e2af"
+      style.font-color: "#cdd6f4"
+    }
+    registry: ComponentRegistry {
+      style.fill: "#313244"
+      style.font-color: "#cdd6f4"
+    }
+  }
+
+  postgres: PostgreSQL 16\n:5434 {
+    style.fill: "#1e1e2e"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+    shape: cylinder
+  }
+
+  redis: Redis 7\n:6381 {
+    style.fill: "#1e1e2e"
+    style.stroke: "#f38ba8"
+    style.font-color: "#cdd6f4"
+    shape: cylinder
+  }
+
+  daemon: TopoConf Daemon\n(opt-in profile) {
+    style.fill: "#1e1e2e"
+    style.stroke: "#cba6f7"
+    style.font-color: "#cdd6f4"
+    style.stroke-dash: 3
+
+    adapter: TopoBridge {
+      style.fill: "#313244"
+      style.font-color: "#cdd6f4"
+    }
+    topo_conf: topo-confidence\n(mounted RO) {
+      style.fill: "#313244"
+      style.stroke: "#cba6f7"
+      style.font-color: "#cdd6f4"
+      style.stroke-dash: 3
+    }
+    adapter -> topo_conf: wraps
+  }
+
+  server.http -> postgres: asyncpg\nCRUD
+  server.ws_handler -> server.streamhub: subscribe
+  server.streamhub -> redis: XREAD BLOCK
+  daemon.adapter -> redis: XADD\n7 streams
+  daemon.adapter <- redis: XREAD\ncontrol channel
+}
+
+browser.ws_client -> docker.server.ws_handler: "WebSocket\n/ws/canvas/{id}" {
+  style.stroke: "#a6e3a1"
+}
+browser -> docker.frontend: "HTTP :5173" {
+  style.stroke: "#89b4fa"
+}
+browser.ws_client <- docker.server.ws_handler: "stream_event\ncomputation_result\ngraph_loaded" {
+  style.stroke: "#a6e3a1"
+  style.stroke-dash: 3
+}

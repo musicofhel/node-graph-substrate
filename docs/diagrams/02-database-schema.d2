@@ -1,0 +1,113 @@
+direction: down
+
+title: {
+  label: Database Schema (PostgreSQL)
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+projects: projects {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+  id: UUID {constraint: PK}
+  slug: TEXT {constraint: UNIQUE}
+  display_name: TEXT
+  created_at: TIMESTAMPTZ
+}
+
+graphs: graphs {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+  id: UUID {constraint: PK}
+  project_id: UUID {constraint: FK}
+  name: TEXT
+  current_version: INT
+  created_at: TIMESTAMPTZ
+  updated_at: TIMESTAMPTZ
+}
+
+graph_versions: graph_versions {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+  graph_id: UUID {constraint: "PK, FK"}
+  version: INT {constraint: PK}
+  snapshot: JSONB
+  message: TEXT
+  created_at: TIMESTAMPTZ
+}
+
+nodes: nodes {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+  id: TEXT {constraint: PK}
+  graph_id: UUID {constraint: FK}
+  type_id: TEXT
+  position_x: REAL
+  position_y: REAL
+  "width": REAL
+  "height": REAL
+  updated_at: TIMESTAMPTZ
+}
+
+node_configs: node_configs {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+  node_id: TEXT {constraint: "PK, FK"}
+  config: JSONB
+  updated_at: TIMESTAMPTZ
+}
+
+edges: edges {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+  id: TEXT {constraint: PK}
+  graph_id: UUID {constraint: FK}
+  source: TEXT {constraint: FK}
+  target: TEXT {constraint: FK}
+  source_handle: TEXT
+  target_handle: TEXT
+  data: JSONB
+}
+
+migrations: _migrations {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+  filename: TEXT {constraint: PK}
+  applied_at: TIMESTAMPTZ
+}
+
+projects -> graphs: "1:N ON DELETE CASCADE" {
+  style.stroke: "#89b4fa"
+}
+graphs -> graph_versions: "1:N ON DELETE CASCADE" {
+  style.stroke: "#a6e3a1"
+}
+graphs -> nodes: "1:N ON DELETE CASCADE" {
+  style.stroke: "#a6e3a1"
+}
+nodes -> node_configs: "1:1 ON DELETE CASCADE" {
+  style.stroke: "#f38ba8"
+}
+graphs -> edges: "1:N ON DELETE CASCADE" {
+  style.stroke: "#a6e3a1"
+}
+nodes -> edges: "source FK CASCADE" {
+  style.stroke: "#f38ba8"
+  style.stroke-dash: 3
+}

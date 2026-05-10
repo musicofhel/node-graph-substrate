@@ -1,0 +1,117 @@
+direction: right
+
+title: {
+  label: Redis Streams Schema
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+control: Control Channel {
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+
+  ctrl: "topoconf:control" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:control**
+      Direction: Server → Daemon
+      Payload: {command, prompt, run_id}
+      Size: ~1 KB
+    |
+  }
+}
+
+scoring: Scoring Streams (Daemon → Server) {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  s1: "hidden_state_cloud" {
+    style.fill: "#313244"
+    style.stroke: "#3b82f6"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:hidden_state_cloud**
+      {prompt_id, umap_3d (N x 3),
+       clusters, bridge_idx, bridge_silhouette}
+      ~40 KB
+    |
+  }
+
+  s2: "persistence_computed" {
+    style.fill: "#313244"
+    style.stroke: "#a78bfa"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:persistence_computed**
+      {prompt_id, H0: [[b,d]...],
+       H1: [[b,d]...], H2: [[b,d]...]}
+      ~5 KB
+    |
+  }
+
+  s3: "features_computed" {
+    style.fill: "#313244"
+    style.stroke: "#22d3ee"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:features_computed**
+      {prompt_id, features: {name: value x 13}}
+      ~1 KB
+    |
+  }
+
+  s4: "confidence_scored" {
+    style.fill: "#313244"
+    style.stroke: "#4ade80"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:confidence_scored**
+      {prompt_id, confidence: 0.82, mode: "heuristic"}
+      ~0.5 KB
+    |
+  }
+
+  s5: "bridge_health" {
+    style.fill: "#313244"
+    style.stroke: "#fbbf24"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:bridge_health**
+      {prompt_id, healthy, bridge_at_pos0,
+       silhouette_by_layer, anomaly_reason}
+      ~1 KB
+    |
+  }
+
+  s6: "explain_result" {
+    style.fill: "#313244"
+    style.stroke: "#f87171"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **topoconf:scoring:explain_result**
+      {prompt_id, confidence, features:
+       {name: {raw, scaled, coef, contrib}},
+       top_contributor}
+      ~2 KB
+    |
+  }
+}
+
+config: Stream Config {
+  style.fill: "#1e1e2e"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+  label: |md
+    **All Streams**
+    - MAXLEN ~ 10000 (approximate trimming)
+    - Plain XREAD (not XREADGROUP)
+    - Broadcast semantics
+    - Payload field: "data" (JSON string)
+    - Max payload: 256 KB assertion
+  |
+}

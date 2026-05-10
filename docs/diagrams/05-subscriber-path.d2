@@ -1,0 +1,136 @@
+direction: right
+
+title: {
+  label: "Data Flow: Subscriber Path (Redis Streams → React Nodes)"
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+daemon: TopoConf Daemon {
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+
+  s1: "Stage 1\nhidden states" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s2: "Stage 2\nPCA + cluster" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s3: "Stage 3\npersistence PH" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s4: "Stage 4\n13 features" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s5: "Stage 5\nconfidence" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s6: "Stage 6\nbridge health" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s7: "Stage 7\nexplain" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  s1 -> s2 -> s3 -> s4 -> s5 -> s6 -> s7
+}
+
+redis: Redis Streams {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+  shape: cylinder
+
+  st1: "topoconf:scoring:\nhidden_state_cloud" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+  st2: "topoconf:scoring:\npersistence_computed" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+  st3: "topoconf:scoring:\nfeatures_computed" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+  st4: "topoconf:scoring:\nconfidence_scored" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+  st5: "topoconf:scoring:\nbridge_health" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+  st6: "topoconf:scoring:\nexplain_result" {
+    style.fill: "#313244"
+    style.font-color: "#89b4fa"
+  }
+}
+
+hub: StreamHub {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+
+  readers: "1 asyncio.Task\nper stream\nXREAD BLOCK 5000" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  fanout: "Fan-out to\nall subscribed\nWebSockets" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  readers -> fanout
+}
+
+ws: WebSocket {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  send: "stream_event\nmessages" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+client: Browser {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  raf: "RAF Coalescing\nbatch per frame" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+  }
+  store: "Zustand Store\nbatchUpdateNodeData()" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  nodes: "React Flow Nodes\nuseNodesData(id)" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+  raf -> store -> nodes
+}
+
+daemon.s2 -> redis.st1: XADD {style.stroke: "#cba6f7"}
+daemon.s3 -> redis.st2: XADD {style.stroke: "#cba6f7"}
+daemon.s4 -> redis.st3: XADD {style.stroke: "#cba6f7"}
+daemon.s5 -> redis.st4: XADD {style.stroke: "#cba6f7"}
+daemon.s6 -> redis.st5: XADD {style.stroke: "#cba6f7"}
+daemon.s7 -> redis.st6: XADD {style.stroke: "#cba6f7"}
+
+redis -> hub.readers: "XREAD\nBLOCK" {style.stroke: "#f38ba8"}
+hub.fanout -> ws.send: "per-node\nmessage" {style.stroke: "#a6e3a1"}
+ws.send -> client.raf: "onmessage" {style.stroke: "#89b4fa"}
