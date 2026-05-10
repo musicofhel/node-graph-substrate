@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
@@ -12,6 +12,14 @@ type PromptData = {
 export const PromptInputNode = memo(({ id }: NodeProps) => {
   const nodeData = useNodesData<Node<PromptData>>(id);
   const [localPrompt, setLocalPrompt] = useState("");
+  const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    if (!synced && nodeData?.data?.config?.prompt) {
+      setLocalPrompt(nodeData.data.config.prompt);
+      setSynced(true);
+    }
+  }, [synced, nodeData?.data?.config?.prompt]);
   const def = NODE_REGISTRY.prompt_input;
 
   const handleAnalyze = useCallback(() => {

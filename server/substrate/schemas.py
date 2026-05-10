@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -51,7 +51,7 @@ class GraphResponse(BaseModel):
 
 
 class NodeOp(BaseModel):
-    op: str  # "upsert_node" | "remove_node" | "upsert_edge" | "remove_edge"
+    op: Literal["upsert_node", "remove_node", "upsert_edge", "remove_edge"]
     data: dict[str, Any] = Field(default_factory=dict)
 
 

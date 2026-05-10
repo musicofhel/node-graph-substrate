@@ -5,6 +5,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+import asyncpg
 import redis.asyncio as aioredis
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,10 +81,8 @@ async def create_project(body: ProjectCreate):
     try:
         project = await crud.create_project(body.slug, body.display_name)
         return {k: str(v) for k, v in project.items()}
-    except Exception as e:
-        if "unique" in str(e).lower():
-            raise HTTPException(409, "Project slug already exists")
-        raise
+    except asyncpg.UniqueViolationError:
+        raise HTTPException(409, "Project slug already exists")
 
 
 # --- Graph routes ---

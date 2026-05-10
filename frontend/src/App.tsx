@@ -106,10 +106,16 @@ export default function App() {
 
       if (graphId) {
         localStorage.setItem("substrate:lastGraphId", graphId);
+        let needsDefaults = false;
         try {
           await useCanvasStore.getState().loadGraph(graphId);
+          needsDefaults = useCanvasStore.getState().nodes.length === 0;
         } catch {
-          setGraphMeta(graphId, 1);
+          needsDefaults = true;
+        }
+
+        if (needsDefaults) {
+          setGraphMeta(graphId, useCanvasStore.getState().graphVersion || 1);
           const defaultNodes = [
             { id: "prompt-1", type: "prompt_input", position: { x: 50, y: 150 }, data: { config: { prompt: "" } } },
             { id: "cloud-1", type: "hidden_state_cloud", position: { x: 350, y: 20 }, data: {} },
