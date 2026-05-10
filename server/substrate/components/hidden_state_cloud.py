@@ -1,5 +1,5 @@
 from substrate.registry import registry
-from substrate.sdk import Component, NodeKind, Socket, SocketType
+from substrate.sdk import Component, NodeKind
 
 
 @registry.register

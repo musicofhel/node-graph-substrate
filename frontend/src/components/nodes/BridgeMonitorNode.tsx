@@ -6,9 +6,10 @@ import { NODE_REGISTRY } from "../../lib/nodes/registry";
 type BridgeData = {
   healthy?: boolean;
   bridge_at_pos0?: Record<string, boolean>;
+  pos0_silhouette_by_layer?: Record<string, number>;
   silhouette_by_layer?: Record<string, number>;
-  mean_silhouette_by_layer?: Record<string, number>;
   crystallization?: number;
+  crystallized?: boolean;
   anomaly_reason?: string | null;
 };
 
@@ -32,9 +33,11 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
               <span className="text-sm font-medium text-neutral-200">
                 {data.healthy ? "HEALTHY" : "ANOMALY"}
               </span>
-              {data.crystallization !== undefined && (
+              {(data.crystallization !== undefined || data.crystallized !== undefined) && (
                 <span className="ml-auto text-[10px] text-neutral-500">
-                  cryst: {data.crystallization.toFixed(2)}
+                  cryst: {data.crystallization !== undefined
+                    ? data.crystallization.toFixed(2)
+                    : data.crystallized ? "yes" : "no"}
                 </span>
               )}
             </div>
@@ -64,10 +67,10 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
                         </span>
                       </td>
                       <td className="py-0.5 text-right font-mono">
-                        {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        {(data.pos0_silhouette_by_layer?.[layer] ?? data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
                       </td>
                       <td className="py-0.5 text-right font-mono">
-                        {(data.mean_silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
                       </td>
                     </tr>
                   ))}

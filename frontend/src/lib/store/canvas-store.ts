@@ -19,6 +19,8 @@ export interface CanvasState {
   graphId: string | null;
   graphVersion: number;
   dirty: boolean;
+  _serverNodeIds: Set<string>;
+  _serverEdgeIds: Set<string>;
 
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -43,6 +45,8 @@ export const useCanvasStore = create<CanvasState>()(
       graphId: null,
       graphVersion: 0,
       dirty: false,
+      _serverNodeIds: new Set<string>(),
+      _serverEdgeIds: new Set<string>(),
 
       onNodesChange: (changes) => {
         set({
@@ -143,16 +147,25 @@ export const useCanvasStore = create<CanvasState>()(
           graphId: data.id,
           graphVersion: data.current_version,
           dirty: false,
+          _serverNodeIds: new Set(nodes.map((n: Node) => n.id)),
+          _serverEdgeIds: new Set(edges.map((e: Edge) => e.id)),
         });
-
-        localStorage.setItem(`substrate:graph:${graphId}`, JSON.stringify(data));
       },
 
       saveGraph: async () => {
-        const { graphId, graphVersion, nodes, edges } = get();
+        const { graphId, graphVersion, nodes, edges, _serverNodeIds, _serverEdgeIds } = get();
         if (!graphId) return;
 
+        const currentNodeIds = new Set(nodes.map((n) => n.id));
+        const currentEdgeIds = new Set(edges.map((e) => e.id));
+
         const ops = [
+          ...[..._serverNodeIds]
+            .filter((id) => !currentNodeIds.has(id))
+            .map((id) => ({ op: "remove_node", data: { id } })),
+          ...[..._serverEdgeIds]
+            .filter((id) => !currentEdgeIds.has(id))
+            .map((id) => ({ op: "remove_edge", data: { id } })),
           ...nodes.map((n) => ({
             op: "upsert_node",
             data: {
@@ -200,12 +213,12 @@ export const useCanvasStore = create<CanvasState>()(
         if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
 
         const result = await resp.json();
-        set({ graphVersion: result.version, dirty: false });
-
-        localStorage.setItem(
-          `substrate:graph:${graphId}`,
-          JSON.stringify({ ...result, id: graphId }),
-        );
+        set({
+          graphVersion: result.version,
+          dirty: false,
+          _serverNodeIds: new Set(nodes.map((n) => n.id)),
+          _serverEdgeIds: new Set(edges.map((e) => e.id)),
+        });
       },
     }),
     { limit: 50 },

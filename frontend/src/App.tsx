@@ -11,15 +11,10 @@ export default function App() {
   const setGraphMeta = useCanvasStore((s) => s.setGraphMeta);
   const addNode = useCanvasStore((s) => s.addNode);
   const wsRef = useRef<SubstrateWS | null>(null);
-  const initRef = useRef(false);
 
   const handleMessage = useCallback(
     (msg: Record<string, unknown>) => {
-      if (msg.type === "stream_event") {
-        const nodeId = msg.node_id as string;
-        const payload = msg.payload as Record<string, unknown>;
-        batchUpdateNodeData([[nodeId, payload]]);
-      } else if (msg.type === "computation_result") {
+      if (msg.type === "computation_result") {
         const nodeId = msg.node_id as string;
         const ok = msg.ok as boolean;
         if (ok) {
@@ -44,18 +39,17 @@ export default function App() {
         } else {
           batchUpdateNodeData([[nodeId, { status: "error" }]]);
         }
-      } else if (msg.type === "node_state_updated") {
-        const nodeId = msg.node_id as string;
-        const patch = msg.data_patch as Record<string, unknown>;
-        batchUpdateNodeData([[nodeId, patch]]);
+      } else if (msg.type === "graph_loaded") {
+        const version = msg.version as number;
+        const graphId = msg.graph_id as string;
+        useCanvasStore.getState().setGraphMeta(graphId, version);
       }
     },
     [batchUpdateNodeData],
   );
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
+    let cancelled = false;
 
     (async () => {
       const params = new URLSearchParams(window.location.search);
@@ -75,18 +69,9 @@ export default function App() {
                 display_name: "Default Project",
               }),
             });
-            const proj = projResp.ok
-              ? await projResp.json()
-              : await (
-                  await fetch(`${API_BASE}/api/projects`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      slug: `proj-${Date.now()}`,
-                      display_name: "Default Project",
-                    }),
-                  })
-                ).json();
+            if (cancelled) return;
+            const proj = await projResp.json();
+            if (cancelled) return;
 
             const graphResp = await fetch(`${API_BASE}/api/graphs`, {
               method: "POST",
@@ -96,6 +81,7 @@ export default function App() {
                 name: "Main Canvas",
               }),
             });
+            if (cancelled) return;
             const graph = await graphResp.json();
             graphId = graph.id;
           } catch (e) {
@@ -104,15 +90,20 @@ export default function App() {
         }
       }
 
+      if (cancelled) return;
+
       if (graphId) {
         localStorage.setItem("substrate:lastGraphId", graphId);
         let needsDefaults = false;
         try {
           await useCanvasStore.getState().loadGraph(graphId);
+          if (cancelled) return;
           needsDefaults = useCanvasStore.getState().nodes.length === 0;
         } catch {
           needsDefaults = true;
         }
+
+        if (cancelled) return;
 
         if (needsDefaults) {
           setGraphMeta(graphId, useCanvasStore.getState().graphVersion || 1);
@@ -139,9 +130,14 @@ export default function App() {
           for (const e of edges) {
             onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });
           }
+
+          try {
+            await useCanvasStore.getState().saveGraph();
+          } catch (e) {
+            console.warn("Failed to persist default canvas:", e);
+          }
         }
 
-        // Connect WS to actual graphId, not "demo"
         wsRef.current?.disconnect();
         const ws = new SubstrateWS(graphId);
         wsRef.current = ws;
@@ -157,12 +153,19 @@ export default function App() {
 
     const handleComputeRequest = (e: Event) => {
       const detail = (e as CustomEvent).detail;
+      if (!wsRef.current) {
+        batchUpdateNodeData([[detail.node_id, { status: "error" }]]);
+        return;
+      }
       batchUpdateNodeData([[detail.node_id, { status: "computing" }]]);
-      wsRef.current?.send(detail);
+      if (!wsRef.current.send(detail)) {
+        batchUpdateNodeData([[detail.node_id, { status: "error" }]]);
+      }
     };
     window.addEventListener("substrate:compute_request", handleComputeRequest);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("substrate:compute_request", handleComputeRequest);
       wsRef.current?.disconnect();
       wsRef.current = null;

@@ -104,10 +104,12 @@ export class SubstrateWS {
     this.activeSubscriptions = subs;
   }
 
-  send(data: Record<string, unknown>): void {
+  send(data: Record<string, unknown>): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
+      return true;
     }
+    return false;
   }
 
   disconnect(): void {

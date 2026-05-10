@@ -6,15 +6,16 @@ import {
   MiniMap,
   type DefaultEdgeOptions,
   type ReactFlowInstance,
+  type Edge,
+  type Connection,
   MarkerType,
-  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCanvasStore } from "../../lib/store/canvas-store";
-import { useUIStore } from "../../lib/store/ui-store";
 import { CanvasControls } from "./CanvasControls";
 import { nodeTypes } from "./node-types";
 import { NodePalette } from "../sidebar/NodePalette";
+import { NODE_REGISTRY } from "../../lib/nodes/registry";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   style: { strokeWidth: 2, stroke: "#525252" },
@@ -33,21 +34,21 @@ export function SubstrateCanvas() {
   const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
   const onConnect = useCanvasStore((s) => s.onConnect);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
-  const setConfigPanelNodeId = useUIStore((s) => s.setConfigPanelNodeId);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
 
-  const handleNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
-      setConfigPanelNodeId(node.id);
-    },
-    [setSelectedNodeId, setConfigPanelNodeId],
-  );
-
-  const handlePaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-    setConfigPanelNodeId(null);
-  }, [setSelectedNodeId, setConfigPanelNodeId]);
+  const isValidConnection = useCallback((connection: Edge | Connection) => {
+    if (!connection.sourceHandle || !connection.targetHandle) return true;
+    const sourceNode = useCanvasStore.getState().nodes.find((n) => n.id === connection.source);
+    const targetNode = useCanvasStore.getState().nodes.find((n) => n.id === connection.target);
+    if (!sourceNode?.type || !targetNode?.type) return true;
+    const sourceDef = NODE_REGISTRY[sourceNode.type];
+    const targetDef = NODE_REGISTRY[targetNode.type];
+    if (!sourceDef || !targetDef) return true;
+    const sourcePort = sourceDef.outputs.find((o) => o.id === connection.sourceHandle);
+    const targetPort = targetDef.inputs.find((i) => i.id === connection.targetHandle);
+    if (!sourcePort || !targetPort) return true;
+    return sourcePort.type === targetPort.type;
+  }, []);
 
   return (
     <div className="relative flex h-full w-full">
@@ -61,8 +62,9 @@ export function SubstrateCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={handleNodeClick}
-        onPaneClick={handlePaneClick}
+        onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+        onPaneClick={() => setSelectedNodeId(null)}
+        isValidConnection={isValidConnection}
         onInit={(instance) => {
           rfInstance.current = instance;
         }}

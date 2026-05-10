@@ -30,6 +30,13 @@ from substrate.ws import ConnectionManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def _serialize_row(row: dict) -> dict:
+    return {
+        k: str(v) if not isinstance(v, (int, float, bool, type(None))) else v
+        for k, v in row.items()
+    }
+
 manager = ConnectionManager()
 redis_client: aioredis.Redis | None = None
 stream_hub: StreamHub | None = None
@@ -80,8 +87,11 @@ async def health():
 async def create_project(body: ProjectCreate):
     try:
         project = await crud.create_project(body.slug, body.display_name)
-        return {k: str(v) for k, v in project.items()}
+        return _serialize_row(project)
     except asyncpg.UniqueViolationError:
+        existing = await crud.get_project_by_slug(body.slug)
+        if existing:
+            return _serialize_row(existing)
         raise HTTPException(409, "Project slug already exists")
 
 
@@ -90,8 +100,11 @@ async def create_project(body: ProjectCreate):
 
 @app.post("/api/graphs")
 async def create_graph(body: GraphCreate):
-    graph = await crud.create_graph(body.project_id, body.name)
-    return {k: str(v) for k, v in graph.items()}
+    try:
+        graph = await crud.create_graph(body.project_id, body.name)
+        return _serialize_row(graph)
+    except asyncpg.ForeignKeyViolationError:
+        raise HTTPException(404, "Project not found")
 
 
 @app.get("/api/graphs/{graph_id}")
@@ -146,19 +159,21 @@ async def handle_compute_request(
     component = components.get(msg.node_id)
     if not component:
         await manager.send(ws, {
-            "type": "error",
-            "code": "unknown_node",
-            "message": f"No component for node {msg.node_id}",
+            "type": "computation_result",
+            "request_id": msg.request_id,
             "node_id": msg.node_id,
+            "ok": False,
+            "error": f"No component for node {msg.node_id}",
         })
         return
 
     if component.kind == NodeKind.SUBSCRIBER:
         await manager.send(ws, {
-            "type": "error",
-            "code": "invalid_request",
-            "message": f"Node {msg.node_id} is a subscriber and does not support compute",
+            "type": "computation_result",
+            "request_id": msg.request_id,
             "node_id": msg.node_id,
+            "ok": False,
+            "error": f"Node {msg.node_id} is a subscriber and does not support compute",
         })
         return
 
@@ -257,8 +272,9 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
                         node_meta.get("config") if node_meta else None,
                     )
                     if comp:
-                        await comp.on_init()
+                        # Set before await to prevent duplicate creation from concurrent messages
                         components[msg.node_id] = comp
+                        await comp.on_init()
                 asyncio.create_task(handle_compute_request(msg, ws, components))
             elif isinstance(msg, ConfigUpdateMsg):
                 await handle_config_update(msg, ws, canvas_id, components)

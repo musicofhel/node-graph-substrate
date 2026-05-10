@@ -41,15 +41,6 @@ class EdgeData(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
-class GraphResponse(BaseModel):
-    id: str
-    project_id: str
-    name: str
-    current_version: int
-    nodes: list[NodeData]
-    edges: list[EdgeData]
-
-
 class NodeOp(BaseModel):
     op: Literal["upsert_node", "remove_node", "upsert_edge", "remove_edge"]
     data: dict[str, Any] = Field(default_factory=dict)

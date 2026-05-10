@@ -66,9 +66,9 @@ class StreamHub:
                             payload = dict(fields)
 
                         ws_map = self._subs.get(stream, {})
-                        dead: list[WebSocket] = []
-                        for ws, node_ids in ws_map.items():
-                            for node_id in node_ids:
+                        dead: set[WebSocket] = set()
+                        for ws, node_ids in list(ws_map.items()):
+                            for node_id in list(node_ids):
                                 try:
                                     await self.manager.send(ws, {
                                         "type": "stream_event",
@@ -79,7 +79,7 @@ class StreamHub:
                                         "ts": time.time(),
                                     })
                                 except Exception:
-                                    dead.append(ws)
+                                    dead.add(ws)
                         for ws in dead:
                             self.unsubscribe_all(ws)
 

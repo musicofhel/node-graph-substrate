@@ -5,18 +5,13 @@ export interface ComputeRequest {
   inputs: Record<string, unknown>;
 }
 
-export interface ConfigUpdateMsg {
-  type: "config_update";
-  node_id: string;
-  config: Record<string, unknown>;
-}
 
 export interface Resubscribe {
   type: "resubscribe";
-  subscriptions: { node_id: string; stream: string; last_id: string }[];
+  subscriptions: { node_id: string; stream: string }[];
 }
 
-export type ClientMessage = ComputeRequest | ConfigUpdateMsg | Resubscribe;
+export type ClientMessage = ComputeRequest | Resubscribe;
 
 export interface GraphLoaded {
   type: "graph_loaded";
@@ -58,9 +53,18 @@ export interface ErrorMsg {
   node_id?: string;
 }
 
+export interface ReplayGap {
+  type: "replay_gap";
+  stream: string;
+  from_cursor: string;
+  to_cursor: string;
+  dropped: number;
+}
+
 export type ServerMessage =
   | GraphLoaded
   | NodeStateUpdated
   | StreamEvent
   | ComputationResult
-  | ErrorMsg;
+  | ErrorMsg
+  | ReplayGap;

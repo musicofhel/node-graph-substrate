@@ -1,0 +1,5 @@
+ALTER TABLE nodes DROP COLUMN IF EXISTS type_version;
+
+ALTER TABLE edges
+  ADD CONSTRAINT edges_source_fk FOREIGN KEY (source) REFERENCES nodes(id) ON DELETE CASCADE,
+  ADD CONSTRAINT edges_target_fk FOREIGN KEY (target) REFERENCES nodes(id) ON DELETE CASCADE;
