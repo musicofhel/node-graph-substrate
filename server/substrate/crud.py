@@ -49,6 +49,22 @@ async def create_graph(project_id: str, name: str) -> dict[str, Any]:
             return graph
 
 
+async def get_graph_by_project_and_name(project_id: str, name: str) -> dict[str, Any] | None:
+    pool = get_pool()
+    row = await pool.fetchrow(
+        "SELECT * FROM graphs WHERE project_id = $1 AND name = $2",
+        project_id,
+        name,
+    )
+    if not row:
+        return None
+    result = dict(row)
+    return {
+        k: str(v) if not isinstance(v, (int, float, bool, type(None))) else v
+        for k, v in result.items()
+    }
+
+
 async def get_graph(graph_id: str) -> dict[str, Any] | None:
     pool = get_pool()
     async with pool.acquire() as conn:

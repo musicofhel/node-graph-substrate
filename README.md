@@ -322,3 +322,121 @@ redis-cli -p 6381 XRANGE topoconf:scoring:features_computed - + COUNT 1
 # Substrate isolation check
 grep -r "topo_confidence\|TopoConfidence" server/substrate/
 ```
+
+---
+
+## Screenshots
+
+### Full Canvas — Empty State
+
+All 7 nodes pre-wired on first visit. Node Palette sidebar on the left with 4 categories (Input, Extraction, Topology, Scoring). Save/Load controls top-right.
+
+![Full Canvas](docs/screenshots/01-full-canvas.png)
+
+### Live Streaming Data
+
+Synthetic daemon publishing to 6 Redis Streams every 2s. All subscriber nodes update in real-time via WebSocket + RAF coalescing.
+
+![Live Streaming Data](docs/screenshots/06-fit-view-with-data.png)
+
+### Compute Path — Prompt Analysis
+
+User enters a prompt and clicks "Analyze". The compute request flows through WebSocket, all nodes update with new topological features.
+
+![Prompt Entered](docs/screenshots/10-prompt-entered.png)
+
+![After Analyze](docs/screenshots/11-after-analyze.png)
+
+### Individual Nodes (with live data)
+
+<table>
+<tr>
+<td width="50%">
+
+**Hidden State Cloud** — R3F 3D point cloud of token embeddings. Blue = cluster 0, red = cluster 1, gold = bridge token. Bridge silhouette score shown below.
+
+![Hidden State Cloud](docs/screenshots/0702-hidden_state_cloud-live.png)
+
+</td>
+<td width="50%">
+
+**Persistence Diagram** — Birth-death scatter for homology dimensions H0 (blue), H1 (cyan), H2 (purple). Points above the diagonal indicate persistent topological features.
+
+![Persistence Diagram](docs/screenshots/0704-persistence_diagram-live.png)
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Feature Bars** — 13 topological features color-coded by dimension group (blue = H0, cyan = H1, purple = H2, gold = bridge, green/red = significance).
+
+![Feature Bars](docs/screenshots/0703-feature_bars-live.png)
+
+</td>
+<td>
+
+**Confidence Gauge** — SVG arc gauge showing heuristic or calibrated confidence score. Green ≥ 0.7, yellow ≥ 0.4, red < 0.4.
+
+![Confidence Gauge](docs/screenshots/0705-confidence_gauge-live.png)
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Bridge Monitor** — Layer-by-layer bridge detection (L7/L14/L24) with health status and silhouette scores. Anomaly = bridge missing at any layer.
+
+![Bridge Monitor](docs/screenshots/0706-bridge_monitor-live.png)
+
+</td>
+<td>
+
+**Explain Waterfall** — Feature contribution waterfall showing which topological features drive the confidence score. Top contributor highlighted.
+
+![Explain Waterfall](docs/screenshots/0707-explain_waterfall-live.png)
+
+</td>
+</tr>
+</table>
+
+### Empty Nodes (waiting for data)
+
+Individual node close-ups before data arrives — each shows its placeholder state.
+
+<table>
+<tr>
+<td width="33%">
+
+![Prompt Input](docs/screenshots/04a-prompt-input-node.png)
+
+</td>
+<td width="33%">
+
+![Hidden State Cloud](docs/screenshots/04b-hidden-state-cloud-node.png)
+
+</td>
+<td width="33%">
+
+![Feature Bars](docs/screenshots/04c-feature-bars-node.png)
+
+</td>
+</tr>
+<tr>
+<td>
+
+![Persistence Diagram](docs/screenshots/04d-persistence-diagram-node.png)
+
+</td>
+<td>
+
+![Confidence Gauge](docs/screenshots/04e-confidence-gauge-node.png)
+
+</td>
+<td>
+
+![Bridge Monitor](docs/screenshots/04f-bridge-monitor-node.png)
+
+</td>
+</tr>
+</table>

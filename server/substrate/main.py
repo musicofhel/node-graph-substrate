@@ -103,6 +103,11 @@ async def create_graph(body: GraphCreate):
     try:
         graph = await crud.create_graph(body.project_id, body.name)
         return _serialize_row(graph)
+    except asyncpg.UniqueViolationError:
+        existing = await crud.get_graph_by_project_and_name(body.project_id, body.name)
+        if existing:
+            return existing
+        raise HTTPException(409, "Graph already exists")
     except asyncpg.ForeignKeyViolationError:
         raise HTTPException(404, "Project not found")
 
