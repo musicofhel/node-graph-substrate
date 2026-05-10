@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import TypeAdapter
 
 from substrate import crud
+from substrate import linkforge_history
 import substrate.components  # noqa: F401 — registers components
 from substrate.db import close_pool, create_pool, run_migrations
 from substrate.messages import (
@@ -98,6 +99,12 @@ async def create_project(body: ProjectCreate):
 # --- Graph routes ---
 
 
+@app.get("/api/projects/{project_id}/graphs")
+async def list_graphs(project_id: str):
+    graphs = await crud.list_graphs(project_id)
+    return [_serialize_row(g) for g in graphs]
+
+
 @app.post("/api/graphs")
 async def create_graph(body: GraphCreate):
     try:
@@ -151,6 +158,46 @@ async def update_config(node_id: str, body: ConfigUpdate):
 @app.get("/api/manifests")
 async def get_manifests():
     return registry.manifests()
+
+
+# --- Link-Forge history ---
+
+
+@app.get("/api/linkforge/history")
+async def linkforge_paper_history(
+    limit: int = 50,
+    offset: int = 0,
+    category: str = "",
+    research_only: bool = False,
+):
+    if not redis_client:
+        raise HTTPException(503, "Redis not available")
+    return await linkforge_history.get_paper_history(
+        redis_client, limit, offset, category, research_only
+    )
+
+
+@app.get("/api/linkforge/paper/{queue_id}")
+async def linkforge_paper_detail(queue_id: str):
+    if not redis_client:
+        raise HTTPException(503, "Redis not available")
+    paper = await linkforge_history.get_paper_detail(redis_client, queue_id)
+    if not paper:
+        raise HTTPException(404, "Paper not found")
+    return paper
+
+
+@app.get("/api/linkforge/paper/{queue_id}/research")
+async def linkforge_paper_research(queue_id: str):
+    if not redis_client:
+        raise HTTPException(503, "Redis not available")
+    paper = await linkforge_history.get_paper_detail(redis_client, queue_id)
+    if not paper:
+        raise HTTPException(404, "Paper not found")
+    arxiv_id = paper.get("arxiv_id", "")
+    if not arxiv_id:
+        return None
+    return await linkforge_history.get_research_lifecycle(redis_client, arxiv_id)
 
 
 # --- WebSocket ---

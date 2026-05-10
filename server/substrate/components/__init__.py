@@ -5,3 +5,7 @@ import substrate.components.persistence_diagram  # noqa: F401
 import substrate.components.confidence_gauge  # noqa: F401
 import substrate.components.bridge_monitor  # noqa: F401
 import substrate.components.explain_waterfall  # noqa: F401
+import substrate.components.lf_coordinator  # noqa: F401
+import substrate.components.lf_stats  # noqa: F401
+import substrate.components.lf_autorel  # noqa: F401
+import substrate.components.research_coordinator  # noqa: F401

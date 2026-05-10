@@ -6,6 +6,10 @@ import { PersistenceDiagramNode } from "../nodes/PersistenceDiagramNode";
 import { ConfidenceGaugeNode } from "../nodes/ConfidenceGaugeNode";
 import { BridgeMonitorNode } from "../nodes/BridgeMonitorNode";
 import { ExplainWaterfallNode } from "../nodes/ExplainWaterfallNode";
+import { LfStageCard } from "../nodes/LfStageCard";
+import { LfCoordinatorNode } from "../nodes/LfCoordinatorNode";
+import { LfStatsNode } from "../nodes/LfStatsNode";
+import { LfAutoRelNode } from "../nodes/LfAutoRelNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -15,4 +19,8 @@ export const nodeTypes: NodeTypes = {
   confidence_gauge: ConfidenceGaugeNode,
   bridge_monitor: BridgeMonitorNode,
   explain_waterfall: ExplainWaterfallNode,
+  lf_stage: LfStageCard,
+  lf_coordinator: LfCoordinatorNode,
+  lf_stats: LfStatsNode,
+  lf_autorel: LfAutoRelNode,
 };

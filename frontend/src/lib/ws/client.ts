@@ -52,6 +52,15 @@ export class SubstrateWS {
         const msg = JSON.parse(event.data);
 
         if (
+          msg.type === "stream_event" &&
+          typeof msg.stream === "string" &&
+          (msg.stream.startsWith("linkforge:") || msg.stream.startsWith("topoconf:research:"))
+        ) {
+          this.handlers.forEach((h) => h(msg));
+          return;
+        }
+
+        if (
           this.batchFn &&
           (msg.type === "stream_event" || msg.type === "node_state_updated")
         ) {

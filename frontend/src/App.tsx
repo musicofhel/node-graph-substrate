@@ -1,19 +1,167 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Edge } from "@xyflow/react";
 import { useCanvasStore } from "./lib/store/canvas-store";
 import { SubstrateCanvas } from "./components/canvas/SubstrateCanvas";
+import { TabBar } from "./components/canvas/TabBar";
+import { PaperPool } from "./components/linkforge/PaperPool";
+import type { PaperSummary } from "./components/linkforge/PaperCard";
 import { SubstrateWS } from "./lib/ws/client";
 import { NODE_REGISTRY } from "./lib/nodes/registry";
 
 const API_BASE = `http://${window.location.hostname}:8080`;
 
+const STREAM_TO_STAGE: Record<string, string> = {
+  "linkforge:ingested": "ingested",
+  "linkforge:extracted": "extracted",
+  "linkforge:categorized": "categorized",
+  "linkforge:embedded": "embedded",
+  "linkforge:stored": "stored",
+  "linkforge:chunked": "chunked",
+  "linkforge:auto_related": "auto_related",
+  "linkforge:research_bridged": "research_bridged",
+  "linkforge:url_discovered": "url_discovered",
+  "linkforge:completed": "completed",
+};
+
+const STAGE_ORDER = [
+  "ingested", "extracted", "categorized", "embedded", "stored",
+  "chunked", "auto_related", "research_bridged", "url_discovered", "completed",
+];
+
+const STAGE_Y: Record<string, number> = {};
+STAGE_ORDER.forEach((s, i) => { STAGE_Y[s] = i * 140; });
+
+interface PaperTracker {
+  queueId: string;
+  columnIndex: number;
+  stageNodes: Map<string, string>;
+}
+
 export default function App() {
   const batchUpdateNodeData = useCanvasStore((s) => s.batchUpdateNodeData);
   const setGraphMeta = useCanvasStore((s) => s.setGraphMeta);
   const addNode = useCanvasStore((s) => s.addNode);
+  const projectId = useCanvasStore((s) => s.projectId);
+  const graphId = useCanvasStore((s) => s.graphId);
   const wsRef = useRef<SubstrateWS | null>(null);
+  const paperTrackerRef = useRef(new Map<string, PaperTracker>());
+  const columnCounterRef = useRef(0);
+  const [showPool, setShowPool] = useState(false);
+  const [livePapers, setLivePapers] = useState<PaperSummary[]>([]);
+
+  const handleLinkforgeEvent = useCallback(
+    (stream: string, payload: Record<string, unknown>) => {
+      const stage = STREAM_TO_STAGE[stream];
+      if (!stage) return;
+      const queueId = String(payload.queue_id ?? "");
+      if (!queueId) return;
+
+      const store = useCanvasStore.getState();
+      let tracker = paperTrackerRef.current.get(queueId);
+      if (!tracker) {
+        const columnIndex = columnCounterRef.current++;
+        tracker = { queueId, columnIndex, stageNodes: new Map() };
+        paperTrackerRef.current.set(queueId, tracker);
+      }
+
+      if (tracker.stageNodes.has(stage)) {
+        batchUpdateNodeData([[tracker.stageNodes.get(stage)!, { ...payload, _stage: stage }]]);
+        return;
+      }
+
+      const nodeId = `lf-${queueId}-${stage}`;
+      const x = -(tracker.columnIndex * 260);
+      const y = STAGE_Y[stage] ?? 0;
+
+      store.addNode({
+        id: nodeId,
+        type: "lf_stage",
+        position: { x, y },
+        data: { ...payload, _stage: stage },
+      });
+      tracker.stageNodes.set(stage, nodeId);
+
+      const stageIdx = STAGE_ORDER.indexOf(stage);
+      if (stageIdx > 0) {
+        const prevStage = STAGE_ORDER[stageIdx - 1];
+        const prevNodeId = tracker.stageNodes.get(prevStage);
+        if (prevNodeId) {
+          const edgeId = `lf-edge-${queueId}-${prevStage}-${stage}`;
+          const newEdge: Edge = {
+            id: edgeId,
+            source: prevNodeId,
+            target: nodeId,
+            style: { stroke: "#525252", strokeWidth: 1 },
+          };
+          useCanvasStore.setState((s) => ({ edges: [...s.edges, newEdge] }));
+        }
+      }
+
+      if (paperTrackerRef.current.size > 30) {
+        const oldest = paperTrackerRef.current.keys().next().value;
+        const oldTracker = oldest != null ? paperTrackerRef.current.get(oldest) : undefined;
+        if (oldest != null && oldTracker) {
+          const nodeIds = new Set(oldTracker.stageNodes.values());
+          useCanvasStore.setState((s) => ({
+            nodes: s.nodes.filter((n) => !nodeIds.has(n.id)),
+            edges: s.edges.filter((e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)),
+          }));
+          paperTrackerRef.current.delete(oldest);
+        }
+      }
+    },
+    [batchUpdateNodeData],
+  );
+
+  const connectGraph = useCallback(
+    (gId: string) => {
+      wsRef.current?.disconnect();
+      const ws = new SubstrateWS(gId);
+      wsRef.current = ws;
+      ws.enableRAFCoalescing(batchUpdateNodeData);
+      ws.onMessage(handleMessageRef.current);
+
+      const subs = buildSubscriptions();
+      ws.setSubscriptions(subs);
+      ws.connect();
+    },
+    [batchUpdateNodeData],
+  );
+
+  const handleSwitchGraph = useCallback(
+    async (newGraphId: string) => {
+      if (newGraphId === useCanvasStore.getState().graphId) return;
+      localStorage.setItem("substrate:lastGraphId", newGraphId);
+      await useCanvasStore.getState().loadGraph(newGraphId);
+      connectGraph(newGraphId);
+    },
+    [connectGraph],
+  );
 
   const handleMessage = useCallback(
     (msg: Record<string, unknown>) => {
+      if (msg.type === "stream_event" && typeof msg.stream === "string") {
+        const stream = msg.stream;
+        if (stream.startsWith("linkforge:") && !stream.startsWith("linkforge:autorel:")) {
+          const payload = msg.payload as Record<string, unknown>;
+          handleLinkforgeEvent(stream, payload);
+          if (stream === "linkforge:completed") {
+            setShowPool(true);
+            const qid = String(payload.queue_id ?? "");
+            const tracker = paperTrackerRef.current.get(qid);
+            setLivePapers((prev) => [{
+              queue_id: qid,
+              success: String(payload.success ?? ""),
+              processing_time_ms: String(payload.processing_time_ms ?? ""),
+              completed_at: String(payload.completed_at ?? ""),
+              title: typeof payload.title === "string" ? payload.title : undefined,
+              category: typeof payload.category === "string" ? payload.category : undefined,
+              forge_score: typeof payload.forge_score === "string" ? payload.forge_score : undefined,
+            }, ...prev]);
+          }
+          return;
+        }
+      }
       if (msg.type === "computation_result") {
         const nodeId = msg.node_id as string;
         const ok = msg.ok as boolean;
@@ -41,24 +189,28 @@ export default function App() {
         }
       } else if (msg.type === "graph_loaded") {
         const version = msg.version as number;
-        const graphId = msg.graph_id as string;
-        useCanvasStore.getState().setGraphMeta(graphId, version);
+        const gId = msg.graph_id as string;
+        useCanvasStore.getState().setGraphMeta(gId, version);
       }
     },
-    [batchUpdateNodeData],
+    [batchUpdateNodeData, handleLinkforgeEvent],
   );
+
+  const handleMessageRef = useRef(handleMessage);
+  handleMessageRef.current = handleMessage;
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       const params = new URLSearchParams(window.location.search);
-      let graphId = params.get("graph");
+      let gId = params.get("graph");
+      let projId: string | null = null;
 
-      if (!graphId) {
+      if (!gId) {
         const cached = localStorage.getItem("substrate:lastGraphId");
         if (cached) {
-          graphId = cached;
+          gId = cached;
         } else {
           try {
             const projResp = await fetch(`${API_BASE}/api/projects`, {
@@ -71,6 +223,7 @@ export default function App() {
             });
             if (cancelled) return;
             const proj = await projResp.json();
+            projId = proj.id;
             if (cancelled) return;
 
             const graphResp = await fetch(`${API_BASE}/api/graphs`, {
@@ -83,7 +236,7 @@ export default function App() {
             });
             if (cancelled) return;
             const graph = await graphResp.json();
-            graphId = graph.id;
+            gId = graph.id;
           } catch (e) {
             console.error("Failed to create default graph:", e);
           }
@@ -92,12 +245,13 @@ export default function App() {
 
       if (cancelled) return;
 
-      if (graphId) {
-        localStorage.setItem("substrate:lastGraphId", graphId);
+      if (gId) {
+        localStorage.setItem("substrate:lastGraphId", gId);
         let needsDefaults = false;
         try {
-          await useCanvasStore.getState().loadGraph(graphId);
+          await useCanvasStore.getState().loadGraph(gId);
           if (cancelled) return;
+          if (!projId) projId = useCanvasStore.getState().projectId;
           needsDefaults = useCanvasStore.getState().nodes.length === 0;
         } catch {
           needsDefaults = true;
@@ -105,8 +259,16 @@ export default function App() {
 
         if (cancelled) return;
 
+        if (projId) {
+          useCanvasStore.getState().setGraphMeta(
+            gId,
+            useCanvasStore.getState().graphVersion,
+            projId,
+          );
+        }
+
         if (needsDefaults) {
-          setGraphMeta(graphId, useCanvasStore.getState().graphVersion || 1);
+          setGraphMeta(gId, useCanvasStore.getState().graphVersion || 1, projId ?? undefined);
           const defaultNodes = [
             { id: "prompt-1", type: "prompt_input", position: { x: 50, y: 150 }, data: { config: { prompt: "" } } },
             { id: "cloud-1", type: "hidden_state_cloud", position: { x: 350, y: 20 }, data: {} },
@@ -138,16 +300,7 @@ export default function App() {
           }
         }
 
-        wsRef.current?.disconnect();
-        const ws = new SubstrateWS(graphId);
-        wsRef.current = ws;
-        ws.enableRAFCoalescing(batchUpdateNodeData);
-        ws.onMessage(handleMessage);
-
-        const subs = buildSubscriptions();
-        ws.setSubscriptions(subs);
-
-        ws.connect();
+        connectGraph(gId);
       }
     })();
 
@@ -170,11 +323,25 @@ export default function App() {
       wsRef.current?.disconnect();
       wsRef.current = null;
     };
-  }, [setGraphMeta, addNode, handleMessage, batchUpdateNodeData]);
+  }, [setGraphMeta, addNode, batchUpdateNodeData, connectGraph]);
 
   return (
-    <div className="h-screen w-screen">
-      <SubstrateCanvas />
+    <div className="flex h-screen w-screen flex-col">
+      <TabBar projectId={projectId} activeGraphId={graphId} onSelectGraph={handleSwitchGraph} />
+      {showPool ? (
+        <>
+          <div className="min-h-0" style={{ flex: "55 1 0%" }}>
+            <SubstrateCanvas />
+          </div>
+          <div className="border-t border-neutral-800" style={{ flex: "45 1 0%" }}>
+            <PaperPool livePapers={livePapers} />
+          </div>
+        </>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <SubstrateCanvas />
+        </div>
+      )}
     </div>
   );
 }

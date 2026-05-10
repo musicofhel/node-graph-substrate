@@ -31,6 +31,15 @@ async def get_project_by_slug(slug: str) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+async def list_graphs(project_id: str) -> list[dict[str, Any]]:
+    pool = get_pool()
+    rows = await pool.fetch(
+        "SELECT id, project_id, name, current_version, created_at, updated_at FROM graphs WHERE project_id = $1 ORDER BY created_at",
+        project_id,
+    )
+    return [dict(r) for r in rows]
+
+
 async def create_graph(project_id: str, name: str) -> dict[str, Any]:
     pool = get_pool()
     async with pool.acquire() as conn:

@@ -16,6 +16,7 @@ export interface CanvasState {
   edges: Edge[];
   selectedNodeId: string | null;
 
+  projectId: string | null;
   graphId: string | null;
   graphVersion: number;
   dirty: boolean;
@@ -31,7 +32,7 @@ export interface CanvasState {
   batchUpdateNodeData: (updates: [string, Record<string, unknown>][]) => void;
   loadGraph: (graphId: string) => Promise<void>;
   saveGraph: () => Promise<void>;
-  setGraphMeta: (graphId: string, version: number) => void;
+  setGraphMeta: (graphId: string, version: number, projectId?: string) => void;
 }
 
 const API_BASE = `http://${window.location.hostname}:8080`;
@@ -42,6 +43,7 @@ export const useCanvasStore = create<CanvasState>()(
       nodes: [],
       edges: [],
       selectedNodeId: null,
+      projectId: null,
       graphId: null,
       graphVersion: 0,
       dirty: false,
@@ -96,8 +98,13 @@ export const useCanvasStore = create<CanvasState>()(
         });
       },
 
-      setGraphMeta: (graphId, version) => {
-        set({ graphId, graphVersion: version, dirty: false });
+      setGraphMeta: (graphId, version, projectId) => {
+        set({
+          graphId,
+          graphVersion: version,
+          dirty: false,
+          ...(projectId != null ? { projectId } : {}),
+        });
       },
 
       loadGraph: async (graphId: string) => {
@@ -144,6 +151,7 @@ export const useCanvasStore = create<CanvasState>()(
         set({
           nodes,
           edges,
+          projectId: data.project_id ?? get().projectId,
           graphId: data.id,
           graphVersion: data.current_version,
           dirty: false,
