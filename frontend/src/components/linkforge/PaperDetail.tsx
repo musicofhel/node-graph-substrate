@@ -25,7 +25,7 @@ const STAGE_INDICATORS: Record<string, string[]> = {
   ingested: ["url", "source"],
   extracted: ["title", "summary"],
   categorized: ["category"],
-  embedded: [],
+  embedded: ["embedding_dim"],
   stored: ["stored_done", "relationship_count"],
   chunked: ["chunk_count"],
   auto_related: ["match_count"],
@@ -159,7 +159,7 @@ export const PaperDetail = memo(({ queueId }: Props) => {
             {research.triaged_at && (
               <div className="flex justify-between">
                 <span>Triaged</span>
-                <span>{new Date(research.triaged_at).toLocaleDateString()}</span>
+                <span>{(() => { const d = new Date(research.triaged_at); return isNaN(d.getTime()) ? research.triaged_at : d.toLocaleDateString(); })()}</span>
               </div>
             )}
           </div>

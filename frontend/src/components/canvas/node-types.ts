@@ -10,6 +10,7 @@ import { LfStageCard } from "../nodes/LfStageCard";
 import { LfCoordinatorNode } from "../nodes/LfCoordinatorNode";
 import { LfStatsNode } from "../nodes/LfStatsNode";
 import { LfAutoRelNode } from "../nodes/LfAutoRelNode";
+import { ResearchCoordinatorNode } from "../nodes/ResearchCoordinatorNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -23,4 +24,5 @@ export const nodeTypes: NodeTypes = {
   lf_coordinator: LfCoordinatorNode,
   lf_stats: LfStatsNode,
   lf_autorel: LfAutoRelNode,
+  research_coordinator: ResearchCoordinatorNode,
 };

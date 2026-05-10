@@ -60,8 +60,9 @@ class StreamHub:
                         last_id = entry_id
                         self._last_ids[stream] = entry_id
 
+                        raw = fields.get("data") or fields.get("payload")
                         try:
-                            payload = json.loads(fields.get("data", "{}"))
+                            payload = json.loads(raw) if raw else dict(fields)
                         except (json.JSONDecodeError, TypeError):
                             payload = dict(fields)
 

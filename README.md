@@ -127,10 +127,10 @@ This architecture handles high-frequency updates without frame drops — multipl
 
 - **App.tsx** — Graph initialization, WS lifecycle, compute event handler
 - **SubstrateCanvas** — React Flow wrapper with palette sidebar
-  - **NodePalette** — 4 categories, 7 node types, drag-to-add
+  - **NodePalette** — 4 categories, 12 node types, drag-to-add
   - **ReactFlow** — Background, Controls, MiniMap
   - **CanvasControls** — Save/Load buttons
-- **7 Custom Nodes** — All `memo()`'d, all wrap `BaseNodeShell`
+- **12 Custom Nodes** — All `memo()`'d, all wrap `BaseNodeShell`
 
 ### State Management
 
@@ -144,7 +144,7 @@ This architecture handles high-frequency updates without frame drops — multipl
 
 ![Node Registry](docs/diagrams/07-node-registry.png)
 
-Seven node types across four categories:
+Twelve node types across four categories:
 
 | Node | Category | Kind | Visualization | Subscribes To |
 |------|----------|------|---------------|---------------|
@@ -440,3 +440,79 @@ Individual node close-ups before data arrives — each shows its placeholder sta
 </td>
 </tr>
 </table>
+
+---
+
+## Paper Digestion Pipeline (LinkForge)
+
+The substrate also visualizes the [link-forge](https://github.com/musicofhel/link-forge) paper ingestion pipeline in real time. Papers flow through 10 stages (Ingested → Extracted → Categorized → Embedded → Stored → Chunked → Auto Related → Research Bridged → URLs Discovered → Completed), with each stage rendered as a React Flow node in a vertical waterfall.
+
+### Live Waterfall
+
+Papers stream in via Redis and appear as waterfall columns of stage cards. Failed papers get red borders. The Paper Pool panel below shows completed papers with score bars, category badges, and sorting/filtering.
+
+![Live Waterfall](docs/screenshots/paper-pipeline/03-live-waterfall.png)
+
+### Paper Pool & Detail View
+
+Click any paper card to see its full pipeline progress, summary, and research lifecycle status.
+
+<table>
+<tr>
+<td width="50%">
+
+**Paper Pool** — Cards with forge score bars, category badges, processing time. Sort by score/time/category, filter by category, search, or toggle research-only.
+
+![Paper Pool](docs/screenshots/paper-pipeline/04-paper-pool.png)
+
+</td>
+<td width="50%">
+
+**Paper Detail** — Pipeline stage waterfall (green = complete, red = failed), summary, category/content-type badges, and research lifecycle for arxiv papers.
+
+![Paper Detail](docs/screenshots/paper-pipeline/06-paper-detail-closeup.png)
+
+</td>
+</tr>
+</table>
+
+### Filtering & Search
+
+<table>
+<tr>
+<td width="33%">
+
+![Sorted by Score](docs/screenshots/paper-pipeline/07-sorted-by-score.png)
+
+**Sorted by Forge Score**
+
+</td>
+<td width="33%">
+
+![Category Filter](docs/screenshots/paper-pipeline/08-category-filtered.png)
+
+**Category Filter**
+
+</td>
+<td width="33%">
+
+![Search](docs/screenshots/paper-pipeline/09-search-results.png)
+
+**Search**
+
+</td>
+</tr>
+</table>
+
+### LinkForge Nodes
+
+Four dedicated nodes for pipeline observability, plus stage cards created dynamically:
+
+| Node | Purpose |
+|------|---------|
+| **Pipeline Coordinator** | Watches all 10 linkforge streams, shows paper count |
+| **Pipeline Stats** | Running success/fail counts, average processing time |
+| **AutoRel Status** | Edge creation/pruning metrics from auto-relationship sweeps |
+| **Research Coordinator** | Research lifecycle tracking (triage → experiment → promote) |
+
+![LF Nodes on Canvas](docs/screenshots/paper-pipeline/02-lf-nodes-on-canvas.png)

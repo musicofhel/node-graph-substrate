@@ -345,15 +345,24 @@ export default function App() {
   );
 }
 
+const LINKFORGE_STREAMS = Object.keys(STREAM_TO_STAGE);
+
 function buildSubscriptions(): { stream: string; node_id: string }[] {
   const nodes = useCanvasStore.getState().nodes;
   const subs: { stream: string; node_id: string }[] = [];
+  const seen = new Set<string>();
   for (const node of nodes) {
     const def = NODE_REGISTRY[node.type ?? ""];
     if (def?.subscribesTo) {
       for (const stream of def.subscribesTo) {
         subs.push({ stream, node_id: node.id });
+        seen.add(stream);
       }
+    }
+  }
+  for (const stream of LINKFORGE_STREAMS) {
+    if (!seen.has(stream)) {
+      subs.push({ stream, node_id: "__linkforge__" });
     }
   }
   return subs;
