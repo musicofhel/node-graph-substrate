@@ -21,6 +21,19 @@ const STAGES: StageInfo[] = [
   { name: "completed", label: "Completed", done: false },
 ];
 
+const STAGE_INDICATORS: Record<string, string[]> = {
+  ingested: ["url", "source"],
+  extracted: ["title", "summary"],
+  categorized: ["category"],
+  embedded: [],
+  stored: ["stored_done", "relationship_count"],
+  chunked: ["chunk_count"],
+  auto_related: ["match_count"],
+  research_bridged: ["research_relevant"],
+  url_discovered: ["urls_found"],
+  completed: ["completed_at", "success"],
+};
+
 interface Props {
   queueId: string;
 }
@@ -64,15 +77,14 @@ export const PaperDetail = memo(({ queueId }: Props) => {
   }
 
   const success = paper.success === "true";
-  const completedIdx = success || paper.success === "false"
-    ? STAGES.length - 1
-    : STAGES.findIndex((s) => s.name === "completed");
-  const lastDoneIdx = "completed_at" in paper
-    ? completedIdx
-    : STAGES.reduce((acc, s, i) => (paper[`${s.name}_done`] ? i : acc), -1);
+  const highestDone = STAGES.reduce((acc, s, i) => {
+    const indicators = STAGE_INDICATORS[s.name] ?? [];
+    if (indicators.some((k) => k in paper && paper[k] !== "")) return i;
+    return acc;
+  }, -1);
   const stages = STAGES.map((s, i) => ({
     ...s,
-    done: Boolean(paper[`${s.name}_done`]) || i <= lastDoneIdx,
+    done: i <= highestDone,
   }));
 
   return (

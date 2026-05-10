@@ -148,7 +148,6 @@ export default function App() {
           if (stream === "linkforge:completed") {
             setShowPool(true);
             const qid = String(payload.queue_id ?? "");
-            const tracker = paperTrackerRef.current.get(qid);
             setLivePapers((prev) => [{
               queue_id: qid,
               success: String(payload.success ?? ""),
@@ -157,7 +156,7 @@ export default function App() {
               title: typeof payload.title === "string" ? payload.title : undefined,
               category: typeof payload.category === "string" ? payload.category : undefined,
               forge_score: typeof payload.forge_score === "string" ? payload.forge_score : undefined,
-            }, ...prev]);
+            }, ...prev].slice(0, 200));
           }
           return;
         }

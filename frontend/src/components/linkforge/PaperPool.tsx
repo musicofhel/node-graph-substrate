@@ -17,12 +17,15 @@ export const PaperPool = memo(({ livePapers }: Props) => {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [researchOnly, setResearchOnly] = useState(false);
-  const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const offsetRef = useRef(0);
   const mergedLiveIds = useRef(new Set<string>());
 
   const fetchHistory = useCallback(async (reset: boolean) => {
-    const newOffset = reset ? 0 : offset;
+    if (loading) return;
+    setLoading(true);
+    const newOffset = reset ? 0 : offsetRef.current;
     try {
       const params = new URLSearchParams({
         limit: "50",
@@ -35,16 +38,18 @@ export const PaperPool = memo(({ livePapers }: Props) => {
       const data: PaperSummary[] = await resp.json();
       if (reset) {
         setPapers(data);
-        setOffset(data.length);
+        offsetRef.current = data.length;
       } else {
         setPapers((prev) => [...prev, ...data]);
-        setOffset(newOffset + data.length);
+        offsetRef.current = newOffset + data.length;
       }
       setHasMore(data.length === 50);
     } catch {
       // silent
+    } finally {
+      setLoading(false);
     }
-  }, [offset, categoryFilter, researchOnly]);
+  }, [loading, categoryFilter, researchOnly]);
 
   useEffect(() => {
     fetchHistory(true);
@@ -151,9 +156,10 @@ export const PaperPool = memo(({ livePapers }: Props) => {
           {hasMore && (
             <button
               onClick={() => fetchHistory(false)}
-              className="mt-2 w-full rounded bg-neutral-800 py-1.5 text-[10px] text-neutral-400 hover:bg-neutral-700"
+              disabled={loading}
+              className="mt-2 w-full rounded bg-neutral-800 py-1.5 text-[10px] text-neutral-400 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Load more
+              {loading ? "Loading..." : "Load more"}
             </button>
           )}
         </div>

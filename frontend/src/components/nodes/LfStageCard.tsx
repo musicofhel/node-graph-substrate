@@ -100,8 +100,8 @@ function AutoRelatedContent({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-0.5 text-[10px] text-neutral-400">
       <div>{String(data.match_count ?? 0)} matches</div>
-      {typeof data.best_match_title === "string" && data.best_match_title && (
-        <div className="truncate">best: {data.best_match_title}</div>
+      {typeof data.best_match_url === "string" && data.best_match_url && (
+        <div className="truncate">best: {data.best_match_url}</div>
       )}
     </div>
   );
