@@ -18,9 +18,20 @@ Self-hosted React Flow canvas + FastAPI + Redis Streams + Postgres that makes `~
 ## Quick start
 
 ```bash
-docker compose up          # postgres, redis, fastapi, vite
-python counter_publisher.py  # throwaway demo (Slice 0 only)
+# PREFERRED — unified pipeline script starts NGS alongside link-forge + research-graph + autopilot:
+bash ~/start-research-pipeline.sh
+bash ~/start-research-pipeline.sh --status     # check what's running
+
+# MANUAL — NGS only:
+docker compose up                # postgres, redis, fastapi
+cd frontend && npm run dev       # vite (native — not in Docker on WSL2)
+python synthetic_daemon.py       # fake streaming data (no GPU needed)
+
+# Skip NGS when starting the rest of the pipeline:
+bash ~/start-research-pipeline.sh --no-dashboard
 ```
+
+NGS observes topo-confidence compute scoring (topology features, persistence diagrams, confidence gauges). It does NOT observe link-forge ingestion events — those are separate systems with no cross-system event bridge.
 
 ## Build order (tracer-bullet slices)
 

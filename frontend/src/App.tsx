@@ -285,6 +285,14 @@ export default function App() {
           needsDefaults = true;
         }
 
+        try {
+          const histResp = await fetch(`${API_BASE}/api/linkforge/history?limit=1`);
+          if (!cancelled && histResp.ok) {
+            const hist = await histResp.json();
+            if (hist.length > 0) setShowPool(true);
+          }
+        } catch {}
+
         if (cancelled) return;
 
         if (projId) {

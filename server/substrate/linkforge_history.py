@@ -13,11 +13,11 @@ async def get_paper_history(
     research_only: bool = False,
 ) -> list[dict[str, Any]]:
     keys = []
-    cursor = "0"
+    cursor: int | str = 0
     while True:
         cursor, batch = await redis.scan(cursor, match="linkforge:paper:*", count=200)
         keys.extend(batch)
-        if cursor == "0" or cursor == b"0":
+        if not cursor or cursor == 0:
             break
 
     papers = []

@@ -48,20 +48,23 @@ services:
       timeout: 5s
       retries: 3
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "${VITE_PORT:-5173}:5173"
-    environment:
-      VITE_WS_URL: ws://localhost:${FASTAPI_PORT:-8080}
-    depends_on:
-      server:
-        condition: service_healthy
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/index.html:/app/index.html
+  # frontend: run natively in WSL (`cd frontend && npm run dev`) to avoid
+  # Docker volume-mount I/O thrashing on WSL2. Re-enable when on a dedicated
+  # Linux box or a machine with more headroom.
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "${VITE_PORT:-5173}:5173"
+  #   environment:
+  #     VITE_WS_URL: ws://localhost:${FASTAPI_PORT:-8080}
+  #   depends_on:
+  #     server:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./frontend/src:/app/src
+  #     - ./frontend/index.html:/app/index.html
 
   topoconf_daemon:
     build:

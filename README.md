@@ -10,23 +10,26 @@ The substrate server **never imports topo-confidence**. All communication happen
 
 ![System Architecture](docs/diagrams/01-system-architecture.png)
 
-Four Docker Compose services (plus an opt-in daemon):
+Three Docker Compose services (plus an opt-in daemon). Frontend runs natively in WSL2 to avoid Docker volume-mount I/O thrashing:
 
-| Service | Port | Stack |
-|---------|------|-------|
-| **Frontend** | 5173 | Vite + React 19 + React Flow v12 + Zustand + R3F |
-| **Server** | 8080 | FastAPI + uvicorn + asyncpg + redis-py |
-| **PostgreSQL** | 5434 | postgres:16-alpine |
-| **Redis** | 6381 | redis:7-alpine |
-| **TopoConf Daemon** | — | topo-confidence wrapper (opt-in `--profile topoconf`) |
+| Service | Port | Stack | Runtime |
+|---------|------|-------|---------|
+| **Frontend** | 5173 | Vite + React 19 + React Flow v12 + Zustand + R3F | Native (WSL2) |
+| **Server** | 8080 | FastAPI + uvicorn + asyncpg + redis-py | Docker |
+| **PostgreSQL** | 5434 | postgres:16-alpine | Docker |
+| **Redis** | 6381 | redis:7-alpine | Docker |
+| **TopoConf Daemon** | — | topo-confidence wrapper (opt-in `--profile topoconf`) | Docker |
 
 ---
 
 ## Quick Start
 
 ```bash
-# Start core services
+# Start infra + server
 docker compose up
+
+# In another terminal — frontend (native, not Docker on WSL2)
+cd frontend && npm run dev
 
 # With real topo-confidence daemon (needs GPU + model cache)
 docker compose --profile topoconf up
