@@ -23,7 +23,7 @@ export const ExplainWaterfallNode = memo(({ id }: NodeProps) => {
 
   if (!data.features) {
     return (
-      <BaseNodeShell label={def.label} category={def.category}>
+      <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
         <div className="py-4 text-center text-xs text-neutral-500">
           Requires calibration
         </div>
@@ -40,7 +40,7 @@ export const ExplainWaterfallNode = memo(({ id }: NodeProps) => {
   );
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
       <div className="flex w-[300px] flex-col gap-0.5">
         {entries.map(([name, feat]) => {
           const pct = Math.abs(feat.contribution) / maxAbs;

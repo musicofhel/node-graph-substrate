@@ -20,7 +20,7 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
   const hasData = data.bridge_at_pos0 !== undefined;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
       <div style={{ width: 240 }}>
         {hasData ? (
           <>

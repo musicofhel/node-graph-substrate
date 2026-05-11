@@ -88,7 +88,7 @@ export const HiddenStateCloudNode = memo(({ id }: NodeProps) => {
   const hasData = !!data.umap_3d;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
       <div className="nodrag nowheel" style={{ width: 300, height: 250 }}>
         {hasData ? (
           <R3FErrorBoundary>

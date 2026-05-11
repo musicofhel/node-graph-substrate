@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { PaperCard, type PaperSummary } from "./PaperCard";
 import { PaperDetail } from "./PaperDetail";
 
@@ -19,11 +19,18 @@ export const PaperPool = memo(({ livePapers }: Props) => {
   const [researchOnly, setResearchOnly] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const offsetRef = useRef(0);
+  const fetchAcRef = useRef<AbortController | null>(null);
   const mergedLiveIds = useRef(new Set<string>());
+  const newBadgeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const fetchHistory = useCallback(async (reset: boolean) => {
-    if (loading) return;
+    if (loadingRef.current && !reset) return;
+    fetchAcRef.current?.abort();
+    const ac = new AbortController();
+    fetchAcRef.current = ac;
+    loadingRef.current = true;
     setLoading(true);
     const newOffset = reset ? 0 : offsetRef.current;
     try {
@@ -33,9 +40,10 @@ export const PaperPool = memo(({ livePapers }: Props) => {
         ...(categoryFilter ? { category: categoryFilter } : {}),
         ...(researchOnly ? { research_only: "true" } : {}),
       });
-      const resp = await fetch(`${API_BASE}/api/linkforge/history?${params}`);
+      const resp = await fetch(`${API_BASE}/api/linkforge/history?${params}`, { signal: ac.signal });
       if (!resp.ok) return;
       const data: PaperSummary[] = await resp.json();
+      if (ac.signal.aborted) return;
       if (reset) {
         setPapers(data);
         offsetRef.current = data.length;
@@ -44,26 +52,28 @@ export const PaperPool = memo(({ livePapers }: Props) => {
         offsetRef.current = newOffset + data.length;
       }
       setHasMore(data.length === 50);
-    } catch {
-      // silent
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) {
+        loadingRef.current = false;
+        setLoading(false);
+      }
     }
-  }, [loading, categoryFilter, researchOnly]);
-
-  useEffect(() => {
-    fetchHistory(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter, researchOnly]);
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    fetchHistory(true);
+    return () => { fetchAcRef.current?.abort(); };
+  }, [fetchHistory]);
+
+  useEffect(() => {
     for (const lp of livePapers) {
       if (!mergedLiveIds.current.has(lp.queue_id)) {
         mergedLiveIds.current.add(lp.queue_id);
         setPapers((prev) => [{ ...lp, _isNew: true }, ...prev]);
         const qid = lp.queue_id;
-        timers.push(
+        newBadgeTimers.current.push(
           setTimeout(() => {
             setPapers((prev) =>
               prev.map((p) =>
@@ -74,8 +84,11 @@ export const PaperPool = memo(({ livePapers }: Props) => {
         );
       }
     }
-    return () => { timers.forEach(clearTimeout); };
   }, [livePapers]);
+
+  useEffect(() => {
+    return () => { newBadgeTimers.current.forEach(clearTimeout); };
+  }, []);
 
   const filtered = useMemo(() => {
     const sorted = [...papers];

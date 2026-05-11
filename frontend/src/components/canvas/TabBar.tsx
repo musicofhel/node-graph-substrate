@@ -18,20 +18,22 @@ export function TabBar({ projectId, activeGraphId, onSelectGraph }: TabBarProps)
   const [tabs, setTabs] = useState<GraphTab[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchTabs = useCallback(async () => {
+  const fetchTabs = useCallback(async (signal?: AbortSignal) => {
     if (!projectId) return;
     try {
-      const resp = await fetch(`${API_BASE}/api/projects/${projectId}/graphs`);
-      if (resp.ok) {
+      const resp = await fetch(`${API_BASE}/api/projects/${projectId}/graphs`, { signal });
+      if (resp.ok && !signal?.aborted) {
         setTabs(await resp.json());
       }
-    } catch {
-      // silent — tabs stay stale
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
     }
   }, [projectId]);
 
   useEffect(() => {
-    fetchTabs();
+    const ac = new AbortController();
+    fetchTabs(ac.signal);
+    return () => { ac.abort(); };
   }, [fetchTabs]);
 
   const handleCreate = async () => {

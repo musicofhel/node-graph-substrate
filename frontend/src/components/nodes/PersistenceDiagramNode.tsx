@@ -47,7 +47,7 @@ export const PersistenceDiagramNode = memo(({ id }: NodeProps) => {
   const toY = (v: number) => SVG_SIZE - PADDING - (v / maxVal) * plotSize;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
       <div style={{ width: SVG_SIZE, height: SVG_SIZE }}>
         {hasData ? (
           <svg width={SVG_SIZE} height={SVG_SIZE}>

@@ -37,7 +37,7 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
   const def = NODE_REGISTRY.confidence_gauge;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
       <div className="flex flex-col items-center" style={{ width: 120 }}>
         {confidence !== undefined ? (
           <>

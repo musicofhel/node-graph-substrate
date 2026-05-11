@@ -23,7 +23,6 @@ class StreamHub:
         )
         self._tasks: dict[str, asyncio.Task] = {}
         self._last_ids: dict[str, str] = {}
-        self._lock = asyncio.Lock()
 
     def subscribe(self, stream: str, ws: WebSocket, node_id: str) -> None:
         self._subs[stream][ws].add(node_id)

@@ -310,12 +310,12 @@ export default function App() {
 
           const { onConnect } = useCanvasStore.getState();
           const edges: { source: string; target: string; sourceHandle: string | null; targetHandle: string | null }[] = [
-            { source: "prompt-1", target: "cloud-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "cloud-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "features-1", sourceHandle: "features_out", targetHandle: "features_in" },
-            { source: "prompt-1", target: "diagram-1", sourceHandle: "features_out", targetHandle: null },
-            { source: "prompt-1", target: "gauge-1", sourceHandle: "features_out", targetHandle: null },
-            { source: "prompt-1", target: "monitor-1", sourceHandle: "features_out", targetHandle: null },
-            { source: "prompt-1", target: "explain-1", sourceHandle: "features_out", targetHandle: null },
+            { source: "prompt-1", target: "diagram-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "gauge-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "monitor-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "explain-1", sourceHandle: "features_out", targetHandle: "features_in" },
           ];
           for (const e of edges) {
             onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });

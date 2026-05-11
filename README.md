@@ -517,7 +517,7 @@ Four dedicated nodes for pipeline observability, plus stage cards created dynami
 
 ![LF Nodes on Canvas](docs/screenshots/paper-pipeline/02-lf-nodes-on-canvas.png)
 
-### Race Condition Audit (E2E Playwright)
+### Race Condition Audit v1 (E2E Playwright)
 
 Comprehensive race condition audit targeting burst ingestion, rapid UI interaction, tracker eviction, and console error monitoring. 27/27 tests pass.
 
@@ -551,6 +551,45 @@ Comprehensive race condition audit targeting burst ingestion, rapid UI interacti
 **Final Overview** — 307 nodes, 271 edges. Zero console errors, zero React state-after-unmount warnings, zero unhandled rejections.
 
 ![Final Overview](docs/screenshots/race-audit/14-final-overview.png)
+
+</td>
+</tr>
+</table>
+
+### Race Condition Audit v2 (E2E Playwright — Fresh Eyes)
+
+Second-pass audit found and fixed 5 additional issues: 14K React Flow handle warnings (missing target handles on 5 subscriber nodes), PaperPool `_isNew` timer leak, `fetchHistory` stale-closure race, TabBar missing AbortController, and dead `_lock` field in StreamHub. 37/37 tests pass, 0 console errors, 0 React Flow warnings.
+
+<table>
+<tr>
+<td width="50%">
+
+**Default Canvas** — 7 nodes with properly connected edges. All 5 subscriber nodes now render target handles via BaseNodeShell; zero React Flow handle warnings.
+
+![Default Canvas](docs/screenshots/race-audit-v2/01-canvas-initial.png)
+
+</td>
+<td width="50%">
+
+**Paper Detail** — Rapid switching between 8 papers in 400ms. AbortController cancels in-flight fetches; detail panel renders final selection correctly.
+
+![Rapid Detail](docs/screenshots/race-audit-v2/05-rapid-detail-switch.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**35-Paper Eviction** — All pipeline stages complete, tracker eviction bounds node count at 307. Paper pool shows complete detail with stage indicators.
+
+![Tracker Eviction](docs/screenshots/race-audit-v2/07-tracker-eviction-35.png)
+
+</td>
+<td width="50%">
+
+**Out-of-Order Arrival** — Stages published as categorized→ingested→embedded→extracted. Bidirectional edge linking creates 3 correct edges despite arrival disorder.
+
+![Out of Order](docs/screenshots/race-audit-v2/03-out-of-order.png)
 
 </td>
 </tr>
