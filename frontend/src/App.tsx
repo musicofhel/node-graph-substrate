@@ -56,7 +56,6 @@ export default function App() {
       const queueId = String(payload.queue_id ?? "");
       if (!queueId) return;
 
-      const store = useCanvasStore.getState();
       let tracker = paperTrackerRef.current.get(queueId);
       if (!tracker) {
         const columnIndex = columnCounterRef.current++;
@@ -73,40 +72,57 @@ export default function App() {
       const x = -(tracker.columnIndex * 260);
       const y = STAGE_Y[stage] ?? 0;
 
-      store.addNode({
-        id: nodeId,
-        type: "lf_stage",
-        position: { x, y },
-        data: { ...payload, _stage: stage },
-      });
-      tracker.stageNodes.set(stage, nodeId);
-
       const stageIdx = STAGE_ORDER.indexOf(stage);
+      const edgeStyle = { stroke: "#525252", strokeWidth: 1 };
+      const newEdges: Edge[] = [];
+
       if (stageIdx > 0) {
         const prevStage = STAGE_ORDER[stageIdx - 1];
         const prevNodeId = tracker.stageNodes.get(prevStage);
         if (prevNodeId) {
-          const edgeId = `lf-edge-${queueId}-${prevStage}-${stage}`;
-          const newEdge: Edge = {
-            id: edgeId,
+          newEdges.push({
+            id: `lf-edge-${queueId}-${prevStage}-${stage}`,
             source: prevNodeId,
             target: nodeId,
-            style: { stroke: "#525252", strokeWidth: 1 },
-          };
-          useCanvasStore.setState((s) => ({ edges: [...s.edges, newEdge] }));
+            style: edgeStyle,
+          });
         }
       }
+      if (stageIdx < STAGE_ORDER.length - 1) {
+        const nextStage = STAGE_ORDER[stageIdx + 1];
+        const nextNodeId = tracker.stageNodes.get(nextStage);
+        if (nextNodeId) {
+          newEdges.push({
+            id: `lf-edge-${queueId}-${stage}-${nextStage}`,
+            source: nodeId,
+            target: nextNodeId,
+            style: edgeStyle,
+          });
+        }
+      }
+
+      const newNode = {
+        id: nodeId,
+        type: "lf_stage" as const,
+        position: { x, y },
+        data: { ...payload, _stage: stage },
+      };
+      useCanvasStore.setState((s) => ({
+        nodes: [...s.nodes, newNode],
+        edges: newEdges.length > 0 ? [...s.edges, ...newEdges] : s.edges,
+      }));
+      tracker.stageNodes.set(stage, nodeId);
 
       if (paperTrackerRef.current.size > 30) {
         const oldest = paperTrackerRef.current.keys().next().value;
         const oldTracker = oldest != null ? paperTrackerRef.current.get(oldest) : undefined;
         if (oldest != null && oldTracker) {
+          paperTrackerRef.current.delete(oldest);
           const nodeIds = new Set(oldTracker.stageNodes.values());
           useCanvasStore.setState((s) => ({
             nodes: s.nodes.filter((n) => !nodeIds.has(n.id)),
             edges: s.edges.filter((e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)),
           }));
-          paperTrackerRef.current.delete(oldest);
         }
       }
     },
@@ -128,11 +144,24 @@ export default function App() {
     [batchUpdateNodeData],
   );
 
+  const switchingRef = useRef<string | null>(null);
+
   const handleSwitchGraph = useCallback(
     async (newGraphId: string) => {
       if (newGraphId === useCanvasStore.getState().graphId) return;
+
+      wsRef.current?.disconnect();
+      wsRef.current = null;
+      paperTrackerRef.current.clear();
+      columnCounterRef.current = 0;
+      switchingRef.current = newGraphId;
+
       localStorage.setItem("substrate:lastGraphId", newGraphId);
       await useCanvasStore.getState().loadGraph(newGraphId);
+
+      if (switchingRef.current !== newGraphId) return;
+      switchingRef.current = null;
+
       connectGraph(newGraphId);
     },
     [connectGraph],
@@ -280,7 +309,7 @@ export default function App() {
           for (const n of defaultNodes) addNode(n);
 
           const { onConnect } = useCanvasStore.getState();
-          const edges = [
+          const edges: { source: string; target: string; sourceHandle: string | null; targetHandle: string | null }[] = [
             { source: "prompt-1", target: "cloud-1", sourceHandle: "features_out", targetHandle: null },
             { source: "prompt-1", target: "features-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "diagram-1", sourceHandle: "features_out", targetHandle: null },

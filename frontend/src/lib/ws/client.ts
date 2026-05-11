@@ -39,6 +39,18 @@ export class SubstrateWS {
     this.ws.onopen = () => {
       console.log("[WS] connected to", this.url);
       this.reconnectDelay = 1000;
+
+      if (this.pending.size > 0) {
+        if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+        const updates = Array.from(this.pending.entries());
+        this.pending.clear();
+        this.rafScheduled = false;
+        this.rafId = null;
+        if (updates.length > 0 && this.batchFn) {
+          this.batchFn(updates);
+        }
+      }
+
       if (this.activeSubscriptions.length > 0) {
         this.send({
           type: "resubscribe",

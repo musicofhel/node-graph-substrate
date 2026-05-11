@@ -23,6 +23,7 @@ class StreamHub:
         )
         self._tasks: dict[str, asyncio.Task] = {}
         self._last_ids: dict[str, str] = {}
+        self._lock = asyncio.Lock()
 
     def subscribe(self, stream: str, ws: WebSocket, node_id: str) -> None:
         self._subs[stream][ws].add(node_id)
@@ -34,7 +35,7 @@ class StreamHub:
 
     def unsubscribe_all(self, ws: WebSocket) -> None:
         empty_streams = []
-        for stream, ws_map in self._subs.items():
+        for stream, ws_map in list(self._subs.items()):
             ws_map.pop(ws, None)
             if not ws_map:
                 empty_streams.append(stream)
@@ -67,9 +68,10 @@ class StreamHub:
                             payload = dict(fields)
 
                         ws_map = self._subs.get(stream, {})
+                        snapshot = [(ws, list(nids)) for ws, nids in list(ws_map.items())]
                         dead: set[WebSocket] = set()
-                        for ws, node_ids in list(ws_map.items()):
-                            for node_id in list(node_ids):
+                        for ws, node_ids in snapshot:
+                            for node_id in node_ids:
                                 try:
                                     await self.manager.send(ws, {
                                         "type": "stream_event",

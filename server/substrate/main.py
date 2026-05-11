@@ -276,6 +276,7 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
     await manager.connect(canvas_id, ws)
 
     components: dict[str, Component] = {}
+    component_lock = asyncio.Lock()
 
     graph = await crud.get_graph(canvas_id) if canvas_id != "demo" else None
     if graph:
@@ -316,17 +317,18 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
 
             if isinstance(msg, ComputeRequest):
                 if msg.node_id not in components:
-                    node_meta = next((n for n in graph["nodes"] if n["id"] == msg.node_id), None) if graph else None
-                    type_id = node_meta["type_id"] if node_meta else "prompt_input"
-                    comp = registry.create_instance(
-                        type_id,
-                        msg.node_id,
-                        node_meta.get("config") if node_meta else None,
-                    )
-                    if comp:
-                        # Set before await to prevent duplicate creation from concurrent messages
-                        components[msg.node_id] = comp
-                        await comp.on_init()
+                    async with component_lock:
+                        if msg.node_id not in components:
+                            node_meta = next((n for n in graph["nodes"] if n["id"] == msg.node_id), None) if graph else None
+                            type_id = node_meta["type_id"] if node_meta else "prompt_input"
+                            comp = registry.create_instance(
+                                type_id,
+                                msg.node_id,
+                                node_meta.get("config") if node_meta else None,
+                            )
+                            if comp:
+                                await comp.on_init()
+                                components[msg.node_id] = comp
                 asyncio.create_task(handle_compute_request(msg, ws, components))
             elif isinstance(msg, ConfigUpdateMsg):
                 await handle_config_update(msg, ws, canvas_id, components)

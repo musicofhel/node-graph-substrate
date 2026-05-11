@@ -55,7 +55,7 @@ export function SubstrateCanvas() {
       <div className="w-[180px] shrink-0 overflow-y-auto border-r border-neutral-800 bg-neutral-950">
         <NodePalette />
       </div>
-      <div className="relative flex-1">
+      <div className="relative flex-1 overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}

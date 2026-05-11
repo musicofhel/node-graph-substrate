@@ -516,3 +516,42 @@ Four dedicated nodes for pipeline observability, plus stage cards created dynami
 | **Research Coordinator** | Research lifecycle tracking (triage → experiment → promote) |
 
 ![LF Nodes on Canvas](docs/screenshots/paper-pipeline/02-lf-nodes-on-canvas.png)
+
+### Race Condition Audit (E2E Playwright)
+
+Comprehensive race condition audit targeting burst ingestion, rapid UI interaction, tracker eviction, and console error monitoring. 27/27 tests pass.
+
+<table>
+<tr>
+<td width="50%">
+
+**Burst Ingestion** — 5 papers published at 50ms/stage. All 50 stage nodes created, 46 edges connected via bidirectional linking.
+
+![Burst Ingestion](docs/screenshots/race-audit/02-burst-ingestion.png)
+
+</td>
+<td width="50%">
+
+**Rapid Detail Selection** — 5 rapid paper clicks in 500ms. AbortController cancels stale fetches; detail panel shows final selection with no loading state.
+
+![Rapid Selection](docs/screenshots/race-audit/04-rapid-selection.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Tracker Cleanup (35 papers)** — Exceeds 30-paper tracker limit. Oldest papers evicted cleanly, no duplicate node IDs, no orphaned nodes.
+
+![Tracker Cleanup](docs/screenshots/race-audit/05-tracker-cleanup-35-papers.png)
+
+</td>
+<td width="50%">
+
+**Final Overview** — 307 nodes, 271 edges. Zero console errors, zero React state-after-unmount warnings, zero unhandled rejections.
+
+![Final Overview](docs/screenshots/race-audit/14-final-overview.png)
+
+</td>
+</tr>
+</table>

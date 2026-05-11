@@ -44,29 +44,30 @@ export const PaperDetail = memo(({ queueId }: Props) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const ac = new AbortController();
     setLoading(true);
+    setPaper(null);
+    setResearch(null);
     (async () => {
       try {
-        const resp = await fetch(`${API_BASE}/api/linkforge/paper/${queueId}`);
-        if (!resp.ok || cancelled) return;
+        const resp = await fetch(`${API_BASE}/api/linkforge/paper/${queueId}`, { signal: ac.signal });
+        if (!resp.ok) return;
         const data = await resp.json();
-        if (cancelled) return;
         setPaper(data);
 
         if (data.research_relevant === "true" && data.arxiv_id) {
-          const rResp = await fetch(`${API_BASE}/api/linkforge/paper/${queueId}/research`);
-          if (rResp.ok && !cancelled) {
+          const rResp = await fetch(`${API_BASE}/api/linkforge/paper/${queueId}/research`, { signal: ac.signal });
+          if (rResp.ok) {
             setResearch(await rResp.json());
           }
         }
-      } catch {
-        // silent
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => { ac.abort(); };
   }, [queueId]);
 
   if (loading) {
