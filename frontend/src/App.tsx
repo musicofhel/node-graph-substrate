@@ -28,8 +28,27 @@ const STAGE_ORDER = [
   "chunked", "auto_related", "research_bridged", "url_discovered", "completed",
 ];
 
-const STAGE_Y: Record<string, number> = {};
-STAGE_ORDER.forEach((s, i) => { STAGE_Y[s] = i * 140; });
+const GRID_COLS = 2;
+const COL_PITCH = 230;
+const ROW_PITCH = 88;
+const GROUP_PAD_X = 16;
+const GROUP_PAD_TOP = 40;
+const GROUP_WIDTH = 480;
+const GROUP_HEIGHT = 490;
+const GROUP_SPACING = 520;
+
+function stageGridPos(stageIdx: number): { x: number; y: number } {
+  const col = stageIdx % GRID_COLS;
+  const row = Math.floor(stageIdx / GRID_COLS);
+  return { x: GROUP_PAD_X + col * COL_PITCH, y: GROUP_PAD_TOP + row * ROW_PITCH };
+}
+
+function edgeHandles(sourceStageIdx: number): { sourceHandle: string; targetHandle: string } {
+  if (sourceStageIdx % 2 === 0) {
+    return { sourceHandle: "source-right", targetHandle: "target-left" };
+  }
+  return { sourceHandle: "source-bottom", targetHandle: "target-top" };
+}
 
 interface PaperTracker {
   queueId: string;
@@ -56,11 +75,26 @@ export default function App() {
       const queueId = String(payload.queue_id ?? "");
       if (!queueId) return;
 
+      const groupId = `lf-group-${queueId}`;
       let tracker = paperTrackerRef.current.get(queueId);
+      let groupNodeToAdd: Record<string, unknown> | null = null;
+
       if (!tracker) {
         const columnIndex = columnCounterRef.current++;
         tracker = { queueId, columnIndex, stageNodes: new Map() };
         paperTrackerRef.current.set(queueId, tracker);
+
+        groupNodeToAdd = {
+          id: groupId,
+          type: "lf_pipeline_group",
+          position: { x: -(columnIndex * GROUP_SPACING), y: 0 },
+          data: { title: `Paper #${queueId}`, queueId },
+          style: { width: GROUP_WIDTH, height: GROUP_HEIGHT },
+        };
+      }
+
+      if (stage === "extracted" && typeof payload.title === "string") {
+        batchUpdateNodeData([[groupId, { title: payload.title, queueId }]]);
       }
 
       if (tracker.stageNodes.has(stage)) {
@@ -69,10 +103,8 @@ export default function App() {
       }
 
       const nodeId = `lf-${queueId}-${stage}`;
-      const x = -(tracker.columnIndex * 260);
-      const y = STAGE_Y[stage] ?? 0;
-
       const stageIdx = STAGE_ORDER.indexOf(stage);
+      const pos = stageGridPos(stageIdx);
       const edgeStyle = { stroke: "#525252", strokeWidth: 1 };
       const newEdges: Edge[] = [];
 
@@ -80,10 +112,14 @@ export default function App() {
         const prevStage = STAGE_ORDER[stageIdx - 1];
         const prevNodeId = tracker.stageNodes.get(prevStage);
         if (prevNodeId) {
+          const h = edgeHandles(stageIdx - 1);
           newEdges.push({
             id: `lf-edge-${queueId}-${prevStage}-${stage}`,
             source: prevNodeId,
             target: nodeId,
+            sourceHandle: h.sourceHandle,
+            targetHandle: h.targetHandle,
+            type: "smoothstep",
             style: edgeStyle,
           });
         }
@@ -92,10 +128,14 @@ export default function App() {
         const nextStage = STAGE_ORDER[stageIdx + 1];
         const nextNodeId = tracker.stageNodes.get(nextStage);
         if (nextNodeId) {
+          const h = edgeHandles(stageIdx);
           newEdges.push({
             id: `lf-edge-${queueId}-${stage}-${nextStage}`,
             source: nodeId,
             target: nextNodeId,
+            sourceHandle: h.sourceHandle,
+            targetHandle: h.targetHandle,
+            type: "smoothstep",
             style: edgeStyle,
           });
         }
@@ -104,11 +144,16 @@ export default function App() {
       const newNode = {
         id: nodeId,
         type: "lf_stage" as const,
-        position: { x, y },
+        position: pos,
+        parentId: groupId,
+        extent: "parent" as const,
         data: { ...payload, _stage: stage },
       };
+
       useCanvasStore.setState((s) => ({
-        nodes: [...s.nodes, newNode],
+        nodes: groupNodeToAdd
+          ? [...s.nodes, groupNodeToAdd as unknown as typeof s.nodes[0], newNode]
+          : [...s.nodes, newNode],
         edges: newEdges.length > 0 ? [...s.edges, ...newEdges] : s.edges,
       }));
       tracker.stageNodes.set(stage, nodeId);
@@ -118,10 +163,12 @@ export default function App() {
         const oldTracker = oldest != null ? paperTrackerRef.current.get(oldest) : undefined;
         if (oldest != null && oldTracker) {
           paperTrackerRef.current.delete(oldest);
-          const nodeIds = new Set(oldTracker.stageNodes.values());
+          const removeIds = new Set(oldTracker.stageNodes.values());
+          const oldGroupId = `lf-group-${oldest}`;
+          removeIds.add(oldGroupId);
           useCanvasStore.setState((s) => ({
-            nodes: s.nodes.filter((n) => !nodeIds.has(n.id)),
-            edges: s.edges.filter((e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)),
+            nodes: s.nodes.filter((n) => !removeIds.has(n.id)),
+            edges: s.edges.filter((e) => !removeIds.has(e.source) && !removeIds.has(e.target)),
           }));
         }
       }
@@ -259,7 +306,7 @@ export default function App() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 project_id: proj.id,
-                name: "Main Canvas",
+                name: "Pipeline",
               }),
             });
             if (cancelled) return;
@@ -337,6 +384,54 @@ export default function App() {
         }
 
         connectGraph(gId);
+
+        if (projId && !cancelled) {
+          try {
+            const graphsResp = await fetch(`${API_BASE}/api/projects/${projId}/graphs`);
+            if (graphsResp.ok) {
+              const allGraphs = await graphsResp.json();
+              const RENAME_MAP: Record<string, string> = {
+                "Main Canvas": "Pipeline",
+                "Canvas 2": "Research",
+              };
+              for (const g of allGraphs) {
+                const newName = RENAME_MAP[g.name];
+                if (newName) {
+                  try {
+                    await fetch(`${API_BASE}/api/graphs/${g.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: newName }),
+                    });
+                    g.name = newName;
+                  } catch {}
+                }
+              }
+
+              for (const g of allGraphs) {
+                if (g.id === gId) continue;
+                const detail = await fetch(`${API_BASE}/api/graphs/${g.id}`);
+                if (!detail.ok) continue;
+                const gData = await detail.json();
+                if (gData.nodes && gData.nodes.length === 0) {
+                  await fetch(`${API_BASE}/api/graphs/${g.id}/ops`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      expected_version: gData.current_version,
+                      message: "Seed research nodes",
+                      ops: [
+                        { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 50 } },
+                        { op: "upsert_node", data: { id: "lf-autorel-1", type_id: "lf_autorel", position_x: 400, position_y: 50 } },
+                        { op: "upsert_node", data: { id: "lf-stats-1", type_id: "lf_stats", position_x: 400, position_y: 300 } },
+                      ],
+                    }),
+                  });
+                }
+              }
+            }
+          } catch {}
+        }
       }
     })();
 

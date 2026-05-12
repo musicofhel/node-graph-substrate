@@ -125,6 +125,16 @@ async def get_graph(graph_id: str) -> dict[str, Any] | None:
         }
 
 
+async def rename_graph(graph_id: str, name: str) -> dict[str, Any] | None:
+    pool = get_pool()
+    row = await pool.fetchrow(
+        "UPDATE graphs SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+        name,
+        graph_id,
+    )
+    return dict(row) if row else None
+
+
 async def apply_ops(graph_id: str, ops: GraphOps) -> dict[str, Any]:
     pool = get_pool()
     async with pool.acquire() as conn:

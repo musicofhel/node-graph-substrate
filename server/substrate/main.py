@@ -23,7 +23,7 @@ from substrate.messages import (
     Resubscribe,
 )
 from substrate.registry import registry
-from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, ProjectCreate
+from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, GraphRename, ProjectCreate
 from substrate.sdk import Component, NodeKind
 from substrate.streamhub import StreamHub
 from substrate.ws import ConnectionManager
@@ -125,6 +125,14 @@ async def get_graph(graph_id: str):
     if not graph:
         raise HTTPException(404, "Graph not found")
     return graph
+
+
+@app.patch("/api/graphs/{graph_id}")
+async def rename_graph(graph_id: str, body: GraphRename):
+    result = await crud.rename_graph(graph_id, body.name)
+    if not result:
+        raise HTTPException(404, "Graph not found")
+    return result
 
 
 @app.patch("/api/graphs/{graph_id}/ops")

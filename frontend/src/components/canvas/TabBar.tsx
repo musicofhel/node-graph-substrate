@@ -38,7 +38,9 @@ export function TabBar({ projectId, activeGraphId, onSelectGraph }: TabBarProps)
 
   const handleCreate = async () => {
     if (!projectId) return;
-    const name = `Canvas ${tabs.length + 1}`;
+    const CANVAS_NAMES = ["Pipeline", "Research"];
+    const existingNames = new Set(tabs.map((t) => t.name));
+    const name = CANVAS_NAMES.find((n) => !existingNames.has(n)) ?? `Canvas ${tabs.length + 1}`;
     try {
       const resp = await fetch(`${API_BASE}/api/graphs`, {
         method: "POST",

@@ -11,6 +11,7 @@ import { LfCoordinatorNode } from "../nodes/LfCoordinatorNode";
 import { LfStatsNode } from "../nodes/LfStatsNode";
 import { LfAutoRelNode } from "../nodes/LfAutoRelNode";
 import { ResearchCoordinatorNode } from "../nodes/ResearchCoordinatorNode";
+import { PipelineGroupNode } from "../nodes/PipelineGroupNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -25,4 +26,5 @@ export const nodeTypes: NodeTypes = {
   lf_stats: LfStatsNode,
   lf_autorel: LfAutoRelNode,
   research_coordinator: ResearchCoordinatorNode,
+  lf_pipeline_group: PipelineGroupNode,
 };

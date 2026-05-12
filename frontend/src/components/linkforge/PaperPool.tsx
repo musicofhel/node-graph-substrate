@@ -71,7 +71,10 @@ export const PaperPool = memo(({ livePapers }: Props) => {
     for (const lp of livePapers) {
       if (!mergedLiveIds.current.has(lp.queue_id)) {
         mergedLiveIds.current.add(lp.queue_id);
-        setPapers((prev) => [{ ...lp, _isNew: true }, ...prev]);
+        setPapers((prev) => {
+          if (prev.some((p) => p.queue_id === lp.queue_id)) return prev;
+          return [{ ...lp, _isNew: true }, ...prev];
+        });
         const qid = lp.queue_id;
         newBadgeTimers.current.push(
           setTimeout(() => {
@@ -91,7 +94,16 @@ export const PaperPool = memo(({ livePapers }: Props) => {
   }, []);
 
   const filtered = useMemo(() => {
-    const sorted = [...papers];
+    const byId = new Map<string, PaperSummary>();
+    for (const p of papers) {
+      const existing = byId.get(p.queue_id);
+      if (!existing || (!existing.title && p.title)) {
+        byId.set(p.queue_id, p);
+      }
+    }
+    const deduped = [...byId.values()].filter((p) => p.title || p.url);
+
+    const sorted = [...deduped];
     if (sort === "forge_score") {
       sorted.sort((a, b) => parseFloat(b.forge_score ?? "0") - parseFloat(a.forge_score ?? "0"));
     } else if (sort === "processing_time") {

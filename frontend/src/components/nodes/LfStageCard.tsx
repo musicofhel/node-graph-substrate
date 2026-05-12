@@ -169,7 +169,8 @@ export const LfStageCard = memo(({ id }: { id: string }) => {
 
   return (
     <div className={`w-[210px] rounded border ${borderOverride} bg-neutral-900 shadow-md`}>
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-neutral-600 !border-none" />
+      <Handle type="target" position={Position.Top} id="target-top" className="!w-2 !h-2 !bg-neutral-600 !border-none" />
+      <Handle type="target" position={Position.Left} id="target-left" className="!w-2 !h-2 !bg-neutral-600 !border-none" />
       <div className="border-b border-neutral-800 px-2 py-1">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-300">
           {label}
@@ -178,7 +179,8 @@ export const LfStageCard = memo(({ id }: { id: string }) => {
       <div className="px-2 py-1.5">
         {Renderer ? <Renderer data={data} /> : null}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-neutral-600 !border-none" />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" className="!w-2 !h-2 !bg-neutral-600 !border-none" />
+      <Handle type="source" position={Position.Right} id="source-right" className="!w-2 !h-2 !bg-neutral-600 !border-none" />
     </div>
   );
 });

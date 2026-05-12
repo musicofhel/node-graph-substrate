@@ -54,3 +54,7 @@ class GraphOps(BaseModel):
 
 class ConfigUpdate(BaseModel):
     config: dict[str, Any]
+
+
+class GraphRename(BaseModel):
+    name: str

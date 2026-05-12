@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY, CANVAS_NODE_TYPES, canvasTypeFromName } from "../../lib/nodes/registry";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import type { NodeCategory } from "../../types/nodes";
 
@@ -26,6 +26,8 @@ const CATEGORY_LABELS: Record<NodeCategory, string> = {
 
 export function NodePalette() {
   const addNode = useCanvasStore((s) => s.addNode);
+  const graphName = useCanvasStore((s) => s.graphName);
+  const allowedTypes = CANVAS_NODE_TYPES[canvasTypeFromName(graphName)];
 
   const handleAdd = useCallback(
     (typeId: string) => {
@@ -43,7 +45,7 @@ export function NodePalette() {
 
   const grouped = CATEGORY_ORDER.map((cat) => ({
     category: cat,
-    nodes: Object.values(NODE_REGISTRY).filter((n) => n.category === cat),
+    nodes: Object.values(NODE_REGISTRY).filter((n) => n.category === cat && allowedTypes.has(n.typeId)),
   })).filter((g) => g.nodes.length > 0);
 
   return (

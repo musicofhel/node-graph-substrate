@@ -143,3 +143,21 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     ],
   },
 };
+
+export type CanvasType = "pipeline" | "research";
+
+export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
+  pipeline: new Set([
+    "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
+    "confidence_gauge", "bridge_monitor", "explain_waterfall",
+    "lf_stage", "lf_coordinator",
+  ]),
+  research: new Set([
+    "research_coordinator", "lf_autorel", "lf_stats",
+  ]),
+};
+
+export function canvasTypeFromName(name: string | null): CanvasType {
+  if (name && name.toLowerCase().includes("research")) return "research";
+  return "pipeline";
+}
