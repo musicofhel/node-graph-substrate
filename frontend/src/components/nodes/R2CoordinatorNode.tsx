@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
+import { PaperPoolSection, type PoolPaper } from "./PaperPoolSection";
+import { useCanvasStore } from "../../lib/store/canvas-store";
 
 const LIFECYCLE_STAGES = ["triaged", "script_generated", "experiment_started", "experiment_completed", "promoted"] as const;
 
@@ -13,10 +15,10 @@ const STAGE_SHORT: Record<string, string> = {
 };
 
 const VERDICT_COLORS: Record<string, string> = {
-  HIT: "text-emerald-400",
-  NEAR_MISS: "text-amber-400",
-  NULL: "text-red-400",
-  INCONCLUSIVE: "text-neutral-400",
+  HIT: "bg-emerald-900/60 text-emerald-400",
+  NEAR_MISS: "bg-amber-900/60 text-amber-400",
+  NULL: "bg-red-900/60 text-red-400",
+  INCONCLUSIVE: "bg-neutral-800 text-neutral-400",
 };
 
 interface PaperState {
@@ -28,13 +30,15 @@ interface PaperState {
   verdict?: string;
 }
 
-const MAX_PAPERS = 20;
+const MAX_PAPERS = 50;
 
-export const ResearchCoordinatorNode = memo(({ id }: { id: string }) => {
+export const R2CoordinatorNode = memo(({ id }: { id: string }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastEventRef = useRef<string>("");
   const [papers, setPapers] = useState<PaperState[]>([]);
+  const starredPapers = useCanvasStore((s) => s.starredPapers);
+  const flushCounter = useCanvasStore((s) => s.flushCounter);
 
   useEffect(() => {
     const arxivId = typeof data.arxiv_id === "string" ? data.arxiv_id : "";
@@ -57,13 +61,12 @@ export const ResearchCoordinatorNode = memo(({ id }: { id: string }) => {
 
       if (typeof data.fe_count === "number") updated.fe_count = data.fe_count;
       if (typeof data.hypothesis_count === "number") updated.hypothesis_count = data.hypothesis_count;
-
       const auroc = Number(data.auroc);
       if (!isNaN(auroc) && data.auroc != null) updated.auroc = auroc;
       if (typeof data.verdict === "string" && data.verdict) updated.verdict = data.verdict;
 
       const currentStage = LIFECYCLE_STAGES.find(
-        (s) => data[s] === true || data[s] === "true"
+        (s) => data[s] === true || data[s] === "true",
       ) ?? (typeof data.status === "string" ? data.status : "");
       if (currentStage) updated.stages.add(currentStage);
 
@@ -76,49 +79,49 @@ export const ResearchCoordinatorNode = memo(({ id }: { id: string }) => {
     });
   }, [data]);
 
+  useEffect(() => {
+    if (flushCounter === 0) return;
+    setPapers((prev) => prev.filter((p) => starredPapers.has(p.arxiv_id)));
+  }, [flushCounter, starredPapers]);
+
+  const completed = papers.filter((p) => p.stages.has("experiment_completed")).length;
+  const promoted = papers.filter((p) => p.stages.has("promoted")).length;
+
+  const poolPapers: PoolPaper[] = papers.map((p) => {
+    const badges: PoolPaper["badges"] = [];
+    for (const stage of LIFECYCLE_STAGES) {
+      badges!.push({
+        text: STAGE_SHORT[stage],
+        className: p.stages.has(stage)
+          ? "bg-emerald-900/60 text-emerald-400"
+          : "bg-neutral-800 text-neutral-600",
+      });
+    }
+    if (p.verdict) {
+      badges!.push({
+        text: p.verdict,
+        className: VERDICT_COLORS[p.verdict] ?? "bg-neutral-800 text-neutral-400",
+      });
+    }
+    return {
+      id: p.arxiv_id,
+      label: p.arxiv_id,
+      sublabel: p.auroc != null ? `AUROC: ${p.auroc.toFixed(2)}` : undefined,
+      badges,
+    };
+  });
+
   return (
     <BaseNodeShell label="Research Coordinator" category="scoring">
-      <div style={{ width: 240, maxHeight: 240, overflowY: "auto" }} className="scrollbar-thin">
-        {papers.length > 0 ? (
-          <div className="space-y-1.5">
-            {papers.map((p) => (
-              <div key={p.arxiv_id} className="rounded border border-neutral-700 bg-neutral-800/50 px-2 py-1">
-                <div className="text-xs font-mono text-emerald-400 truncate">{p.arxiv_id}</div>
-                <div className="flex items-center gap-0.5 mt-0.5">
-                  {LIFECYCLE_STAGES.map((stage) => (
-                    <span
-                      key={stage}
-                      title={stage}
-                      className={`inline-flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold ${
-                        p.stages.has(stage)
-                          ? "bg-emerald-900/60 text-emerald-400"
-                          : "bg-neutral-800 text-neutral-600"
-                      }`}
-                    >
-                      {STAGE_SHORT[stage]}
-                    </span>
-                  ))}
-                  {p.auroc != null && (
-                    <span className="ml-auto text-[10px] text-neutral-400">
-                      {p.auroc.toFixed(2)}
-                    </span>
-                  )}
-                  {p.verdict && (
-                    <span className={`text-[10px] font-medium ${VERDICT_COLORS[p.verdict] ?? "text-neutral-400"}`}>
-                      {p.verdict}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-3 text-center text-xs text-neutral-500">
-            Waiting for research events...
-          </div>
-        )}
+      <div style={{ width: 360 }}>
+        <div className="flex justify-between text-xs text-neutral-400 mb-1">
+          <span>Papers: <span className="text-neutral-200">{papers.length}</span></span>
+          <span>Completed: <span className="text-emerald-400">{completed}</span></span>
+          <span>Promoted: <span className="text-amber-400">{promoted}</span></span>
+        </div>
+        <PaperPoolSection papers={poolPapers} emptyText="Waiting for research events..." />
       </div>
     </BaseNodeShell>
   );
 });
-ResearchCoordinatorNode.displayName = "ResearchCoordinatorNode";
+R2CoordinatorNode.displayName = "R2CoordinatorNode";

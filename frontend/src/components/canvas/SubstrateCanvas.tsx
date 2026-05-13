@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -13,6 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { CanvasControls } from "./CanvasControls";
+import { PipelineTimeline } from "./PipelineTimeline";
 import { nodeTypes } from "./node-types";
 import { NodePalette } from "../sidebar/NodePalette";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
@@ -36,6 +37,18 @@ export function SubstrateCanvas() {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
 
+  const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string }) => {
+    setSelectedNodeId(node.id);
+  }, [setSelectedNodeId]);
+
+  const handlePaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, [setSelectedNodeId]);
+
+  const handleInit = useCallback((instance: ReactFlowInstance) => {
+    rfInstance.current = instance;
+  }, []);
+
   const isValidConnection = useCallback((connection: Edge | Connection) => {
     if (!connection.sourceHandle || !connection.targetHandle) return true;
     const sourceNode = useCanvasStore.getState().nodes.find((n) => n.id === connection.source);
@@ -51,7 +64,7 @@ export function SubstrateCanvas() {
   }, []);
 
   return (
-    <div className="relative flex h-full w-full">
+    <div className="absolute inset-0 flex">
       <div className="w-[180px] shrink-0 overflow-y-auto border-r border-neutral-800 bg-neutral-950">
         <NodePalette />
       </div>
@@ -62,19 +75,17 @@ export function SubstrateCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-        onPaneClick={() => setSelectedNodeId(null)}
+        onNodeClick={handleNodeClick}
+        onPaneClick={handlePaneClick}
         isValidConnection={isValidConnection}
-        onInit={(instance) => {
-          rfInstance.current = instance;
-        }}
+        onInit={handleInit}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
+        colorMode="dark"
         fitView
         snapToGrid
         snapGrid={[20, 20]}
         deleteKeyCode={["Backspace", "Delete"]}
-        proOptions={{ hideAttribution: true }}
       >
         <Background color="#333" gap={20} />
         <Controls />
@@ -83,6 +94,7 @@ export function SubstrateCanvas() {
           maskColor="rgba(0,0,0,0.7)"
           bgColor="#171717"
         />
+        <PipelineTimeline />
       </ReactFlow>
       <CanvasControls />
       </div>

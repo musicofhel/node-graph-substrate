@@ -9,3 +9,4 @@ import substrate.components.lf_coordinator  # noqa: F401
 import substrate.components.lf_stats  # noqa: F401
 import substrate.components.lf_autorel  # noqa: F401
 import substrate.components.research_coordinator  # noqa: F401
+import substrate.components.research_bridge  # noqa: F401

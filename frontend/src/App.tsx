@@ -6,7 +6,8 @@ import { TabBar } from "./components/canvas/TabBar";
 import { PaperPool } from "./components/linkforge/PaperPool";
 import type { PaperSummary } from "./components/linkforge/PaperCard";
 import { SubstrateWS } from "./lib/ws/client";
-import { NODE_REGISTRY } from "./lib/nodes/registry";
+import { NODE_REGISTRY, canvasTypeFromName } from "./lib/nodes/registry";
+import { NodeDetailModal } from "./components/canvas/NodeDetailModal";
 
 const API_BASE = `http://${window.location.hostname}:8080`;
 
@@ -28,26 +29,15 @@ const STAGE_ORDER = [
   "chunked", "auto_related", "research_bridged", "url_discovered", "completed",
 ];
 
-const GRID_COLS = 2;
-const COL_PITCH = 230;
-const ROW_PITCH = 88;
+const STAGE_HEIGHT = 62;
 const GROUP_PAD_X = 16;
 const GROUP_PAD_TOP = 40;
-const GROUP_WIDTH = 480;
-const GROUP_HEIGHT = 490;
-const GROUP_SPACING = 520;
+const GROUP_WIDTH = 250;
+const GROUP_HEIGHT = GROUP_PAD_TOP + STAGE_ORDER.length * STAGE_HEIGHT + 16;
+const GROUP_SPACING = 280;
 
 function stageGridPos(stageIdx: number): { x: number; y: number } {
-  const col = stageIdx % GRID_COLS;
-  const row = Math.floor(stageIdx / GRID_COLS);
-  return { x: GROUP_PAD_X + col * COL_PITCH, y: GROUP_PAD_TOP + row * ROW_PITCH };
-}
-
-function edgeHandles(sourceStageIdx: number): { sourceHandle: string; targetHandle: string } {
-  if (sourceStageIdx % 2 === 0) {
-    return { sourceHandle: "source-right", targetHandle: "target-left" };
-  }
-  return { sourceHandle: "source-bottom", targetHandle: "target-top" };
+  return { x: GROUP_PAD_X, y: GROUP_PAD_TOP + stageIdx * STAGE_HEIGHT };
 }
 
 interface PaperTracker {
@@ -62,6 +52,8 @@ export default function App() {
   const addNode = useCanvasStore((s) => s.addNode);
   const projectId = useCanvasStore((s) => s.projectId);
   const graphId = useCanvasStore((s) => s.graphId);
+  const graphName = useCanvasStore((s) => s.graphName);
+  const currentCanvasType = canvasTypeFromName(graphName);
   const wsRef = useRef<SubstrateWS | null>(null);
   const paperTrackerRef = useRef(new Map<string, PaperTracker>());
   const columnCounterRef = useRef(0);
@@ -77,20 +69,13 @@ export default function App() {
 
       const groupId = `lf-group-${queueId}`;
       let tracker = paperTrackerRef.current.get(queueId);
-      let groupNodeToAdd: Record<string, unknown> | null = null;
+      let isNewPaper = false;
 
       if (!tracker) {
-        const columnIndex = columnCounterRef.current++;
-        tracker = { queueId, columnIndex, stageNodes: new Map() };
+        columnCounterRef.current++;
+        tracker = { queueId, columnIndex: columnCounterRef.current, stageNodes: new Map() };
         paperTrackerRef.current.set(queueId, tracker);
-
-        groupNodeToAdd = {
-          id: groupId,
-          type: "lf_pipeline_group",
-          position: { x: -(columnIndex * GROUP_SPACING), y: 0 },
-          data: { title: `Paper #${queueId}`, queueId },
-          style: { width: GROUP_WIDTH, height: GROUP_HEIGHT },
-        };
+        isNewPaper = true;
       }
 
       if (stage === "extracted" && typeof payload.title === "string") {
@@ -112,13 +97,12 @@ export default function App() {
         const prevStage = STAGE_ORDER[stageIdx - 1];
         const prevNodeId = tracker.stageNodes.get(prevStage);
         if (prevNodeId) {
-          const h = edgeHandles(stageIdx - 1);
           newEdges.push({
             id: `lf-edge-${queueId}-${prevStage}-${stage}`,
             source: prevNodeId,
             target: nodeId,
-            sourceHandle: h.sourceHandle,
-            targetHandle: h.targetHandle,
+            sourceHandle: "source-bottom",
+            targetHandle: "target-top",
             type: "smoothstep",
             style: edgeStyle,
           });
@@ -128,13 +112,12 @@ export default function App() {
         const nextStage = STAGE_ORDER[stageIdx + 1];
         const nextNodeId = tracker.stageNodes.get(nextStage);
         if (nextNodeId) {
-          const h = edgeHandles(stageIdx);
           newEdges.push({
             id: `lf-edge-${queueId}-${stage}-${nextStage}`,
             source: nodeId,
             target: nextNodeId,
-            sourceHandle: h.sourceHandle,
-            targetHandle: h.targetHandle,
+            sourceHandle: "source-bottom",
+            targetHandle: "target-top",
             type: "smoothstep",
             style: edgeStyle,
           });
@@ -150,12 +133,27 @@ export default function App() {
         data: { ...payload, _stage: stage },
       };
 
-      useCanvasStore.setState((s) => ({
-        nodes: groupNodeToAdd
-          ? [...s.nodes, groupNodeToAdd as unknown as typeof s.nodes[0], newNode]
-          : [...s.nodes, newNode],
-        edges: newEdges.length > 0 ? [...s.edges, ...newEdges] : s.edges,
-      }));
+      useCanvasStore.setState((s) => {
+        let nodes = s.nodes;
+        if (isNewPaper) {
+          nodes = nodes.map((n) =>
+            n.type === "lf_pipeline_group"
+              ? { ...n, position: { ...n.position, x: n.position.x + GROUP_SPACING } }
+              : n
+          );
+          nodes = [...nodes, {
+            id: groupId,
+            type: "lf_pipeline_group",
+            position: { x: 0, y: 0 },
+            data: { title: `Paper #${queueId}`, queueId },
+            style: { width: GROUP_WIDTH, height: GROUP_HEIGHT },
+          } as unknown as typeof s.nodes[0]];
+        }
+        return {
+          nodes: [...nodes, newNode],
+          edges: newEdges.length > 0 ? [...s.edges, ...newEdges] : s.edges,
+        };
+      });
       tracker.stageNodes.set(stage, nodeId);
 
       if (paperTrackerRef.current.size > 30) {
@@ -209,18 +207,48 @@ export default function App() {
       if (switchingRef.current !== newGraphId) return;
       switchingRef.current = null;
 
+      const state = useCanvasStore.getState();
+      if (state.nodes.length === 0) {
+        const cType = canvasTypeFromName(state.graphName);
+        const R2_SEED = [
+          { id: "r2-bridge-1", type: "r2_bridge", position: { x: 50, y: 50 }, data: {} },
+          { id: "r2-coord-1", type: "r2_coordinator", position: { x: 550, y: 50 }, data: {} },
+          { id: "r2-stats-1", type: "r2_stats", position: { x: 50, y: 500 }, data: {} },
+          { id: "r2-autorel-1", type: "r2_autorel", position: { x: 550, y: 500 }, data: {} },
+          { id: "r2-state-1", type: "r2_state", position: { x: -1000, y: -1000 }, data: { config: { starred_papers: [] } } },
+        ];
+        const RESEARCH_SEED = [
+          { id: "research-bridge-1", type: "research_bridge", position: { x: 50, y: 50 }, data: {} },
+          { id: "research-coord-1", type: "research_coordinator", position: { x: 50, y: 300 }, data: {} },
+          { id: "lf-autorel-1", type: "lf_autorel", position: { x: 400, y: 50 }, data: {} },
+          { id: "lf-stats-1", type: "lf_stats", position: { x: 400, y: 300 }, data: {} },
+        ];
+        const seeds = cType === "research2" ? R2_SEED : cType === "research" ? RESEARCH_SEED : null;
+        if (seeds) {
+          for (const n of seeds) addNode(n);
+          try { await useCanvasStore.getState().saveGraph(); } catch {}
+        }
+      }
+
       connectGraph(newGraphId);
     },
-    [connectGraph],
+    [connectGraph, addNode],
   );
 
   const handleMessage = useCallback(
     (msg: Record<string, unknown>) => {
       if (msg.type === "stream_event" && typeof msg.stream === "string") {
+        const nodeId = msg.node_id as string;
+        const payload = msg.payload as Record<string, unknown>;
         const stream = msg.stream;
+
+        if (nodeId && nodeId !== "__linkforge__") {
+          batchUpdateNodeData([[nodeId, payload]]);
+        }
+
         if (stream.startsWith("linkforge:") && !stream.startsWith("linkforge:autorel:")) {
-          const payload = msg.payload as Record<string, unknown>;
-          handleLinkforgeEvent(stream, payload);
+          const cType = canvasTypeFromName(useCanvasStore.getState().graphName);
+          if (cType !== "research2") handleLinkforgeEvent(stream, payload);
           if (stream === "linkforge:completed") {
             setShowPool(true);
             const qid = String(payload.queue_id ?? "");
@@ -234,8 +262,8 @@ export default function App() {
               forge_score: typeof payload.forge_score === "string" ? payload.forge_score : undefined,
             }, ...prev].slice(0, 200));
           }
-          return;
         }
+        return;
       }
       if (msg.type === "computation_result") {
         const nodeId = msg.node_id as string;
@@ -408,23 +436,45 @@ export default function App() {
                 }
               }
 
+              const SEED_MAP: Record<string, { op: string; data: { id: string; type_id: string; position_x: number; position_y: number } }[]> = {
+                research: [
+                  { op: "upsert_node", data: { id: "research-bridge-1", type_id: "research_bridge", position_x: 50, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 300 } },
+                  { op: "upsert_node", data: { id: "lf-autorel-1", type_id: "lf_autorel", position_x: 400, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "lf-stats-1", type_id: "lf_stats", position_x: 400, position_y: 300 } },
+                ],
+                research2: [
+                  { op: "upsert_node", data: { id: "r2-bridge-1", type_id: "r2_bridge", position_x: 50, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "r2-coord-1", type_id: "r2_coordinator", position_x: 550, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "r2-stats-1", type_id: "r2_stats", position_x: 50, position_y: 500 } },
+                  { op: "upsert_node", data: { id: "r2-autorel-1", type_id: "r2_autorel", position_x: 550, position_y: 500 } },
+                  { op: "upsert_node", data: { id: "r2-state-1", type_id: "r2_state", position_x: -1000, position_y: -1000 } },
+                ],
+              };
+
               for (const g of allGraphs) {
                 if (g.id === gId) continue;
+                const cType = canvasTypeFromName(g.name);
+                const seedNodes = SEED_MAP[cType];
+                if (!seedNodes) continue;
+
                 const detail = await fetch(`${API_BASE}/api/graphs/${g.id}`);
                 if (!detail.ok) continue;
                 const gData = await detail.json();
-                if (gData.nodes && gData.nodes.length === 0) {
+                const existingNodeIds = new Set(
+                  (gData.nodes ?? []).map((n: { id: string }) => n.id),
+                );
+                const missingOps = seedNodes.filter(
+                  (op) => !existingNodeIds.has(op.data.id),
+                );
+                if (missingOps.length > 0) {
                   await fetch(`${API_BASE}/api/graphs/${g.id}/ops`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       expected_version: gData.current_version,
-                      message: "Seed research nodes",
-                      ops: [
-                        { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 50 } },
-                        { op: "upsert_node", data: { id: "lf-autorel-1", type_id: "lf_autorel", position_x: 400, position_y: 50 } },
-                        { op: "upsert_node", data: { id: "lf-stats-1", type_id: "lf_stats", position_x: 400, position_y: 300 } },
-                      ],
+                      message: `Seed ${cType} nodes`,
+                      ops: missingOps,
                     }),
                   });
                 }
@@ -458,18 +508,19 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen flex-col">
+      <NodeDetailModal />
       <TabBar projectId={projectId} activeGraphId={graphId} onSelectGraph={handleSwitchGraph} />
-      {showPool ? (
+      {showPool && currentCanvasType !== "research2" ? (
         <>
-          <div className="min-h-0" style={{ flex: "55 1 0%" }}>
+          <div className="relative min-h-0" style={{ flex: "55 1 0%" }}>
             <SubstrateCanvas />
           </div>
-          <div className="border-t border-neutral-800" style={{ flex: "45 1 0%" }}>
+          <div className="border-t border-neutral-800 min-h-0 overflow-hidden" style={{ flex: "45 1 0%" }}>
             <PaperPool livePapers={livePapers} />
           </div>
         </>
       ) : (
-        <div className="min-h-0 flex-1">
+        <div className="relative min-h-0 flex-1">
           <SubstrateCanvas />
         </div>
       )}

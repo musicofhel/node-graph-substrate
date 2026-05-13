@@ -11,7 +11,13 @@ import { LfCoordinatorNode } from "../nodes/LfCoordinatorNode";
 import { LfStatsNode } from "../nodes/LfStatsNode";
 import { LfAutoRelNode } from "../nodes/LfAutoRelNode";
 import { ResearchCoordinatorNode } from "../nodes/ResearchCoordinatorNode";
+import { ResearchBridgeNode } from "../nodes/ResearchBridgeNode";
 import { PipelineGroupNode } from "../nodes/PipelineGroupNode";
+import { R2BridgeNode } from "../nodes/R2BridgeNode";
+import { R2CoordinatorNode } from "../nodes/R2CoordinatorNode";
+import { R2StatsNode } from "../nodes/R2StatsNode";
+import { R2AutoRelNode } from "../nodes/R2AutoRelNode";
+import { R2StateNode } from "../nodes/R2StateNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -26,5 +32,11 @@ export const nodeTypes: NodeTypes = {
   lf_stats: LfStatsNode,
   lf_autorel: LfAutoRelNode,
   research_coordinator: ResearchCoordinatorNode,
+  research_bridge: ResearchBridgeNode,
   lf_pipeline_group: PipelineGroupNode,
+  r2_bridge: R2BridgeNode,
+  r2_coordinator: R2CoordinatorNode,
+  r2_stats: R2StatsNode,
+  r2_autorel: R2AutoRelNode,
+  r2_state: R2StateNode,
 };

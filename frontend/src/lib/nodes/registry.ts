@@ -127,6 +127,15 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     configFields: [],
     subscribesTo: ["linkforge:autorel:sweep_completed"],
   },
+  research_bridge: {
+    typeId: "research_bridge",
+    label: "Research Bridge",
+    category: "input",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: ["linkforge:research_bridged"],
+  },
   research_coordinator: {
     typeId: "research_coordinator",
     label: "Research Coordinator",
@@ -142,22 +151,76 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       "topoconf:research:promoted",
     ],
   },
+  r2_bridge: {
+    typeId: "r2_bridge",
+    label: "Research Bridge",
+    category: "input",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: ["linkforge:research_bridged"],
+  },
+  r2_coordinator: {
+    typeId: "r2_coordinator",
+    label: "Research Coordinator",
+    category: "scoring",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [
+      "topoconf:research:triaged",
+      "topoconf:research:script_generated",
+      "topoconf:research:experiment_started",
+      "topoconf:research:experiment_completed",
+      "topoconf:research:promoted",
+    ],
+  },
+  r2_stats: {
+    typeId: "r2_stats",
+    label: "Pipeline Stats",
+    category: "scoring",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: ["linkforge:completed"],
+  },
+  r2_autorel: {
+    typeId: "r2_autorel",
+    label: "AutoRel Status",
+    category: "scoring",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: ["linkforge:autorel:sweep_completed"],
+  },
+  r2_state: {
+    typeId: "r2_state",
+    label: "State",
+    category: "input",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
 };
 
-export type CanvasType = "pipeline" | "research";
+export type CanvasType = "pipeline" | "research" | "research2";
 
 export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   pipeline: new Set([
     "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
     "confidence_gauge", "bridge_monitor", "explain_waterfall",
-    "lf_stage", "lf_coordinator",
   ]),
   research: new Set([
-    "research_coordinator", "lf_autorel", "lf_stats",
+    "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",
+  ]),
+  research2: new Set([
+    "r2_bridge", "r2_coordinator", "r2_stats", "r2_autorel",
   ]),
 };
 
 export function canvasTypeFromName(name: string | null): CanvasType {
+  if (name && /research\s*v?2/i.test(name)) return "research2";
   if (name && name.toLowerCase().includes("research")) return "research";
   return "pipeline";
 }

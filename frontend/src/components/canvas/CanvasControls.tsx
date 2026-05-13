@@ -1,14 +1,20 @@
 import { useCallback, useState } from "react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
+import { canvasTypeFromName } from "../../lib/nodes/registry";
 
 export function CanvasControls() {
   const graphId = useCanvasStore((s) => s.graphId);
+  const graphName = useCanvasStore((s) => s.graphName);
   const graphVersion = useCanvasStore((s) => s.graphVersion);
   const dirty = useCanvasStore((s) => s.dirty);
   const saveGraph = useCanvasStore((s) => s.saveGraph);
   const loadGraph = useCanvasStore((s) => s.loadGraph);
+  const flushUnstarred = useCanvasStore((s) => s.flushUnstarred);
+  const starredCount = useCanvasStore((s) => s.starredPapers.size);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const canvasType = canvasTypeFromName(graphName);
 
   const handleSave = useCallback(async () => {
     if (!graphId) return;
@@ -46,6 +52,21 @@ export function CanvasControls() {
           v{graphVersion}
           {dirty ? " *" : ""}
         </span>
+      )}
+      {canvasType === "research2" && (
+        <>
+          {starredCount > 0 && (
+            <span className="rounded bg-amber-900/50 px-2 py-1 text-xs text-amber-400">
+              ★ {starredCount}
+            </span>
+          )}
+          <button
+            onClick={flushUnstarred}
+            className="rounded bg-red-900/80 px-3 py-1 text-sm text-red-200 hover:bg-red-800"
+          >
+            Flush
+          </button>
+        </>
       )}
       <button
         onClick={handleSave}

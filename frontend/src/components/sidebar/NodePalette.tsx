@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { NODE_REGISTRY, CANVAS_NODE_TYPES, canvasTypeFromName } from "../../lib/nodes/registry";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import type { NodeCategory } from "../../types/nodes";
@@ -43,10 +43,10 @@ export function NodePalette() {
     [addNode],
   );
 
-  const grouped = CATEGORY_ORDER.map((cat) => ({
+  const grouped = useMemo(() => CATEGORY_ORDER.map((cat) => ({
     category: cat,
     nodes: Object.values(NODE_REGISTRY).filter((n) => n.category === cat && allowedTypes.has(n.typeId)),
-  })).filter((g) => g.nodes.length > 0);
+  })).filter((g) => g.nodes.length > 0), [allowedTypes]);
 
   return (
     <div className="flex flex-col gap-3 p-3">
