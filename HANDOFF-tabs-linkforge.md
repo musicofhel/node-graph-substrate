@@ -1,8 +1,7 @@
 # Implementation Handoff: Tabs + Link-Forge Pipeline v2
 
 **Date**: 2026-05-10
-**Status**: Spec complete, zero implementation started
-**Latest commit**: `46179ce` on main, no uncommitted changes
+**Status (2026-05-13)**: Waves 1,3,4,5,7 complete in-repo. Wave 2 (link-forge publisher) and Wave 6 (topo-confidence research publisher) are in external repos. Research v2 canvas (unspecced Wave 8) also implemented.
 **Full spec**: `SPEC-linkforge-v2.md` (Waves 2-7), `SPEC-tabs-and-linkforge.md` (Wave 1 tabs only)
 
 ---
@@ -419,3 +418,29 @@ No uncommitted changes. All pushed to GitHub main.
 ## Start Here
 
 Wave 1 (tabs) is the simplest and unblocks everything. `docker compose up` to test tab switching. Then proceed through Waves 2-7 in order.
+
+---
+
+## Deferred Features (2026-05-13 Cross-Validation)
+
+These were specified in `SPEC.md` but never implemented. Each needs investigation, implementation planning, and a race condition audit (following the `e2e_race_audit.py` / `e2e_race_audit_v2.py` pattern) before shipping.
+
+### 1. ELK.js Auto-Layout
+**Spec ref:** `SPEC.md` §3 — `frontend/src/lib/layout/elk-layout.ts`, `elk-worker.ts`
+**What:** Automatic node positioning using ELK.js (adapted from `~/pipeline-studio`). Currently, topo-confidence nodes use manual positioning and linkforge uses the shift-right group system.
+**Investigate:** Whether the current manual + group approach is sufficient, or if auto-layout adds value for complex graphs. Consider: layout stability on node add/remove, animation between layouts, Web Worker isolation for layout computation.
+
+### 2. ConfigPanel
+**Spec ref:** `SPEC.md` §3 — `frontend/src/components/panels/ConfigPanel.tsx`
+**What:** Side panel for editing node config fields (text inputs, sliders, selects) that map to `NODE_REGISTRY[type].configFields`. Currently only `prompt_input` has config fields, and `NodeDetailModal` shows config read-only.
+**Investigate:** Whether the modal view is sufficient or a persistent side panel is needed. Consider: panel open/close vs modal UX, live config updates via WS `config_update` message, optimistic updates with rollback on error.
+
+### 3. EventLog
+**Spec ref:** `SPEC.md` §3 — `frontend/src/components/panels/EventLog.tsx`
+**What:** Raw WebSocket event viewer/debugger — shows all inbound WS messages in real-time for debugging stream subscriptions.
+**Investigate:** Whether browser DevTools WS inspector is sufficient for debugging, or if an in-canvas log provides value. Consider: filtering by stream/node, max buffer size, pause/resume, search.
+
+### 4. Waterfall/Pool Resize Handle
+**Spec ref:** `SPEC-linkforge-v2.md` Wave 5 — "55%/45% split with drag handle"
+**What:** Draggable resize handle between the waterfall (React Flow canvas) and pool (HTML card grid) zones in the link-forge tab.
+**Investigate:** Whether a fixed split is sufficient or users need resize. Consider: React Flow's viewport recalculation on container resize, minimum zone heights, persistence of split ratio.

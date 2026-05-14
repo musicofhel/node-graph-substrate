@@ -1,5 +1,7 @@
 # Spec: Chrome Tabs + Link-Forge Pipeline
 
+**Status (2026-05-13):** Phase 1 (Tabs) COMPLETE. Phases 2-4 SUPERSEDED by `SPEC-linkforge-v2.md` — do not implement from this doc.
+
 ## Overview
 
 Two features that compose:
@@ -250,6 +252,8 @@ Link-forge continues to work identically when `PUBLISHER_REDIS_URL` is empty. Al
 
 ## Phase 3: Substrate Backend Components
 
+> **SUPERSEDED (2026-05-13):** This phase was replaced by `SPEC-linkforge-v2.md` Wave 3, which uses 4 consolidated components instead of 7 individual stage components. Do not implement from this section.
+
 7 new SUBSCRIBER components in the substrate server. These are thin shells — they declare `subscribed_streams` and the frontend handles all visualization.
 
 ### P3-1. New component files
@@ -298,6 +302,8 @@ Decision: **No new SocketType needed.** Each tab is its own graph with its own n
 ---
 
 ## Phase 4: Substrate Frontend — Link-Forge Node Types
+
+> **SUPERSEDED (2026-05-13):** This phase was replaced by `SPEC-linkforge-v2.md` Wave 4, which uses a single unified `LfStageCard` with 10 internal renderers instead of 7 separate components. Do not implement from this section.
 
 7 new React components for visualizing the link-forge pipeline.
 

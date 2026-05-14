@@ -1,7 +1,7 @@
 # Spec: Link-Forge Pipeline — v2 (Revised)
 
 **Date**: 2026-05-10
-**Status**: Spec complete, zero implementation started
+**Status (2026-05-13)**: Waves 1,3,4,5,7 complete in-repo. Wave 2 (link-forge publisher) and Wave 6 (topo-confidence research publisher) are in external repos.
 **Supersedes**: `SPEC-tabs-and-linkforge.md` Phases 3-4, `HANDOFF-tabs-linkforge.md` Phases 3-4
 
 Phase 1 (Tabs) in `SPEC-tabs-and-linkforge.md` is **unchanged and still authoritative**.
@@ -485,27 +485,25 @@ if (msg.type === "stream_event" && (msg.stream as string)?.startsWith("linkforge
 `handleLinkforgeEvent` does:
 
 1. Extract `queue_id` from payload — correlates events to the same paper
-2. If new queue_id: create PaperTracker entry, increment columnCounter
+2. If new queue_id: create `lf_pipeline_group` parent container at x=0, shift ALL existing group nodes right by `GROUP_SPACING` (280px)
 3. Determine stage name from stream (e.g., `linkforge:categorized` -> `categorized`)
-4. Create `lf_stage` node at grid position:
-   - `x = -(columnIndex * 260)` (newest on LEFT)
-   - `y = STAGE_Y[stage]`
-5. If previous stage exists for this paper: create edge (vertical connection)
-6. If paper count > 30: remove oldest paper's nodes + edges
+4. Create `lf_stage` child node inside the group at vertical position:
+   - x relative to group: `GROUP_PAD_X` (16px)
+   - y relative to group: `GROUP_PAD_TOP + stageIdx * STAGE_HEIGHT` (40 + idx * 62)
+5. If previous stage exists for this paper: create edge (`source-bottom` → `target-top`)
+6. If paper count > 30: remove oldest (rightmost) paper's group + child nodes + edges
 
-Stage Y positions (140px spacing for 10 stages):
+Layout constants (as implemented):
 ```
-ingested:          0
-extracted:       140
-categorized:     280
-embedded:        420
-stored:          560
-chunked:         700
-auto_related:    840
-research_bridged: 980
-url_discovered: 1120
-completed:      1260
+STAGE_HEIGHT   = 62       # vertical spacing between stages
+GROUP_PAD_X    = 16       # left padding inside group
+GROUP_PAD_TOP  = 40       # top padding inside group (room for title)
+GROUP_WIDTH    = 250      # group container width
+GROUP_HEIGHT   = GROUP_PAD_TOP + 10 * STAGE_HEIGHT + 16  = 676
+GROUP_SPACING  = 280      # horizontal gap between paper columns
 ```
+
+Each paper is wrapped in an `lf_pipeline_group` parent node. Stage cards are children with `parentId` and `extent: "parent"`. New papers always appear at x=0; existing papers shift right. A `PipelineTimeline` horizontal slider (visible when 2+ groups exist) maps slider position to viewport x for navigating older papers.
 
 ### W4-3. LfStageCard Component
 
@@ -1210,7 +1208,7 @@ Dependencies:
 3. **Coordinator pattern**: static nodes subscribe to streams, App.tsx intercepts events and creates dynamic stage cards
 4. **WS bypass**: linkforge + research stream events skip RAF coalescing, go directly to handlers
 5. **Single node type**: `lf_stage` renders 10 different card layouts based on `data._stage`
-6. **Newest on LEFT**: papers use negative X positioning (`x = -(columnIndex * 260)`)
+6. **Newest at x=0**: new papers appear at x=0, existing papers shift right by `GROUP_SPACING` (280px). Each paper wrapped in `lf_pipeline_group` parent node.
 7. **30 paper cap**: oldest paper's nodes removed when 31st arrives
 8. **Pool is HTML, not React Flow**: scrollable card grid + detail panel below the canvas
 9. **Hybrid pool layout**: 60/40 split — card grid left, detail panel right
@@ -1230,25 +1228,37 @@ Dependencies:
 - `frontend/src/components/nodes/LfCoordinatorNode.tsx`
 - `frontend/src/components/nodes/LfStatsNode.tsx`
 - `frontend/src/components/nodes/LfAutoRelNode.tsx`
+- `frontend/src/components/nodes/PipelineGroupNode.tsx`
+- `frontend/src/components/nodes/ResearchBridgeNode.tsx`
+- `frontend/src/components/nodes/ResearchCoordinatorNode.tsx`
+- `frontend/src/components/nodes/PaperPoolSection.tsx`
+- `frontend/src/components/nodes/R2BridgeNode.tsx`
+- `frontend/src/components/nodes/R2CoordinatorNode.tsx`
+- `frontend/src/components/nodes/R2StatsNode.tsx`
+- `frontend/src/components/nodes/R2AutoRelNode.tsx`
+- `frontend/src/components/nodes/R2StateNode.tsx`
 - `frontend/src/components/canvas/TabBar.tsx`
+- `frontend/src/components/canvas/NodeDetailModal.tsx`
+- `frontend/src/components/canvas/PipelineTimeline.tsx`
 - `frontend/src/components/linkforge/PaperPool.tsx`
 - `frontend/src/components/linkforge/PaperCard.tsx`
 - `frontend/src/components/linkforge/PaperDetail.tsx`
 - `server/substrate/components/lf_coordinator.py`
 - `server/substrate/components/lf_stats.py`
 - `server/substrate/components/lf_autorel.py`
+- `server/substrate/components/research_bridge.py`
 - `server/substrate/components/research_coordinator.py`
 - `server/substrate/linkforge_history.py`
 
 ### Modified files (~/node-graph-substrate):
 - `server/substrate/crud.py` — add `list_graphs()`
 - `server/substrate/main.py` — add list_graphs route + 3 history routes
-- `server/substrate/components/__init__.py` — import 4 new components
+- `server/substrate/components/__init__.py` — import all new components
 - `frontend/src/App.tsx` — TabBar, projectId, linkforge event handler, paper tracker, pool state
-- `frontend/src/lib/store/canvas-store.ts` — add projectId
+- `frontend/src/lib/store/canvas-store.ts` — add projectId, starredPapers, flushCounter
 - `frontend/src/lib/ws/client.ts` — linkforge + research bypass in onmessage
-- `frontend/src/lib/nodes/registry.ts` — 5 new entries
-- `frontend/src/components/canvas/node-types.ts` — 5 new imports
+- `frontend/src/lib/nodes/registry.ts` — 18 entries + CanvasType + CANVAS_NODE_TYPES
+- `frontend/src/components/canvas/node-types.ts` — all node type imports
 
 ### New files (~/link-forge):
 - `src/publisher/redis.ts`
@@ -1269,3 +1279,50 @@ Dependencies:
 - `pipeline/generate_recompute.py` — 1 publish + hash write
 - `pipeline/nodes.py` — 2 publish + hash writes (experiment start/complete)
 - `research-graph/promote_result.py` — 1 publish + hash write
+
+---
+
+## Wave 8 (Post-Spec): Research v2 Canvas
+
+**Status (2026-05-13):** Implemented. Not in original spec — documenting retroactively.
+
+### Canvas Type System
+
+`frontend/src/lib/nodes/registry.ts` introduces a multi-canvas type system:
+
+```typescript
+type CanvasType = "pipeline" | "research" | "research2";
+
+const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
+  pipeline: new Set(["prompt_input", "feature_bars", "hidden_state_cloud",
+    "persistence_diagram", "confidence_gauge", "bridge_monitor", "explain_waterfall"]),
+  research: new Set(["research_bridge", "research_coordinator", "lf_autorel", "lf_stats"]),
+  research2: new Set(["r2_bridge", "r2_coordinator", "r2_stats", "r2_autorel"]),
+};
+
+function canvasTypeFromName(name: string | null): CanvasType;
+```
+
+The `NodePalette` sidebar filters available nodes by the active canvas type. `canvasTypeFromName` infers type from the graph name (e.g., "Research v2" → `research2`).
+
+### Research v2 Node Types (5 new)
+
+| type_id | Label | Category | Subscribes To |
+|---------|-------|----------|---------------|
+| `r2_bridge` | Research Bridge | input | `linkforge:research_bridged` |
+| `r2_coordinator` | Research Coordinator | scoring | `topoconf:research:*` (5 streams) |
+| `r2_stats` | Pipeline Stats | scoring | `linkforge:completed` |
+| `r2_autorel` | AutoRel Status | scoring | `linkforge:autorel:sweep_completed` |
+| `r2_state` | State | input | (none — hidden persistence node) |
+
+### Paper Starring
+
+Canvas store additions for research v2:
+- `starredPapers: Set<string>` — queue_ids the user has starred
+- `flushCounter: number` — incremented on flush
+- `toggleStar(queueId)` — add/remove from starred set
+- `flushUnstarred()` — remove all unstarred paper data
+
+`R2StateNode` is a hidden 1px node that persists `starredPapers` in its config via the graph save flow. `PaperPoolSection` is a reusable embedded paper list with star toggle, used inside `R2BridgeNode` and `R2CoordinatorNode`.
+
+`CanvasControls` includes a "Flush Unstarred" button (visible only on research2 canvas) and a star count badge.

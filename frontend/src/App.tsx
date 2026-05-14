@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import { useCanvasStore } from "./lib/store/canvas-store";
+import { useUIStore } from "./lib/store/ui-store";
 import { SubstrateCanvas } from "./components/canvas/SubstrateCanvas";
 import { TabBar } from "./components/canvas/TabBar";
+import { SplitPane } from "./components/canvas/SplitPane";
 import { PaperPool } from "./components/linkforge/PaperPool";
 import type { PaperSummary } from "./components/linkforge/PaperCard";
 import { SubstrateWS } from "./lib/ws/client";
@@ -54,6 +56,8 @@ export default function App() {
   const graphId = useCanvasStore((s) => s.graphId);
   const graphName = useCanvasStore((s) => s.graphName);
   const currentCanvasType = canvasTypeFromName(graphName);
+  const canvasSplitRatio = useUIStore((s) => s.canvasSplitRatio);
+  const setCanvasSplitRatio = useUIStore((s) => s.setCanvasSplitRatio);
   const wsRef = useRef<SubstrateWS | null>(null);
   const paperTrackerRef = useRef(new Map<string, PaperTracker>());
   const columnCounterRef = useRef(0);
@@ -511,14 +515,12 @@ export default function App() {
       <NodeDetailModal />
       <TabBar projectId={projectId} activeGraphId={graphId} onSelectGraph={handleSwitchGraph} />
       {showPool && currentCanvasType !== "research2" ? (
-        <>
-          <div className="relative min-h-0" style={{ flex: "55 1 0%" }}>
-            <SubstrateCanvas />
-          </div>
-          <div className="border-t border-neutral-800 min-h-0 overflow-hidden" style={{ flex: "45 1 0%" }}>
-            <PaperPool livePapers={livePapers} />
-          </div>
-        </>
+        <SplitPane
+          ratio={canvasSplitRatio}
+          onRatioChange={setCanvasSplitRatio}
+          top={<SubstrateCanvas />}
+          bottom={<PaperPool livePapers={livePapers} />}
+        />
       ) : (
         <div className="relative min-h-0 flex-1">
           <SubstrateCanvas />

@@ -31,7 +31,7 @@ python synthetic_daemon.py       # fake streaming data (no GPU needed)
 bash ~/start-research-pipeline.sh --no-dashboard
 ```
 
-NGS observes topo-confidence compute scoring (topology features, persistence diagrams, confidence gauges). It does NOT observe link-forge ingestion events — those are separate systems with no cross-system event bridge.
+NGS observes three pipelines via 23 Redis streams: topo-confidence compute scoring (7 streams), link-forge paper ingestion (10 streams + autorel), and topo-confidence research lifecycle (5 streams). Three canvas types: pipeline (topo scoring), research (link-forge waterfall), research2 (R2 nodes with paper starring).
 
 ## Build order (tracer-bullet slices)
 

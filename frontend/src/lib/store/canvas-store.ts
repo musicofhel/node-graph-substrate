@@ -11,6 +11,7 @@ import {
 import { create } from "zustand";
 import { temporal } from "zundo";
 import { shallow } from "zustand/shallow";
+import { getLayoutedElements } from "../layout/elk-layout";
 
 export interface CanvasState {
   nodes: Node[];
@@ -40,6 +41,7 @@ export interface CanvasState {
   setGraphMeta: (graphId: string, version: number, projectId?: string, graphName?: string) => void;
   toggleStar: (paperId: string) => void;
   flushUnstarred: () => void;
+  autoLayout: () => Promise<void>;
 }
 
 const API_BASE = `http://${window.location.hostname}:8080`;
@@ -102,6 +104,14 @@ export const useCanvasStore = create<CanvasState>()(
 
       flushUnstarred: () => {
         set({ flushCounter: get().flushCounter + 1 });
+      },
+
+      autoLayout: async () => {
+        const graphIdBefore = get().graphId;
+        const { nodes, edges } = get();
+        const { nodes: laid } = await getLayoutedElements(nodes, edges);
+        if (get().graphId !== graphIdBefore) return;
+        set({ nodes: laid, dirty: true });
       },
 
       addNode: (node) => {

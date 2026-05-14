@@ -372,6 +372,7 @@ The Gradio app is the reference implementation for visualization:
 │       ├── db.py                            # asyncpg pool management
 │       ├── schemas.py                       # Pydantic models for HTTP API
 │       ├── sdk.py                           # Component base class (NodeKind, Socket, etc.)
+│       ├── linkforge_history.py             # Redis hash queries for paper history + research lifecycle
 │       └── components/
 │           ├── __init__.py
 │           ├── prompt_input.py              # PromptInput computed node
@@ -380,7 +381,12 @@ The Gradio app is the reference implementation for visualization:
 │           ├── persistence_diagram.py       # PersistenceDiagram subscriber
 │           ├── confidence_gauge.py          # ConfidenceGauge subscriber
 │           ├── bridge_monitor.py            # BridgeMonitor subscriber
-│           └── explain_waterfall.py         # ExplainWaterfall subscriber
+│           ├── explain_waterfall.py         # ExplainWaterfall subscriber
+│           ├── lf_coordinator.py            # LinkForge pipeline coordinator (10 streams)
+│           ├── lf_stats.py                  # LinkForge pipeline stats (completed stream)
+│           ├── lf_autorel.py                # AutoRel sweep status subscriber
+│           ├── research_bridge.py           # Research bridge subscriber
+│           └── research_coordinator.py      # Research lifecycle coordinator (5 streams)
 │
 ├── daemons/
 │   └── topoconf/
@@ -397,28 +403,28 @@ The Gradio app is the reference implementation for visualization:
 │   ├── postcss.config.mjs
 │   └── src/
 │       ├── main.tsx
-│       ├── App.tsx
+│       ├── App.tsx                           # Init flow, WS wiring, linkforge event handler
 │       ├── index.css
 │       ├── types/
 │       │   ├── nodes.ts                     # NodeDefinition, HandleType, etc.
 │       │   └── messages.ts                  # WS message type unions
 │       ├── lib/
 │       │   ├── nodes/
-│       │   │   ├── registry.ts              # 7 node definitions
-│       │   │   ├── node-types-map.ts        # type_id → React component
+│       │   │   ├── registry.ts              # 18 node definitions + CanvasType + CANVAS_NODE_TYPES
 │       │   │   └── handle-colors.ts         # Handle type → color
 │       │   ├── store/
-│       │   │   ├── canvas-store.ts          # Zustand + zundo (adapted from pipeline-studio)
-│       │   │   └── ui-store.ts              # Panels, sidebar, theme
-│       │   ├── layout/
-│       │   │   ├── elk-layout.ts            # Copy from pipeline-studio
-│       │   │   └── elk-worker.ts            # Copy from pipeline-studio
+│       │   │   ├── canvas-store.ts          # Zustand + zundo (undo/redo, starredPapers)
+│       │   │   └── ui-store.ts              # Sidebar state
 │       │   └── ws/
 │       │       └── client.ts                # WebSocket client + reconnect + RAF coalescing
 │       └── components/
 │           ├── canvas/
 │           │   ├── SubstrateCanvas.tsx       # ReactFlow wrapper
-│           │   └── CanvasControls.tsx        # Toolbar
+│           │   ├── CanvasControls.tsx        # Toolbar (save/load + flush starred)
+│           │   ├── TabBar.tsx               # Chrome-style graph tabs
+│           │   ├── NodeDetailModal.tsx       # Node inspection overlay
+│           │   ├── PipelineTimeline.tsx      # Horizontal slider for paper navigation
+│           │   └── node-types.ts            # type_id → React component map (snake_case keys)
 │           ├── nodes/
 │           │   ├── BaseNodeShell.tsx         # Shared header/border/handles
 │           │   ├── PromptInputNode.tsx       # Text area + "Analyze" button
@@ -427,48 +433,68 @@ The Gradio app is the reference implementation for visualization:
 │           │   ├── PersistenceDiagramNode.tsx # Birth-death scatter H0/H1/H2
 │           │   ├── ConfidenceGaugeNode.tsx   # SVG arc gauge 0-1
 │           │   ├── BridgeMonitorNode.tsx     # Layer health matrix
-│           │   └── ExplainWaterfallNode.tsx  # 13-feature contribution waterfall
+│           │   ├── ExplainWaterfallNode.tsx  # 13-feature contribution waterfall
+│           │   ├── LfStageCard.tsx           # Unified 10-stage renderer (polymorphic)
+│           │   ├── LfCoordinatorNode.tsx     # Pipeline coordinator status
+│           │   ├── LfStatsNode.tsx           # Pipeline stats accumulator
+│           │   ├── LfAutoRelNode.tsx         # AutoRel sweep status
+│           │   ├── PipelineGroupNode.tsx     # Parent container for paper stage groups
+│           │   ├── ResearchBridgeNode.tsx    # Research v1 bridge
+│           │   ├── ResearchCoordinatorNode.tsx # Research v1 coordinator
+│           │   ├── PaperPoolSection.tsx      # Reusable embedded paper pool (used by R2 nodes)
+│           │   ├── R2BridgeNode.tsx          # Research v2 bridge (with paper pool)
+│           │   ├── R2CoordinatorNode.tsx     # Research v2 coordinator
+│           │   ├── R2StatsNode.tsx           # Research v2 stats
+│           │   ├── R2AutoRelNode.tsx         # Research v2 autorel
+│           │   └── R2StateNode.tsx           # Research v2 starred paper persistence (hidden)
 │           ├── sidebar/
-│           │   └── NodePalette.tsx           # Drag-and-drop palette
-│           └── panels/
-│               ├── ConfigPanel.tsx           # Node config editor
-│               └── EventLog.tsx             # Raw WS event viewer
+│           │   └── NodePalette.tsx           # Canvas-type-aware drag-and-drop palette
+│           └── linkforge/
+│               ├── PaperPool.tsx             # History + live paper card grid with filters
+│               ├── PaperCard.tsx             # Compact paper summary card
+│               └── PaperDetail.tsx           # Full paper detail + research lifecycle
 │
-└── migrations/
-    └── 001_init.sql
+├── migrations/
+│   ├── 001_init.sql
+│   └── 002_schema_fixes.sql                 # Dropped type_version, added edge FKs
+│
+├── synthetic_daemon.py                      # Fake topoconf:scoring:* events (no GPU needed)
+├── synthetic_linkforge.py                   # Fake linkforge:* pipeline events
+├── e2e_paper_pipeline.py                    # Playwright E2E: paper pipeline flow
+├── e2e_race_audit.py                        # Playwright race condition audit (27/27 pass)
+├── e2e_race_audit_v2.py                     # Second-pass race audit (37/37 pass)
+├── e2e_visual_inspect.py                    # Visual inspection E2E
+└── take_screenshots.py                      # Screenshot generation
 ```
+
+**Deferred (not yet implemented — see HANDOFF):**
+- `frontend/src/lib/layout/elk-layout.ts` — ELK.js auto-layout
+- `frontend/src/lib/layout/elk-worker.ts` — ELK worker thread
+- `frontend/src/components/panels/ConfigPanel.tsx` — node config editor panel
+- `frontend/src/components/panels/EventLog.tsx` — raw WS event viewer
 
 ---
 
 ## 4. Component SDK Design
 
-Simplified from Langflow's `Component` API. Two node kinds: computed (pull-based `build()`) and subscriber (push-based `on_event()`).
+Simplified from Langflow's `Component` API. Two node kinds: computed (pull-based `build()`) and subscriber (push-based `on_event()`). Uses semantic socket types matching the topo-confidence domain rather than generic primitives.
 
 ```python
 # server/substrate/sdk.py
 from __future__ import annotations
-from typing import Any, ClassVar
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class SocketType(str, Enum):
-    STR = "str"
-    INT = "int"
-    FLOAT = "float"
-    DICT = "dict"
-    JSON = "json"
-    NDARRAY = "ndarray"       # pass-through, not Pydantic-validated
-    TENSOR = "tensor"
-    STREAM_EVENT = "stream_event"
-
-
-@dataclass(frozen=True)
-class Socket:
-    name: str
-    type: SocketType
-    description: str = ""
-    optional: bool = False
+    PROMPT = "prompt"
+    EXTRACTION = "extraction"
+    FEATURES = "features"
+    CONFIDENCE = "confidence"
+    BRIDGE_HEALTH = "bridge_health"
+    EXPLANATION = "explanation"
+    DIAGRAMS = "diagrams"
 
 
 class NodeKind(str, Enum):
@@ -477,77 +503,91 @@ class NodeKind(str, Enum):
 
 
 @dataclass
+class Socket:
+    id: str
+    type: SocketType
+    label: str = ""
+
+
+@dataclass
 class ComponentManifest:
-    type_id: str                   # "topoconf.PromptInput"
-    display_name: str
+    type_id: str
     kind: NodeKind
+    label: str
+    category: str
     inputs: list[Socket]
     outputs: list[Socket]
-    react_component: str           # frontend lookup key
-    subscribed_streams: list[str] = field(default_factory=list)
-    config_schema: dict[str, Any] = field(default_factory=dict)
+    subscribed_streams: list[str]
+    config_fields: list[dict[str, Any]]
 
 
 class Component:
-    type_id: ClassVar[str]
-    kind: ClassVar[NodeKind] = NodeKind.COMPUTED
-    inputs: ClassVar[list[Socket]] = []
-    outputs: ClassVar[list[Socket]] = []
-    react_component: ClassVar[str]
-    subscribed_streams: ClassVar[list[str]] = []
-    config_schema: ClassVar[dict[str, Any]] = {}
+    type_id: str = ""
+    kind: NodeKind = NodeKind.COMPUTED
+    label: str = ""
+    category: str = "input"
+    inputs: list[Socket] = []
+    outputs: list[Socket] = []
+    subscribed_streams: list[str] = []
+    config_fields: list[dict[str, Any]] = []
 
-    def __init__(self, node_id: str, config: dict[str, Any]):
+    def __init__(self, node_id: str, config: dict[str, Any] | None = None):
         self.node_id = node_id
-        self.config = config
+        self.config = config or {}
 
-    async def on_init(self) -> None: ...
+    async def on_init(self) -> None:
+        pass
     async def build(self, **inputs: Any) -> dict[str, Any]:
         raise NotImplementedError
-    async def on_event(self, stream: str, event: dict[str, Any]) -> dict[str, Any] | None:
-        return None
-    async def on_config_change(self, new_config: dict[str, Any]) -> None:
-        self.config = new_config
-    async def on_destroy(self) -> None: ...
+    async def on_event(self, stream: str, event: dict[str, Any]) -> None:
+        pass
+    async def on_config_change(self, config: dict[str, Any]) -> None:
+        self.config = config
+    async def on_destroy(self) -> None:
+        pass
 
     @classmethod
     def manifest(cls) -> ComponentManifest:
         return ComponentManifest(
             type_id=cls.type_id,
-            display_name=getattr(cls, "display_name", cls.__name__),
             kind=cls.kind,
+            label=cls.label,
+            category=cls.category,
             inputs=cls.inputs,
             outputs=cls.outputs,
-            react_component=cls.react_component,
             subscribed_streams=cls.subscribed_streams,
-            config_schema=cls.config_schema,
+            config_fields=cls.config_fields,
         )
 ```
 
-**React-component pairing:** explicit registry, not convention magic:
+**React-component pairing:** explicit registry at `frontend/src/components/canvas/node-types.ts`, using snake_case `type_id` keys (matching `NODE_REGISTRY` in `registry.ts`):
 
 ```ts
-// frontend/src/lib/nodes/node-types-map.ts
-import PromptInputNode         from "@/components/nodes/PromptInputNode";
-import HiddenStateCloudNode    from "@/components/nodes/HiddenStateCloudNode";
-import FeatureBarsNode         from "@/components/nodes/FeatureBarsNode";
-import PersistenceDiagramNode  from "@/components/nodes/PersistenceDiagramNode";
-import ConfidenceGaugeNode     from "@/components/nodes/ConfidenceGaugeNode";
-import BridgeMonitorNode       from "@/components/nodes/BridgeMonitorNode";
-import ExplainWaterfallNode    from "@/components/nodes/ExplainWaterfallNode";
-
-export const NODE_TYPES_MAP: Record<string, React.ComponentType<any>> = {
-  "topoconf.PromptInput":       PromptInputNode,
-  "topoconf.HiddenStateCloud":  HiddenStateCloudNode,
-  "topoconf.FeatureBars":       FeatureBarsNode,
-  "topoconf.PersistenceDiagram": PersistenceDiagramNode,
-  "topoconf.ConfidenceGauge":   ConfidenceGaugeNode,
-  "topoconf.BridgeMonitor":     BridgeMonitorNode,
-  "topoconf.ExplainWaterfall":  ExplainWaterfallNode,
+// frontend/src/components/canvas/node-types.ts
+export const nodeTypes: NodeTypes = {
+  prompt_input: PromptInputNode,
+  feature_bars: FeatureBarsNode,
+  hidden_state_cloud: HiddenStateCloudNode,
+  persistence_diagram: PersistenceDiagramNode,
+  confidence_gauge: ConfidenceGaugeNode,
+  bridge_monitor: BridgeMonitorNode,
+  explain_waterfall: ExplainWaterfallNode,
+  lf_stage: LfStageCard,
+  lf_coordinator: LfCoordinatorNode,
+  lf_stats: LfStatsNode,
+  lf_autorel: LfAutoRelNode,
+  research_coordinator: ResearchCoordinatorNode,
+  research_bridge: ResearchBridgeNode,
+  lf_pipeline_group: PipelineGroupNode,
+  r2_bridge: R2BridgeNode,
+  r2_coordinator: R2CoordinatorNode,
+  r2_stats: R2StatsNode,
+  r2_autorel: R2AutoRelNode,
+  r2_state: R2StateNode,
 };
 ```
 
-Adding a new node = one Python file + one React file + one line in `node-types-map.ts` + one entry in `registry.ts`.
+Adding a new node = one Python file + one React file + one line in `node-types.ts` + one entry in `registry.ts`.
 
 ---
 
@@ -821,7 +861,6 @@ CREATE TABLE nodes (
   id          TEXT PRIMARY KEY,
   graph_id    UUID NOT NULL REFERENCES graphs(id) ON DELETE CASCADE,
   type_id     TEXT NOT NULL,
-  type_version INT NOT NULL DEFAULT 1,
   position_x  REAL NOT NULL,
   position_y  REAL NOT NULL,
   width       REAL,
@@ -829,6 +868,8 @@ CREATE TABLE nodes (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX ON nodes (graph_id);
+
+-- Note: type_version was in 001_init.sql but dropped in 002_schema_fixes.sql
 
 CREATE TABLE node_configs (
   node_id     TEXT PRIMARY KEY REFERENCES nodes(id) ON DELETE CASCADE,
@@ -840,13 +881,15 @@ CREATE INDEX ON node_configs USING GIN (config jsonb_path_ops);
 CREATE TABLE edges (
   id          TEXT PRIMARY KEY,
   graph_id    UUID NOT NULL REFERENCES graphs(id) ON DELETE CASCADE,
-  source      TEXT NOT NULL,
-  target      TEXT NOT NULL,
+  source      TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+  target      TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
   source_handle TEXT,
   target_handle TEXT,
   data        JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX ON edges (graph_id);
+
+-- Edge FK constraints added in 002_schema_fixes.sql
 ```
 
 **Persistence strategy: Postgres + localStorage cache.** Postgres is the source of truth. localStorage mirrors the current graph for instant reload — if `localStorage.version === postgres.current_version`, skip the network fetch. On save, write-through: PATCH Postgres first, then update localStorage. On version mismatch, Postgres wins.

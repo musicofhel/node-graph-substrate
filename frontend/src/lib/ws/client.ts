@@ -1,3 +1,5 @@
+import { useEventLogStore } from "../store/event-log-store";
+
 type MessageHandler = (msg: Record<string, unknown>) => void;
 type BatchUpdateFn = (updates: [string, Record<string, unknown>][]) => void;
 
@@ -62,6 +64,14 @@ export class SubstrateWS {
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+
+        useEventLogStore.getState().push({
+          ts: Date.now(),
+          type: (msg.type as string) ?? "unknown",
+          stream: msg.stream as string | undefined,
+          nodeId: msg.node_id as string | undefined,
+          raw: msg,
+        });
 
         if (
           msg.type === "stream_event" &&

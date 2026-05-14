@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useUIStore } from "../../lib/store/ui-store";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
 import { HANDLE_COLORS } from "../../lib/nodes/handle-colors";
 import type { HandleType } from "../../types/nodes";
@@ -135,7 +136,20 @@ export function NodeDetailModal() {
           {/* Config */}
           {Object.keys(config).length > 0 && (
             <div>
-              <SectionHeader title="Configuration" />
+              <div className="flex items-center justify-between mb-1.5">
+                <SectionHeader title="Configuration" />
+                {def && def.configFields.length > 0 && (
+                  <button
+                    onClick={() => {
+                      close();
+                      useUIStore.getState().openConfigPanel(selectedNodeId);
+                    }}
+                    className="rounded bg-blue-900/60 px-2 py-0.5 text-[10px] font-medium text-blue-400 hover:bg-blue-800/60"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
               <div className="space-y-1">
                 {Object.entries(config).map(([k, v]) => (
                   <div key={k} className="flex gap-2 text-xs">

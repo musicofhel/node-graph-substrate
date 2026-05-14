@@ -1,5 +1,7 @@
 # Plan: Chrome-Style Graph Tabs
 
+**Status:** COMPLETE (2026-05-13). Implemented as Phase 1 of `SPEC-tabs-and-linkforge.md`.
+
 ## Goal
 
 Add a tab bar above the React Flow canvas so the user can switch between multiple graph flows (e.g., topo-confidence scoring, link-forge pipeline, etc.) within the same project. Each tab = one graph.

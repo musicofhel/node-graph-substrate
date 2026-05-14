@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useUIStore } from "../../lib/store/ui-store";
 import { canvasTypeFromName } from "../../lib/nodes/registry";
 
 export function CanvasControls() {
@@ -9,9 +10,13 @@ export function CanvasControls() {
   const dirty = useCanvasStore((s) => s.dirty);
   const saveGraph = useCanvasStore((s) => s.saveGraph);
   const loadGraph = useCanvasStore((s) => s.loadGraph);
+  const autoLayout = useCanvasStore((s) => s.autoLayout);
   const flushUnstarred = useCanvasStore((s) => s.flushUnstarred);
   const starredCount = useCanvasStore((s) => s.starredPapers.size);
+  const eventLogOpen = useUIStore((s) => s.eventLogOpen);
+  const toggleEventLog = useUIStore((s) => s.toggleEventLog);
   const [saving, setSaving] = useState(false);
+  const [layouting, setLayouting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canvasType = canvasTypeFromName(graphName);
@@ -39,6 +44,21 @@ export function CanvasControls() {
       setError(e instanceof Error ? e.message : "Load failed");
     }
   }, [loadGraph]);
+
+  const handleLayout = useCallback(async () => {
+    setLayouting(true);
+    setError(null);
+    try {
+      await autoLayout();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Layout failed");
+    } finally {
+      setLayouting(false);
+    }
+  }, [autoLayout]);
+
+  // Layout breaks shift-right group positioning on research canvas
+  const layoutEnabled = canvasType !== "research";
 
   return (
     <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
@@ -68,6 +88,25 @@ export function CanvasControls() {
           </button>
         </>
       )}
+      {layoutEnabled && (
+        <button
+          onClick={handleLayout}
+          disabled={layouting}
+          className="rounded bg-indigo-700 px-3 py-1 text-sm text-white hover:bg-indigo-600 disabled:opacity-50"
+        >
+          {layouting ? "..." : "Layout"}
+        </button>
+      )}
+      <button
+        onClick={toggleEventLog}
+        className={`rounded px-3 py-1 text-sm ${
+          eventLogOpen
+            ? "bg-blue-700 text-white"
+            : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+        }`}
+      >
+        Log
+      </button>
       <button
         onClick={handleSave}
         disabled={!graphId || saving || !dirty}
