@@ -2,6 +2,7 @@ import { memo, type ReactNode } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { HandleDefinition } from "../../types/nodes";
 import { HANDLE_COLORS } from "../../lib/nodes/handle-colors";
+import { useDriftStore } from "../../lib/store/drift-store";
 
 const POSITION_MAP = {
   top: Position.Top,
@@ -10,12 +11,15 @@ const POSITION_MAP = {
   right: Position.Right,
 } as const;
 
+import type { DriftSeverity } from "../../lib/drift/psi";
+
 interface Props {
   label: string;
   category: string;
   inputs?: HandleDefinition[];
   outputs?: HandleDefinition[];
   status?: "idle" | "computing" | "error";
+  healthStatus?: DriftSeverity;
   children: ReactNode;
 }
 
@@ -27,12 +31,22 @@ const CATEGORY_BORDER: Record<string, string> = {
 };
 
 export const BaseNodeShell = memo(
-  ({ label, category, inputs = [], outputs = [], status, children }: Props) => {
+  ({ label, category, inputs = [], outputs = [], status, healthStatus, children }: Props) => {
     const borderClass = CATEGORY_BORDER[category] ?? "border-neutral-700";
+    const isBaselineMode = useDriftStore((s) => s.baselineMode === "snapshot" && s.baselines.size > 0);
+    const HEALTH_BAND: Record<DriftSeverity, string> = {
+      ok: "bg-emerald-500/60",
+      warning: "bg-amber-500/80",
+      alert: "bg-red-500 animate-pulse",
+    };
+    const alertGlow = healthStatus === "alert" ? "shadow-[0_0_8px_rgba(239,68,68,0.3)]" : "";
     return (
       <div
-        className={`relative min-w-[200px] rounded-lg border ${borderClass} bg-neutral-900 shadow-lg`}
+        className={`relative min-w-[200px] rounded-lg border ${borderClass} bg-neutral-900 shadow-lg ${alertGlow}`}
       >
+        {healthStatus && (
+          <div className={`h-[3px] rounded-t-lg transition-colors duration-500 ${HEALTH_BAND[healthStatus]}`} />
+        )}
         {inputs.map((h) => (
           <Handle
             key={h.id}
@@ -46,6 +60,9 @@ export const BaseNodeShell = memo(
           <span className="text-xs font-semibold tracking-wide text-neutral-300 uppercase">
             {label}
           </span>
+          {isBaselineMode && healthStatus && (
+            <span className="rounded bg-blue-600 px-0.5 text-[8px] font-bold text-white">B</span>
+          )}
           {status === "computing" && (
             <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
           )}

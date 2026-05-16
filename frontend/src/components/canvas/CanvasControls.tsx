@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
+import { useDriftStore } from "../../lib/store/drift-store";
 import { canvasTypeFromName } from "../../lib/nodes/registry";
 
 export function CanvasControls() {
@@ -15,6 +16,11 @@ export function CanvasControls() {
   const starredCount = useCanvasStore((s) => s.starredPapers.size);
   const eventLogOpen = useUIStore((s) => s.eventLogOpen);
   const toggleEventLog = useUIStore((s) => s.toggleEventLog);
+  const baselineMode = useDriftStore((s) => s.baselineMode);
+  const hasBaselines = useDriftStore((s) => s.baselines.size > 0);
+  const saveAllBaselines = useDriftStore((s) => s.saveAllBaselines);
+  const clearAllBaselines = useDriftStore((s) => s.clearAllBaselines);
+  const setBaselineMode = useDriftStore((s) => s.setBaselineMode);
   const [saving, setSaving] = useState(false);
   const [layouting, setLayouting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +101,35 @@ export function CanvasControls() {
           className="rounded bg-indigo-700 px-3 py-1 text-sm text-white hover:bg-indigo-600 disabled:opacity-50"
         >
           {layouting ? "..." : "Layout"}
+        </button>
+      )}
+      <div className="flex items-center rounded bg-neutral-800 text-xs">
+        <button
+          onClick={() => setBaselineMode("rolling")}
+          className={`rounded-l px-2 py-1 ${baselineMode === "rolling" ? "bg-blue-700 text-white" : "text-neutral-400 hover:text-neutral-200"}`}
+        >
+          Rolling
+        </button>
+        <button
+          onClick={() => setBaselineMode("snapshot")}
+          className={`rounded-r px-2 py-1 ${baselineMode === "snapshot" ? "bg-blue-700 text-white" : "text-neutral-400 hover:text-neutral-200"}`}
+        >
+          Baseline
+        </button>
+      </div>
+      <button
+        onClick={() => saveAllBaselines(`manual-${Date.now()}`)}
+        className="rounded bg-cyan-800 px-2 py-1 text-xs text-cyan-200 hover:bg-cyan-700"
+        title="Snapshot current distributions as baseline"
+      >
+        Snapshot
+      </button>
+      {hasBaselines && (
+        <button
+          onClick={clearAllBaselines}
+          className="rounded bg-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-600"
+        >
+          Clear
         </button>
       )}
       <button

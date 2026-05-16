@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { useNodeDrift } from "../../lib/store/drift-store";
 
 type BridgeData = {
   healthy?: boolean;
@@ -18,9 +19,10 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.bridge_monitor;
   const hasData = data.bridge_at_pos0 !== undefined;
+  const drift = useNodeDrift(id);
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
       <div style={{ width: 240 }}>
         {hasData ? (
           <>

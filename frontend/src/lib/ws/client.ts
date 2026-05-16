@@ -1,7 +1,22 @@
 import { useEventLogStore } from "../store/event-log-store";
+import { useDriftStore } from "../store/drift-store";
 
 type MessageHandler = (msg: Record<string, unknown>) => void;
 type BatchUpdateFn = (updates: [string, Record<string, unknown>][]) => void;
+
+function extractNumericValues(payload: Record<string, unknown>): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const [key, val] of Object.entries(payload)) {
+    if (typeof val === "number" && key !== "prompt_id") {
+      result[key] = val;
+    } else if (key === "features" && typeof val === "object" && val !== null) {
+      for (const [fk, fv] of Object.entries(val as Record<string, unknown>)) {
+        if (typeof fv === "number") result[fk] = fv;
+      }
+    }
+  }
+  return result;
+}
 
 export class SubstrateWS {
   private ws: WebSocket | null = null;
@@ -72,6 +87,20 @@ export class SubstrateWS {
           nodeId: msg.node_id as string | undefined,
           raw: msg,
         });
+
+        // Drift store — MUST be before the linkforge/research bypass (early return below)
+        const driftNodeId = msg.node_id as string | undefined;
+        if (driftNodeId && (msg.type === "stream_event" || msg.type === "node_state_updated")) {
+          const driftPayload = msg.type === "stream_event"
+            ? (msg.payload as Record<string, unknown> | undefined)
+            : (msg.data_patch as Record<string, unknown> | undefined);
+          if (driftPayload) {
+            const numericValues = extractNumericValues(driftPayload);
+            if (Object.keys(numericValues).length > 0) {
+              useDriftStore.getState().pushSample(driftNodeId, Date.now(), numericValues);
+            }
+          }
+        }
 
         if (
           msg.type === "stream_event" &&

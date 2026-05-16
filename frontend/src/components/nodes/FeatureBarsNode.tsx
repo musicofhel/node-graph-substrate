@@ -2,6 +2,8 @@ import { memo } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
+import { Sparkline } from "./Sparkline";
 
 const FEATURE_NAMES = [
   "H0_persistence_entropy",
@@ -43,6 +45,8 @@ export const FeatureBarsNode = memo(({ id }: NodeProps) => {
   const nodeData = useNodesData<Node<FeatureData>>(id);
   const features = nodeData?.data?.features;
   const def = NODE_REGISTRY.feature_bars;
+  const drift = useNodeDrift(id);
+  const history = useDriftStore((s) => s.histories.get(id));
 
   if (!features) {
     return (
@@ -66,13 +70,15 @@ export const FeatureBarsNode = memo(({ id }: NodeProps) => {
       label={def.label}
       category={def.category}
       inputs={def.inputs}
+      healthStatus={drift?.worst}
     >
-      <div className="flex w-[280px] flex-col gap-0.5">
+      <div className="flex w-[320px] flex-col gap-0.5">
         {FEATURE_NAMES.map((name) => {
           const val = features[name] ?? 0;
           const pct = Math.abs(val) / maxAbs;
           const color = FEATURE_COLORS[name] ?? "#888";
           const shortName = name.replace(/_/g, " ").replace(/persistence /g, "p.");
+          const featureHistory = history?.map((h) => h.values[name]).filter((v): v is number => v !== undefined) ?? [];
 
           return (
             <div key={name} className="flex items-center gap-1">
@@ -94,6 +100,9 @@ export const FeatureBarsNode = memo(({ id }: NodeProps) => {
                   }}
                 />
               </div>
+              {featureHistory.length > 1 && (
+                <Sparkline values={featureHistory} width={40} height={12} color={color} />
+              )}
               <span className="w-[40px] text-right font-mono text-[10px] text-neutral-400">
                 {val.toFixed(2)}
               </span>

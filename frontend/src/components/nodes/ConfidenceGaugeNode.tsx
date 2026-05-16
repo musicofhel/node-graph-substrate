@@ -2,6 +2,8 @@ import { memo } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
+import { Sparkline } from "./Sparkline";
 
 type GaugeData = {
   confidence?: number;
@@ -35,9 +37,12 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
   const confidence = rawConf !== undefined ? Math.max(0, Math.min(1, rawConf)) : undefined;
   const mode = nodeData?.data?.mode ?? "—";
   const def = NODE_REGISTRY.confidence_gauge;
+  const history = useDriftStore((s) => s.histories.get(id));
+  const confidenceValues = history?.map((h) => h.values.confidence).filter((v): v is number => v !== undefined) ?? [];
+  const drift = useNodeDrift(id);
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
+    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
       <div className="flex flex-col items-center" style={{ width: 120 }}>
         {confidence !== undefined ? (
           <>
@@ -70,6 +75,7 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
                 {(confidence * 100).toFixed(0)}%
               </text>
             </svg>
+            <Sparkline values={confidenceValues} width={120} height={24} color="#10b981" />
             <span className="text-[10px] text-neutral-500">{mode}</span>
           </>
         ) : (

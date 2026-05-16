@@ -16,6 +16,7 @@ import { useUIStore } from "../../lib/store/ui-store";
 import { CanvasControls } from "./CanvasControls";
 import { PipelineTimeline } from "./PipelineTimeline";
 import { nodeTypes } from "./node-types";
+import { edgeTypes } from "../edges/edge-types";
 import { NodePalette } from "../sidebar/NodePalette";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
 import { EventLog } from "../panels/EventLog";
@@ -86,6 +87,7 @@ export function SubstrateCanvas() {
             isValidConnection={isValidConnection}
             onInit={handleInit}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
             colorMode="dark"
             fitView

@@ -18,6 +18,7 @@ import { R2CoordinatorNode } from "../nodes/R2CoordinatorNode";
 import { R2StatsNode } from "../nodes/R2StatsNode";
 import { R2AutoRelNode } from "../nodes/R2AutoRelNode";
 import { R2StateNode } from "../nodes/R2StateNode";
+import { DriftMatrixNode } from "../nodes/DriftMatrixNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -39,4 +40,5 @@ export const nodeTypes: NodeTypes = {
   r2_stats: R2StatsNode,
   r2_autorel: R2AutoRelNode,
   r2_state: R2StateNode,
+  drift_matrix: DriftMatrixNode,
 };

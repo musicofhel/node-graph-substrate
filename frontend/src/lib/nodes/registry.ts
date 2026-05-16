@@ -202,6 +202,15 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     configFields: [],
     subscribesTo: [],
   },
+  drift_matrix: {
+    typeId: "drift_matrix",
+    label: "Drift Matrix",
+    category: "scoring",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
 };
 
 export type CanvasType = "pipeline" | "research" | "research2";
@@ -209,7 +218,7 @@ export type CanvasType = "pipeline" | "research" | "research2";
 export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   pipeline: new Set([
     "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
-    "confidence_gauge", "bridge_monitor", "explain_waterfall",
+    "confidence_gauge", "bridge_monitor", "explain_waterfall", "drift_matrix",
   ]),
   research: new Set([
     "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",

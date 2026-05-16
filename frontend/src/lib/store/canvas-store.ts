@@ -78,7 +78,7 @@ export const useCanvasStore = create<CanvasState>()(
 
       onConnect: (connection) => {
         set({
-          edges: addEdge(connection, get().edges),
+          edges: addEdge({ ...connection, type: "stale" }, get().edges),
           dirty: true,
         });
       },
@@ -187,6 +187,7 @@ export const useCanvasStore = create<CanvasState>()(
             target: e.target,
             sourceHandle: e.source_handle,
             targetHandle: e.target_handle,
+            type: "stale",
           }),
         );
 
