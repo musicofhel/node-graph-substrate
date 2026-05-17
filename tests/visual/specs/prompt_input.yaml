@@ -1,0 +1,31 @@
+node_type: prompt_input
+display_name: Prompt Input
+selector: ".react-flow__node-prompt_input"
+
+dimensions:
+  min_width: 200
+  min_height: 100
+
+capture:
+  padding: 20
+  interval_seconds: 10
+  duration_seconds: 30
+
+elements:
+  - selector: "textarea"
+    name: prompt_textarea
+    required: true
+  - selector: "button"
+    name: analyze_button
+    required: true
+    text_matches: "Analyz"
+
+alignment_checks:
+  - name: button_full_width
+    description: Button spans full width of node content
+    type: element_position
+    target: "button"
+    reference: "textarea"
+    assert:
+      width_match: true
+      width_tolerance: 10

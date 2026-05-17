@@ -23,7 +23,7 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
 
   return (
     <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div style={{ width: 240 }}>
+      <div style={{ width: 280 }}>
         {hasData ? (
           <>
             <div className="mb-2 flex items-center gap-2">

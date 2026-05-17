@@ -1,0 +1,59 @@
+node_type: confidence_gauge
+display_name: Confidence Gauge
+selector: ".react-flow__node-confidence_gauge"
+
+dimensions:
+  min_width: 150
+  min_height: 120
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "svg"
+    name: gauge_svg
+    attributes:
+      width: "120"
+      height: "66"
+  - selector: "svg path:nth-of-type(1)"
+    name: background_arc
+    required: true
+  - selector: "svg path:nth-of-type(2)"
+    name: value_arc
+    required: true
+  - selector: "svg text"
+    name: percentage_text
+    required: true
+    text_matches: "\\d+%"
+
+alignment_checks:
+  - name: arc_start_overlay
+    description: Both arcs share the same M (start) point
+    type: svg_path_comparison
+    paths:
+      - selector: "svg path:nth-of-type(1)"
+        role: background
+      - selector: "svg path:nth-of-type(2)"
+        role: value
+    assert:
+      shared_start_point: true
+      start_tolerance: 0.5
+
+  - name: text_centered
+    description: Percentage text is horizontally centered in SVG
+    type: element_position
+    target: "svg text"
+    reference: "svg"
+    assert:
+      horizontal_center_offset_max: 2
+
+  - name: arc_within_viewbox
+    description: Arc stroke does not clip against viewBox boundaries
+    type: bounding_box_containment
+    container: "svg"
+    target: "svg path:nth-of-type(1)"
+    assert:
+      fully_contained: true
+      stroke_width: 8

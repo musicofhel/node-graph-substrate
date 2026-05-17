@@ -1,0 +1,39 @@
+node_type: feature_bars
+display_name: Feature Bars
+selector: ".react-flow__node-feature_bars"
+
+dimensions:
+  min_width: 320
+  min_height: 200
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".flex.items-center.gap-1"
+    name: bar_rows
+    required: true
+    min_count: 13
+  - selector: "svg"
+    name: sparklines
+    required: false
+    min_count: 1
+
+alignment_checks:
+  - name: bars_aligned
+    description: All 13 feature bar rows have consistent left edge
+    type: element_position
+    target: ".flex.items-center.gap-1"
+    assert:
+      consistent_left_edge: true
+      tolerance: 2
+
+  - name: values_right_aligned
+    description: Numeric values are right-aligned in their column
+    type: element_position
+    target: "span.font-mono"
+    assert:
+      consistent_right_edge: true
+      tolerance: 2

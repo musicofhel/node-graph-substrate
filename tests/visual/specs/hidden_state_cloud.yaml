@@ -1,0 +1,31 @@
+node_type: hidden_state_cloud
+display_name: Hidden State Cloud
+selector: ".react-flow__node-hidden_state_cloud"
+render_type: canvas
+
+dimensions:
+  min_width: 300
+  min_height: 250
+
+capture:
+  padding: 20
+  interval_seconds: 10
+  duration_seconds: 30
+
+elements:
+  - selector: "canvas"
+    name: r3f_canvas
+    required: true
+  - selector: ".nodrag.nowheel"
+    name: interaction_container
+    required: true
+
+alignment_checks:
+  - name: canvas_fills_container
+    description: WebGL canvas fills its container div
+    type: bounding_box_containment
+    container: ".nodrag.nowheel"
+    target: "canvas"
+    assert:
+      fills_parent: true
+      tolerance: 5

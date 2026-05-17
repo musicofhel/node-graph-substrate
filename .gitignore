@@ -6,5 +6,6 @@ __pycache__/
 .vite/
 *.egg-info/
 e2e_screenshots/
+tests/visual/screenshots/
 test-results/
 .claude/

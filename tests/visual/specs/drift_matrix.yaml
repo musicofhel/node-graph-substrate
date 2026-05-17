@@ -1,0 +1,42 @@
+node_type: drift_matrix
+display_name: Drift Matrix
+selector: ".react-flow__node-drift_matrix"
+
+dimensions:
+  min_width: 200
+  min_height: 150
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "svg"
+    name: heatmap_svg
+    required: true
+  - selector: "svg rect"
+    name: heatmap_cells
+    required: false
+    min_count: 1
+  - selector: "svg text"
+    name: labels
+    required: true
+    min_count: 1
+
+alignment_checks:
+  - name: cells_grid_aligned
+    description: Heatmap rects form a regular grid
+    type: element_position
+    target: "svg rect"
+    assert:
+      grid_regular: true
+      tolerance: 2
+
+  - name: row_labels_right_aligned
+    description: Feature name labels right-aligned to label column
+    type: element_position
+    target: "svg text[text-anchor='end']"
+    assert:
+      consistent_right_edge: true
+      tolerance: 1

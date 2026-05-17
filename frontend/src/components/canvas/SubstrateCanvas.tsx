@@ -101,6 +101,7 @@ export function SubstrateCanvas() {
               nodeColor="#10b981"
               maskColor="rgba(0,0,0,0.7)"
               bgColor="#171717"
+              position="bottom-left"
             />
             <PipelineTimeline />
           </ReactFlow>

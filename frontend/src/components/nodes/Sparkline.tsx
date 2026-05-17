@@ -23,7 +23,7 @@ export const Sparkline = memo(({ values, width = 100, height = 24, color = "#10b
     })
     .join(" ");
 
-  const gradientId = `spark-grad-${width}-${height}`;
+  const gradientId = `spark-grad-${width}-${height}-${color.replace("#", "")}`;
   const fillPoints = `0,${height} ${points} ${width},${height}`;
 
   return (

@@ -16,9 +16,11 @@ function gaugeColor(v: number): string {
   return "#ef4444";
 }
 
-const ARC_R = 50;
+const ARC_R = 46;
 const CX = 60;
-const CY = 60;
+const CY = 52;
+const SVG_W = 120;
+const SVG_H = 66;
 
 function describeArc(pct: number): string {
   const startAngle = Math.PI;
@@ -43,10 +45,10 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
 
   return (
     <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div className="flex flex-col items-center" style={{ width: 120 }}>
+      <div className="flex flex-col items-center" style={{ width: SVG_W }}>
         {confidence !== undefined ? (
           <>
-            <svg width={120} height={70} viewBox="0 0 120 70">
+            <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`}>
               {/* Background arc */}
               <path
                 d={describeArc(1)}
@@ -65,10 +67,10 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
               />
               <text
                 x={CX}
-                y={CY - 5}
+                y={CY - 2}
                 textAnchor="middle"
                 fill={gaugeColor(confidence)}
-                fontSize={22}
+                fontSize={20}
                 fontWeight="bold"
                 fontFamily="monospace"
               >

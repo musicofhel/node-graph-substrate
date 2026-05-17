@@ -1,0 +1,52 @@
+node_type: persistence_diagram
+display_name: Persistence Diagram
+selector: ".react-flow__node-persistence_diagram"
+
+dimensions:
+  min_width: 250
+  min_height: 250
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "svg"
+    name: diagram_svg
+    required: true
+    attributes:
+      width: "250"
+      height: "250"
+  - selector: "svg line"
+    name: axes_and_diagonal
+    required: true
+    min_count: 3
+  - selector: "svg circle"
+    name: data_points
+    required: false
+    min_count: 1
+  - selector: "svg text"
+    name: axis_labels
+    required: true
+    min_count: 2
+
+alignment_checks:
+  - name: axes_meet_at_origin
+    description: X and Y axes share a common endpoint (bottom-left corner)
+    type: svg_path_comparison
+    paths:
+      - selector: "svg line:nth-of-type(1)"
+        role: x_axis
+      - selector: "svg line:nth-of-type(2)"
+        role: y_axis
+    assert:
+      shared_endpoint: true
+      tolerance: 1
+
+  - name: points_above_diagonal
+    description: All scatter points should be at or above the diagonal
+    type: element_position
+    target: "svg circle"
+    assert:
+      above_diagonal: true

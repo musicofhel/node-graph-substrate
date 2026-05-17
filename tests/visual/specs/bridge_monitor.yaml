@@ -1,0 +1,44 @@
+node_type: bridge_monitor
+display_name: Bridge Monitor
+selector: ".react-flow__node-bridge_monitor"
+
+dimensions:
+  min_width: 240
+  min_height: 120
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "table"
+    name: bridge_table
+    required: true
+  - selector: "thead tr"
+    name: table_header
+    required: true
+  - selector: "tbody tr"
+    name: table_rows
+    required: true
+    min_count: 1
+  - selector: "span.rounded-full"
+    name: status_indicator
+    required: true
+
+alignment_checks:
+  - name: table_columns_aligned
+    description: Table columns are vertically aligned across rows
+    type: element_position
+    target: "td"
+    assert:
+      consistent_column_widths: true
+      tolerance: 3
+
+  - name: status_dot_aligned
+    description: Status dot vertically centers with text
+    type: element_position
+    target: "span.rounded-full"
+    reference: "span.text-sm"
+    assert:
+      vertical_center_offset_max: 3
