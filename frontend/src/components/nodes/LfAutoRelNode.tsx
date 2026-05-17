@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 
-export const LfAutoRelNode = memo(({ id }: { id: string }) => {
+export const LfAutoRelNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
 
@@ -14,7 +14,7 @@ export const LfAutoRelNode = memo(({ id }: { id: string }) => {
   const durationMs = Number(data.duration_ms ?? 0);
 
   return (
-    <BaseNodeShell label="AutoRel Status" category="scoring">
+    <BaseNodeShell selected={selected} label="AutoRel Status" category="scoring">
       <div className="space-y-1 text-xs text-neutral-400">
         {totalCreated > 0 || totalPruned > 0 ? (
           <>

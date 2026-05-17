@@ -1,0 +1,33 @@
+node_type: lf_pipeline_group
+display_name: Pipeline Group
+selector: ".react-flow__node-lf_pipeline_group"
+
+dimensions:
+  min_width: 400
+  min_height: 200
+
+capture:
+  padding: 40
+  interval_seconds: 10
+  duration_seconds: 30
+
+elements:
+  - selector: ".rounded-lg.border.border-neutral-700\\/40"
+    name: group_container
+    required: true
+  - selector: "span.text-xs.font-medium.text-neutral-400"
+    name: group_title
+    required: true
+
+alignment_checks:
+  - name: container_has_border
+    description: Group container has visible border
+    type: element_position
+    target: ".rounded-lg.border"
+    assert:
+      has_border: true
+
+detail_panel:
+  tabs: [overview]
+  screenshots_per_tab: 1
+  optional: true

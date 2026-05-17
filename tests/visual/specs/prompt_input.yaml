@@ -29,3 +29,7 @@ alignment_checks:
     assert:
       width_match: true
       width_tolerance: 10
+
+detail_panel:
+  tabs: [overview, config]
+  screenshots_per_tab: 1

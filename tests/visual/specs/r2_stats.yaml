@@ -1,0 +1,39 @@
+node_type: r2_stats
+display_name: R2 Stats
+selector: ".react-flow__node-r2_stats"
+
+dimensions:
+  min_width: 240
+  min_height: 150
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".grid-cols-4"
+    name: stats_grid
+    required: true
+  - selector: "span.text-emerald-400"
+    name: success_count
+    required: true
+  - selector: "span.text-red-400"
+    name: fail_count
+    required: true
+  - selector: ".border-t.border-neutral-800"
+    name: paper_pool_section
+    required: true
+
+alignment_checks:
+  - name: stats_grid_aligned
+    description: Stats grid items have consistent baseline
+    type: element_position
+    target: ".grid-cols-4 > div"
+    assert:
+      consistent_top_edge: true
+      tolerance: 2
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

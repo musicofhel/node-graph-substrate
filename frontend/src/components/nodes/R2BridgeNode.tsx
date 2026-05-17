@@ -13,7 +13,7 @@ interface BridgedPaper {
 
 const MAX_ENTRIES = 100;
 
-export const R2BridgeNode = memo(({ id }: { id: string }) => {
+export const R2BridgeNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
@@ -62,8 +62,8 @@ export const R2BridgeNode = memo(({ id }: { id: string }) => {
   }));
 
   return (
-    <BaseNodeShell label="Research Bridge" category="input">
-      <div style={{ width: 360 }}>
+    <BaseNodeShell selected={selected} label="Research Bridge" category="input">
+      <div className="w-full min-w-[320px]">
         <div className="flex justify-between text-xs text-neutral-400 mb-1">
           <span>Bridged: <span className="text-neutral-200">{total}</span></span>
           <span>Relevant: <span className="text-emerald-400">{relevant}</span></span>

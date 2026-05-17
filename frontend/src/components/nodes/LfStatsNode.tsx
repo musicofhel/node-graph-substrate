@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 
-export const LfStatsNode = memo(({ id }: { id: string }) => {
+export const LfStatsNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
@@ -30,7 +30,7 @@ export const LfStatsNode = memo(({ id }: { id: string }) => {
   const pct = total > 0 ? Math.round((s.successCount / total) * 100) : 0;
 
   return (
-    <BaseNodeShell label="Pipeline Stats" category="scoring">
+    <BaseNodeShell selected={selected} label="Pipeline Stats" category="scoring">
       <div className="space-y-1 text-xs text-neutral-400">
         <div className="flex justify-between">
           <span>Success</span>

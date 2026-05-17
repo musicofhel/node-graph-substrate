@@ -32,7 +32,7 @@ interface PaperState {
 
 const MAX_PAPERS = 50;
 
-export const R2CoordinatorNode = memo(({ id }: { id: string }) => {
+export const R2CoordinatorNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastEventRef = useRef<string>("");
@@ -112,7 +112,7 @@ export const R2CoordinatorNode = memo(({ id }: { id: string }) => {
   });
 
   return (
-    <BaseNodeShell label="Research Coordinator" category="scoring">
+    <BaseNodeShell selected={selected} label="Research Coordinator" category="scoring">
       <div style={{ width: 360 }}>
         <div className="flex justify-between text-xs text-neutral-400 mb-1">
           <span>Papers: <span className="text-neutral-200">{papers.length}</span></span>

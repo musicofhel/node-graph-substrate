@@ -11,7 +11,7 @@ interface BridgedPaper {
 
 const MAX_ENTRIES = 50;
 
-export const ResearchBridgeNode = memo(({ id }: { id: string }) => {
+export const ResearchBridgeNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
@@ -36,7 +36,7 @@ export const ResearchBridgeNode = memo(({ id }: { id: string }) => {
   }, [data.queue_id, data.arxiv_id, data.research_relevant, data.relevance_note]);
 
   return (
-    <BaseNodeShell label="Research Bridge" category="input">
+    <BaseNodeShell selected={selected} label="Research Bridge" category="input">
       <div style={{ width: 230, maxHeight: 200, overflowY: "auto" }} className="scrollbar-thin">
         {papers.length > 0 ? (
           <div className="space-y-1">

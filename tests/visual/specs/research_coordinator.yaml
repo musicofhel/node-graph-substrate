@@ -1,0 +1,39 @@
+node_type: research_coordinator
+display_name: Research Coordinator
+selector: ".react-flow__node-research_coordinator"
+
+dimensions:
+  min_width: 240
+  min_height: 150
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".scrollbar-thin"
+    name: scroll_container
+    required: true
+  - selector: ".rounded.border.border-neutral-700"
+    name: paper_cards
+    required: false
+    min_count: 0
+  - selector: "span.inline-flex.h-4.w-4"
+    name: lifecycle_badges
+    required: false
+    min_count: 0
+
+alignment_checks:
+  - name: paper_cards_aligned
+    description: Paper cards have consistent left edge within scroll container
+    type: element_position
+    target: ".rounded.border.border-neutral-700"
+    assert:
+      consistent_left_edge: true
+      tolerance: 2
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1
+  optional: true

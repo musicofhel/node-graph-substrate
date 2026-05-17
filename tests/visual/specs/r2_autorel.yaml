@@ -1,0 +1,39 @@
+node_type: r2_autorel
+display_name: R2 AutoRel
+selector: ".react-flow__node-r2_autorel"
+
+dimensions:
+  min_width: 240
+  min_height: 150
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "span.text-emerald-400"
+    name: created_count
+    required: false
+  - selector: "span.text-red-400"
+    name: pruned_count
+    required: false
+  - selector: ".border-t.border-neutral-800"
+    name: divider
+    required: true
+  - selector: ".border-t.border-neutral-800"
+    name: sweep_section
+    required: true
+
+alignment_checks:
+  - name: sweep_items_aligned
+    description: Sweep list items have consistent left edge
+    type: element_position
+    target: ".flex.items-center.justify-between"
+    assert:
+      consistent_left_edge: true
+      tolerance: 2
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

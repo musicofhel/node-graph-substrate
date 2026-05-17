@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, NodeResizer } from "@xyflow/react";
 import type { HandleDefinition } from "../../types/nodes";
 import { HANDLE_COLORS } from "../../lib/nodes/handle-colors";
 import { useDriftStore } from "../../lib/store/drift-store";
@@ -14,6 +14,7 @@ const POSITION_MAP = {
 import type { DriftSeverity } from "../../lib/drift/psi";
 
 interface Props {
+  selected?: boolean;
   label: string;
   category: string;
   inputs?: HandleDefinition[];
@@ -31,7 +32,7 @@ const CATEGORY_BORDER: Record<string, string> = {
 };
 
 export const BaseNodeShell = memo(
-  ({ label, category, inputs = [], outputs = [], status, healthStatus, children }: Props) => {
+  ({ selected, label, category, inputs = [], outputs = [], status, healthStatus, children }: Props) => {
     const borderClass = CATEGORY_BORDER[category] ?? "border-neutral-700";
     const isBaselineMode = useDriftStore((s) => s.baselineMode === "snapshot" && s.baselines.size > 0);
     const HEALTH_BAND: Record<DriftSeverity, string> = {
@@ -44,6 +45,14 @@ export const BaseNodeShell = memo(
       <div
         className={`relative min-w-[200px] rounded-lg border ${borderClass} bg-neutral-900 shadow-lg ${alertGlow}`}
       >
+        <NodeResizer
+          isVisible={!!selected}
+          minWidth={200}
+          minHeight={100}
+          color="#3b82f6"
+          lineStyle={{ borderWidth: 1 }}
+          handleStyle={{ width: 8, height: 8 }}
+        />
         {healthStatus && (
           <div className={`h-[3px] rounded-t-lg transition-colors duration-500 ${HEALTH_BAND[healthStatus]}`} />
         )}

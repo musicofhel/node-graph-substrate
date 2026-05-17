@@ -22,7 +22,10 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "normalize", label: "Normalization", type: "select", options: [{ label: "Raw", value: "raw" }, { label: "Z-Score", value: "z-score" }, { label: "Min-Max", value: "min-max" }], default: "raw" },
+      { key: "sort_by", label: "Sort", type: "select", options: [{ label: "Default", value: "default" }, { label: "Value ↓", value: "value_desc" }, { label: "Value ↑", value: "value_asc" }, { label: "Alpha", value: "alpha" }], default: "default" },
+    ],
     subscribesTo: ["topoconf:scoring:features_computed"],
   },
   hidden_state_cloud: {
@@ -33,7 +36,10 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "point_size", label: "Point Size", type: "slider", min: 1, max: 10, step: 0.5, default: 3 },
+      { key: "show_bridge", label: "Highlight Bridge", type: "boolean", default: true },
+    ],
     subscribesTo: ["topoconf:scoring:hidden_state_cloud"],
   },
   persistence_diagram: {
@@ -44,7 +50,12 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "show_h0", label: "Show H0", type: "boolean", default: true },
+      { key: "show_h1", label: "Show H1", type: "boolean", default: true },
+      { key: "show_h2", label: "Show H2", type: "boolean", default: true },
+      { key: "min_lifetime", label: "Min Lifetime", type: "slider", min: 0, max: 1, step: 0.01, default: 0 },
+    ],
     subscribesTo: ["topoconf:scoring:persistence_computed"],
   },
   confidence_gauge: {
@@ -55,7 +66,11 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "threshold_low", label: "Low Threshold", type: "slider", min: 0, max: 1, step: 0.05, default: 0.4 },
+      { key: "threshold_high", label: "High Threshold", type: "slider", min: 0, max: 1, step: 0.05, default: 0.7 },
+      { key: "alert_enabled", label: "Alerts", type: "boolean", default: true },
+    ],
     subscribesTo: ["topoconf:scoring:confidence_scored"],
   },
   bridge_monitor: {
@@ -66,7 +81,10 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "silhouette_threshold", label: "Sil Threshold", type: "slider", min: -1, max: 1, step: 0.05, default: 0 },
+      { key: "crystallization_threshold", label: "Cryst Threshold", type: "slider", min: 0, max: 1, step: 0.05, default: 0.8 },
+    ],
     subscribesTo: ["topoconf:scoring:bridge_health"],
   },
   explain_waterfall: {
@@ -77,7 +95,10 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
       { id: "features_in", type: "features", position: "top", label: "Features" },
     ],
     outputs: [],
-    configFields: [],
+    configFields: [
+      { key: "top_n", label: "Top N Features", type: "slider", min: 5, max: 13, step: 1, default: 13 },
+      { key: "sort_order", label: "Sort", type: "select", options: [{ label: "Abs Contribution", value: "abs_contribution" }, { label: "Positive First", value: "positive_first" }, { label: "Negative First", value: "negative_first" }, { label: "Alpha", value: "alpha" }], default: "abs_contribution" },
+    ],
     subscribesTo: ["topoconf:scoring:explain_result"],
   },
   lf_stage: {

@@ -30,7 +30,7 @@ interface PaperState {
 
 const MAX_PAPERS = 20;
 
-export const ResearchCoordinatorNode = memo(({ id }: { id: string }) => {
+export const ResearchCoordinatorNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastEventRef = useRef<string>("");
@@ -77,7 +77,7 @@ export const ResearchCoordinatorNode = memo(({ id }: { id: string }) => {
   }, [data]);
 
   return (
-    <BaseNodeShell label="Research Coordinator" category="scoring">
+    <BaseNodeShell selected={selected} label="Research Coordinator" category="scoring">
       <div style={{ width: 240, maxHeight: 240, overflowY: "auto" }} className="scrollbar-thin">
         {papers.length > 0 ? (
           <div className="space-y-1.5">

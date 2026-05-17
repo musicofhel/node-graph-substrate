@@ -14,13 +14,14 @@ function loadSplitRatio(): number {
   return DEFAULT_SPLIT;
 }
 
+export type DetailTab = "overview" | "timeseries" | "config" | "drift";
+
 interface UIState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 
-  configPanelNodeId: string | null;
-  openConfigPanel: (nodeId: string) => void;
-  closeConfigPanel: () => void;
+  detailPanelTab: DetailTab;
+  setDetailTab: (tab: DetailTab) => void;
 
   eventLogOpen: boolean;
   toggleEventLog: () => void;
@@ -33,9 +34,8 @@ export const useUIStore = create<UIState>()((set) => ({
   sidebarOpen: false,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  configPanelNodeId: null,
-  openConfigPanel: (nodeId) => set({ configPanelNodeId: nodeId }),
-  closeConfigPanel: () => set({ configPanelNodeId: null }),
+  detailPanelTab: "overview",
+  setDetailTab: (tab) => set({ detailPanelTab: tab }),
 
   eventLogOpen: false,
   toggleEventLog: () => set((s) => ({ eventLogOpen: !s.eventLogOpen })),

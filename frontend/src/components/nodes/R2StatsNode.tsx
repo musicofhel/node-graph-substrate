@@ -13,7 +13,7 @@ interface CompletedPaper {
 
 const MAX_PAPERS = 100;
 
-export const R2StatsNode = memo(({ id }: { id: string }) => {
+export const R2StatsNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
@@ -64,7 +64,7 @@ export const R2StatsNode = memo(({ id }: { id: string }) => {
   }));
 
   return (
-    <BaseNodeShell label="Pipeline Stats" category="scoring">
+    <BaseNodeShell selected={selected} label="Pipeline Stats" category="scoring">
       <div style={{ width: 360 }}>
         <div className="grid grid-cols-4 gap-2 text-xs text-neutral-400 mb-1">
           <div>Total: <span className="text-neutral-200">{total}</span></div>

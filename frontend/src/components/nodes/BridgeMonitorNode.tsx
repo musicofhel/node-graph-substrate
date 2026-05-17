@@ -14,7 +14,7 @@ type BridgeData = {
   anomaly_reason?: string | null;
 };
 
-export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
+export const BridgeMonitorNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<BridgeData>>(id);
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.bridge_monitor;
@@ -22,8 +22,8 @@ export const BridgeMonitorNode = memo(({ id }: NodeProps) => {
   const drift = useNodeDrift(id);
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div style={{ width: 280 }}>
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
+      <div className="w-full min-w-[240px]">
         {hasData ? (
           <>
             <div className="mb-2 flex items-center gap-2">

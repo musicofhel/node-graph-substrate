@@ -9,7 +9,7 @@ type PromptData = {
   outputs?: Record<string, unknown>;
 };
 
-export const PromptInputNode = memo(({ id }: NodeProps) => {
+export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<PromptData>>(id);
   const [localPrompt, setLocalPrompt] = useState("");
   const [synced, setSynced] = useState(false);
@@ -38,6 +38,7 @@ export const PromptInputNode = memo(({ id }: NodeProps) => {
 
   return (
     <BaseNodeShell
+      selected={selected}
       label={def.label}
       category={def.category}
       outputs={def.outputs}

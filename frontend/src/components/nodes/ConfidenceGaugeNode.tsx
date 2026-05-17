@@ -33,7 +33,7 @@ function describeArc(pct: number): string {
   return `M ${x1} ${y1} A ${ARC_R} ${ARC_R} 0 ${largeArc} 1 ${x2} ${y2}`;
 }
 
-export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
+export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<GaugeData>>(id);
   const rawConf = nodeData?.data?.confidence;
   const confidence = rawConf !== undefined ? Math.max(0, Math.min(1, rawConf)) : undefined;
@@ -44,7 +44,7 @@ export const ConfidenceGaugeNode = memo(({ id }: NodeProps) => {
   const drift = useNodeDrift(id);
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
       <div className="flex flex-col items-center" style={{ width: SVG_W }}>
         {confidence !== undefined ? (
           <>

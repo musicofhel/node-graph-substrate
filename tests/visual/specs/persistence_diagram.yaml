@@ -15,9 +15,6 @@ elements:
   - selector: "svg"
     name: diagram_svg
     required: true
-    attributes:
-      width: "250"
-      height: "250"
   - selector: "svg line"
     name: axes_and_diagonal
     required: true
@@ -50,3 +47,7 @@ alignment_checks:
     target: "svg circle"
     assert:
       above_diagonal: true
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

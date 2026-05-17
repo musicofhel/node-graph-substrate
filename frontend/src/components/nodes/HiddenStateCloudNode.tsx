@@ -81,15 +81,15 @@ function PointCloud({ data }: { data: CloudData }) {
   );
 }
 
-export const HiddenStateCloudNode = memo(({ id }: NodeProps) => {
+export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<CloudData>>(id);
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.hidden_state_cloud;
   const hasData = !!data.umap_3d;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="nodrag nowheel" style={{ width: 300, height: 250 }}>
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
+      <div className="nodrag nowheel w-full min-w-[260px]" style={{ height: 250 }}>
         {hasData ? (
           <R3FErrorBoundary>
             <Canvas

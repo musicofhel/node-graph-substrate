@@ -1,0 +1,34 @@
+node_type: lf_stage
+display_name: LF Stage Card
+selector: ".react-flow__node-lf_stage"
+
+dimensions:
+  min_width: 210
+  min_height: 80
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".border-b.border-neutral-800"
+    name: header_bar
+    required: true
+  - selector: "span"
+    name: stage_label
+    required: true
+    min_count: 1
+
+alignment_checks:
+  - name: border_color_present
+    description: Stage card has category-specific border color
+    type: element_position
+    target: ".rounded.border"
+    assert:
+      has_border_color: true
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1
+  optional: true

@@ -18,7 +18,7 @@ const DIM_COLORS: Record<string, string> = {
 const SVG_SIZE = 250;
 const PADDING = 30;
 
-export const PersistenceDiagramNode = memo(({ id }: NodeProps) => {
+export const PersistenceDiagramNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<DiagramData>>(id);
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.persistence_diagram;
@@ -47,10 +47,10 @@ export const PersistenceDiagramNode = memo(({ id }: NodeProps) => {
   const toY = (v: number) => SVG_SIZE - PADDING - (v / maxVal) * plotSize;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
-      <div style={{ width: SVG_SIZE, height: SVG_SIZE }}>
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
+      <div className="w-full min-w-[200px]" style={{ aspectRatio: "1" }}>
         {hasData ? (
-          <svg width={SVG_SIZE} height={SVG_SIZE}>
+          <svg width="100%" height="100%" viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} preserveAspectRatio="xMidYMid meet">
             {/* Axes */}
             <line
               x1={PADDING}

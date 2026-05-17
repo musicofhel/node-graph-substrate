@@ -31,7 +31,7 @@ interface CellData {
   severity: DriftSeverity;
 }
 
-export const DriftMatrixNode = memo(({ id }: NodeProps) => {
+export const DriftMatrixNode = memo(({ id, selected }: NodeProps) => {
   const def = NODE_REGISTRY.drift_matrix;
   const histories = useDriftStore((s) => s.histories);
   const baselines = useDriftStore((s) => s.baselines);
@@ -79,7 +79,7 @@ export const DriftMatrixNode = memo(({ id }: NodeProps) => {
 
   if (nodeIds.length === 0) {
     return (
-      <BaseNodeShell label={def.label} category={def.category}>
+      <BaseNodeShell selected={selected} label={def.label} category={def.category}>
         <div className="text-xs text-neutral-500 w-[200px]">
           Waiting for history (need 20+ samples on at least one node)...
         </div>
@@ -91,7 +91,7 @@ export const DriftMatrixNode = memo(({ id }: NodeProps) => {
   const svgH = HEADER_H + FEATURE_NAMES.length * CELL_H + 20;
 
   return (
-    <BaseNodeShell label={def.label} category={def.category}>
+    <BaseNodeShell selected={selected} label={def.label} category={def.category}>
       <div className="relative">
         <div className="mb-1 text-[9px] text-neutral-500">
           {baselineName ? `vs baseline: ${baselineName}` : "vs rolling"}

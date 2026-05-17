@@ -1,0 +1,34 @@
+node_type: lf_coordinator
+display_name: LF Coordinator
+selector: ".react-flow__node-lf_coordinator"
+
+dimensions:
+  min_width: 200
+  min_height: 100
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: "span.animate-pulse.rounded-full"
+    name: status_dot
+    required: true
+  - selector: "span.text-xs.text-neutral-400"
+    name: status_text
+    required: true
+    text_matches: "watching \\d+ streams"
+
+alignment_checks:
+  - name: status_dot_aligned
+    description: Pulsing dot vertically centers with status text
+    type: element_position
+    target: "span.animate-pulse"
+    reference: "span.text-xs"
+    assert:
+      vertical_center_offset_max: 3
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

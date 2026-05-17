@@ -1,0 +1,36 @@
+node_type: lf_autorel
+display_name: LF AutoRel
+selector: ".react-flow__node-lf_autorel"
+
+dimensions:
+  min_width: 200
+  min_height: 100
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".space-y-1"
+    name: stats_container
+    required: true
+  - selector: "span.text-emerald-400"
+    name: edges_created
+    required: false
+  - selector: "span.text-red-400"
+    name: edges_pruned
+    required: false
+
+alignment_checks:
+  - name: stats_rows_aligned
+    description: Edge stat rows have consistent left edge
+    type: element_position
+    target: ".space-y-1 > div"
+    assert:
+      consistent_left_edge: true
+      tolerance: 2
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

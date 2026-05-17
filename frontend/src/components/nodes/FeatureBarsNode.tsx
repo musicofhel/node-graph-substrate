@@ -41,7 +41,7 @@ type FeatureData = {
   features?: Record<string, number>;
 };
 
-export const FeatureBarsNode = memo(({ id }: NodeProps) => {
+export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<FeatureData>>(id);
   const features = nodeData?.data?.features;
   const def = NODE_REGISTRY.feature_bars;
@@ -51,6 +51,7 @@ export const FeatureBarsNode = memo(({ id }: NodeProps) => {
   if (!features) {
     return (
       <BaseNodeShell
+        selected={selected}
         label={def.label}
         category={def.category}
         inputs={def.inputs}
@@ -67,12 +68,13 @@ export const FeatureBarsNode = memo(({ id }: NodeProps) => {
 
   return (
     <BaseNodeShell
+      selected={selected}
       label={def.label}
       category={def.category}
       inputs={def.inputs}
       healthStatus={drift?.worst}
     >
-      <div className="flex w-[320px] flex-col gap-0.5">
+      <div className="flex w-full min-w-[280px] flex-col gap-0.5">
         {FEATURE_NAMES.map((name) => {
           const val = features[name] ?? 0;
           const pct = Math.abs(val) / maxAbs;

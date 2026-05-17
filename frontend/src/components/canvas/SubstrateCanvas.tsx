@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -20,7 +20,7 @@ import { edgeTypes } from "../edges/edge-types";
 import { NodePalette } from "../sidebar/NodePalette";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
 import { EventLog } from "../panels/EventLog";
-import { ConfigPanel } from "../panels/ConfigPanel";
+import { DetailPanel } from "../panels/DetailPanel";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   style: { strokeWidth: 2, stroke: "#525252" },
@@ -38,10 +38,18 @@ export function SubstrateCanvas() {
   const onNodesChange = useCanvasStore((s) => s.onNodesChange);
   const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
   const onConnect = useCanvasStore((s) => s.onConnect);
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const eventLogOpen = useUIStore((s) => s.eventLogOpen);
-  const configPanelNodeId = useUIStore((s) => s.configPanelNodeId);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedNodeId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setSelectedNodeId]);
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string }) => {
     setSelectedNodeId(node.id);
@@ -106,9 +114,9 @@ export function SubstrateCanvas() {
             <PipelineTimeline />
           </ReactFlow>
           <CanvasControls />
-          {configPanelNodeId && (
-            <div className="absolute right-0 top-0 bottom-0 w-[300px] z-40">
-              <ConfigPanel />
+          {selectedNodeId && (
+            <div className="absolute right-0 top-0 bottom-0 w-[420px] z-40 border-l border-neutral-800">
+              <DetailPanel nodeId={selectedNodeId} />
             </div>
           )}
         </div>

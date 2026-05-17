@@ -13,7 +13,7 @@ interface SweepEntry {
 
 const MAX_ENTRIES = 20;
 
-export const R2AutoRelNode = memo(({ id }: { id: string }) => {
+export const R2AutoRelNode = memo(({ id, selected }: { id: string; selected?: boolean }) => {
   const nodeData = useNodesData(id);
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
@@ -48,7 +48,7 @@ export const R2AutoRelNode = memo(({ id }: { id: string }) => {
   const totalPruned = sweeps.reduce((acc, s) => acc + s.total_pruned, 0);
 
   return (
-    <BaseNodeShell label="AutoRel Status" category="scoring">
+    <BaseNodeShell selected={selected} label="AutoRel Status" category="scoring">
       <div style={{ width: 360 }}>
         <div className="flex justify-between text-xs text-neutral-400 mb-1">
           <span>Sweeps: <span className="text-neutral-200">{sweeps.length}</span></span>

@@ -1,0 +1,41 @@
+node_type: r2_bridge
+display_name: R2 Bridge
+selector: ".react-flow__node-r2_bridge"
+
+dimensions:
+  min_width: 240
+  min_height: 150
+
+capture:
+  padding: 20
+  interval_seconds: 5
+  duration_seconds: 60
+
+elements:
+  - selector: ".border-t.border-neutral-800"
+    name: paper_pool_section
+    required: true
+  - selector: "span.text-\\[10px\\].font-semibold"
+    name: papers_header
+    required: false
+  - selector: ".font-mono.text-emerald-400"
+    name: paper_labels
+    required: false
+    min_count: 0
+  - selector: "button"
+    name: star_buttons
+    required: false
+    min_count: 0
+
+alignment_checks:
+  - name: paper_items_aligned
+    description: Paper items have consistent left edge
+    type: element_position
+    target: ".flex.items-start.gap-1\\.5"
+    assert:
+      consistent_left_edge: true
+      tolerance: 2
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

@@ -42,3 +42,7 @@ alignment_checks:
     reference: "span.text-sm"
     assert:
       vertical_center_offset_max: 3
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

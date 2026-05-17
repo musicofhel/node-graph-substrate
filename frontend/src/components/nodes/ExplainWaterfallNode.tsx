@@ -16,14 +16,14 @@ type ExplainData = {
   top_contributor?: string;
 };
 
-export const ExplainWaterfallNode = memo(({ id }: NodeProps) => {
+export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
   const nodeData = useNodesData<Node<ExplainData>>(id);
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.explain_waterfall;
 
   if (!data.features) {
     return (
-      <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
+      <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
         <div className="py-4 text-center text-xs text-neutral-500">
           Requires calibration
         </div>
@@ -40,8 +40,8 @@ export const ExplainWaterfallNode = memo(({ id }: NodeProps) => {
   );
 
   return (
-    <BaseNodeShell label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="flex w-[300px] flex-col gap-0.5">
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
+      <div className="flex w-full min-w-[260px] flex-col gap-0.5">
         {entries.map(([name, feat]) => {
           const pct = Math.abs(feat.contribution) / maxAbs;
           const isPositive = feat.contribution >= 0;

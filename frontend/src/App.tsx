@@ -9,7 +9,6 @@ import { PaperPool } from "./components/linkforge/PaperPool";
 import type { PaperSummary } from "./components/linkforge/PaperCard";
 import { SubstrateWS } from "./lib/ws/client";
 import { NODE_REGISTRY, canvasTypeFromName } from "./lib/nodes/registry";
-import { NodeDetailModal } from "./components/canvas/NodeDetailModal";
 
 const API_BASE = `http://${window.location.hostname}:8080`;
 
@@ -512,7 +511,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen flex-col">
-      <NodeDetailModal />
       <TabBar projectId={projectId} activeGraphId={graphId} onSelectGraph={handleSwitchGraph} />
       {showPool && currentCanvasType !== "research2" ? (
         <SplitPane

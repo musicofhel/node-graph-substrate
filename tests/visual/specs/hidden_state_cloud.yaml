@@ -29,3 +29,7 @@ alignment_checks:
     assert:
       fills_parent: true
       tolerance: 5
+
+detail_panel:
+  tabs: [overview, timeseries, config, drift]
+  screenshots_per_tab: 1

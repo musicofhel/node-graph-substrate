@@ -276,6 +276,136 @@ ALIGNMENT_DISPATCH = {
     "drift_matrix": check_heatmap_alignment,
 }
 
+DETAIL_PANEL_SELECTOR = ".absolute.right-0.top-0.bottom-0.w-\\[420px\\]"
+DETAIL_TAB_MAP = {"overview": "Overview", "timeseries": "Series", "config": "Config", "drift": "Drift"}
+
+CANVAS_TYPE_MAP: dict[str, str] = {
+    "prompt_input": "Pipeline",
+    "feature_bars": "Pipeline",
+    "hidden_state_cloud": "Pipeline",
+    "persistence_diagram": "Pipeline",
+    "confidence_gauge": "Pipeline",
+    "bridge_monitor": "Pipeline",
+    "explain_waterfall": "Pipeline",
+    "drift_matrix": "Pipeline",
+    "lf_stage": "Pipeline",
+    "lf_pipeline_group": "Pipeline",
+    "lf_coordinator": "Research",
+    "lf_stats": "Research",
+    "lf_autorel": "Research",
+    "research_coordinator": "Research",
+    "research_bridge": "Research",
+    "r2_bridge": "Research v2",
+    "r2_coordinator": "Research v2",
+    "r2_stats": "Research v2",
+    "r2_autorel": "Research v2",
+    "r2_state": "Research v2",
+}
+
+
+async def capture_detail_panel(page, node_el, node_type: str, detail_spec: dict, panel_dir: Path) -> list[dict]:
+    """Click node to open detail panel, screenshot each tab, then close."""
+    results = []
+    tabs = detail_spec.get("tabs", ["overview", "timeseries", "config", "drift"])
+
+    # Click the node to select it and open detail panel
+    box = await node_el.bounding_box()
+    if not box:
+        results.append({"name": "detail_panel_open", "pass": False, "detail": "No bounding box"})
+        return results
+
+    # First, click canvas pane to clear any existing selection
+    pane = page.locator(".react-flow__pane")
+    if await pane.count() > 0:
+        pane_box = await pane.first.bounding_box()
+        if pane_box:
+            await page.mouse.click(pane_box["x"] + 20, pane_box["y"] + 20)
+            await asyncio.sleep(0.3)
+
+    # Re-fetch bounding box since layout may have shifted
+    box = await node_el.bounding_box()
+    if not box:
+        results.append({"name": "detail_panel_open", "pass": False, "detail": "No bounding box after pane click"})
+        return results
+
+    # Click on the node border area (not center) to avoid scroll containers swallowing the click
+    cx = box["x"] + 10
+    cy = box["y"] + 10
+    await page.mouse.click(cx, cy)
+    await asyncio.sleep(0.8)
+
+    # Verify panel opened
+    panel = page.locator(DETAIL_PANEL_SELECTOR)
+    panel_visible = await panel.count() > 0
+    if not panel_visible:
+        # Try broader selector
+        panel = page.locator("[class*='w-[420px]']")
+        panel_visible = await panel.count() > 0
+
+    if not panel_visible:
+        # Try clicking the node element directly with force
+        await node_el.click(force=True, position={"x": 5, "y": 5})
+        await asyncio.sleep(0.8)
+        panel = page.locator(DETAIL_PANEL_SELECTOR)
+        panel_visible = await panel.count() > 0
+        if not panel_visible:
+            panel = page.locator("[class*='w-[420px]']")
+            panel_visible = await panel.count() > 0
+
+    if not panel_visible:
+        is_optional = detail_spec.get("optional", False)
+        results.append({
+            "name": "detail_panel_open",
+            "pass": is_optional,
+            "detail": "Panel did not appear after click" + (" (optional)" if is_optional else ""),
+        })
+        # Press Escape to clean up
+        await page.keyboard.press("Escape")
+        await asyncio.sleep(0.3)
+        return results
+
+    results.append({"name": "detail_panel_open", "pass": True, "detail": "Panel opened successfully"})
+
+    # Screenshot each tab
+    for tab_key in tabs:
+        tab_label = DETAIL_TAB_MAP.get(tab_key, tab_key.capitalize())
+        tab_btn = panel.locator(f"button:text-is('{tab_label}')")
+
+        if await tab_btn.count() == 0:
+            results.append({"name": f"tab_{tab_key}", "pass": False, "detail": f"Tab button '{tab_label}' not found"})
+            continue
+
+        await tab_btn.click()
+        await asyncio.sleep(0.5)
+
+        # Screenshot the panel
+        panel_box = await panel.first.bounding_box()
+        if panel_box:
+            await page.screenshot(
+                path=str(panel_dir / f"detail-{tab_key}.png"),
+                clip={
+                    "x": max(0, panel_box["x"]),
+                    "y": max(0, panel_box["y"]),
+                    "width": panel_box["width"],
+                    "height": panel_box["height"],
+                },
+            )
+            results.append({"name": f"tab_{tab_key}", "pass": True, "detail": f"Captured {tab_key} tab"})
+        else:
+            results.append({"name": f"tab_{tab_key}", "pass": False, "detail": "Panel box not found after tab click"})
+
+    # Close panel: Escape to deselect, then click canvas background to ensure clean state
+    await page.keyboard.press("Escape")
+    await asyncio.sleep(0.3)
+    pane = page.locator(".react-flow__pane")
+    if await pane.count() > 0:
+        pane_box = await pane.first.bounding_box()
+        if pane_box:
+            await page.mouse.click(pane_box["x"] + 20, pane_box["y"] + 20)
+            await asyncio.sleep(0.3)
+
+    return results
+
 
 async def run_tests(
     specs_dir: Path,
@@ -337,12 +467,54 @@ async def run_tests(
         # Full canvas baseline
         await page.screenshot(path=str(run_dir / "00-full-canvas.png"))
 
-        results = []
+        # Group specs by canvas type and sort so we minimize tab switches
+        canvas_order = ["Pipeline", "Research", "Research v2"]
+        specs_by_canvas: dict[str, list[dict]] = {}
         for spec in specs:
+            ct = CANVAS_TYPE_MAP.get(spec["node_type"], "Pipeline")
+            specs_by_canvas.setdefault(ct, []).append(spec)
+
+        ordered_specs: list[dict] = []
+        for ct in canvas_order:
+            ordered_specs.extend(specs_by_canvas.get(ct, []))
+
+        current_canvas: str | None = None
+
+        results = []
+        for spec in ordered_specs:
             node_type = spec["node_type"]
             selector = spec["selector"]
+            target_canvas = CANVAS_TYPE_MAP.get(node_type, "Pipeline")
             node_dir = run_dir / node_type
             node_dir.mkdir(parents=True, exist_ok=True)
+
+            # Switch canvas tab if needed
+            if target_canvas != current_canvas:
+                tab_btn = page.locator(f".border-b.border-neutral-800 button:text-is('{target_canvas}')")
+                if await tab_btn.count() > 0:
+                    await tab_btn.first.click()
+                    await asyncio.sleep(1.5)
+                    # Wait for nodes to render on the new canvas
+                    try:
+                        await page.wait_for_selector(".react-flow__node", timeout=5000)
+                    except Exception:
+                        pass
+                    # Fit view
+                    fit_btn = page.locator(".react-flow__controls button").first
+                    if await fit_btn.count() > 0:
+                        await fit_btn.click(force=True)
+                        await asyncio.sleep(0.5)
+                    current_canvas = target_canvas
+                    print(f"\n=== Switched to canvas: {target_canvas} ===")
+                    await page.screenshot(path=str(run_dir / f"00-canvas-{target_canvas.lower().replace(' ', '-')}.png"))
+                else:
+                    print(f"\n=== Canvas tab '{target_canvas}' not found — skipping nodes on this canvas ===")
+                    # Mark all specs for this canvas as NOT_FOUND
+                    remaining_for_canvas = [s for s in ordered_specs if CANVAS_TYPE_MAP.get(s["node_type"]) == target_canvas]
+                    for s in remaining_for_canvas:
+                        results.append({"node": s["node_type"], "status": "NOT_FOUND"})
+                    current_canvas = target_canvas
+                    continue
 
             print(f"\n--- {spec['display_name']} ({node_type}) ---")
 
@@ -391,13 +563,28 @@ async def run_tests(
                 if tick < shots - 1:
                     await asyncio.sleep(node_interval)
 
+            # Detail panel screenshots (if spec has detail_panel section)
+            detail_spec = spec.get("detail_panel")
+            detail_results = []
+            if detail_spec:
+                print(f"  Capturing detail panel tabs: {detail_spec.get('tabs', [])}")
+                detail_results = await capture_detail_panel(page, node_el, node_type, detail_spec, node_dir)
+                for dr in detail_results:
+                    status = "PASS" if dr["pass"] else "FAIL"
+                    print(f"  [{status}] {dr['name']}: {dr['detail']}")
+
             results.append({
                 "node": node_type,
                 "status": "OK",
                 "shots": shots,
                 "elements": elem_results,
                 "alignment": alignment_results,
-                "all_pass": all(e["pass"] for e in elem_results) and all(a["pass"] for a in alignment_results),
+                "detail_panel": detail_results,
+                "all_pass": (
+                    all(e["pass"] for e in elem_results)
+                    and all(a["pass"] for a in alignment_results)
+                    and all(d["pass"] for d in detail_results)
+                ),
             })
 
         await browser.close()
@@ -432,6 +619,9 @@ async def run_tests(
         for a in r.get("alignment", []):
             if not a["pass"]:
                 summary_lines.append(f"    FAIL alignment: {a['name']} - {a['detail']}")
+        for d in r.get("detail_panel", []):
+            if not d["pass"]:
+                summary_lines.append(f"    FAIL detail: {d['name']} - {d['detail']}")
         if node_pass:
             total_pass += 1
         else:

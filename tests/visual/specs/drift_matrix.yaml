@@ -40,3 +40,7 @@ alignment_checks:
     assert:
       consistent_right_edge: true
       tolerance: 1
+
+detail_panel:
+  tabs: [overview, drift]
+  screenshots_per_tab: 1
