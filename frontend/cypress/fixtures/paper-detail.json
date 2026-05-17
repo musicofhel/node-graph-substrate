@@ -1,0 +1,25 @@
+{
+  "queue_id": "paper-001",
+  "title": "Graph Neural Networks: A Comprehensive Review",
+  "url": "https://arxiv.org/abs/2104.13478",
+  "category": "machine_learning",
+  "content_type": "arxiv",
+  "forge_score": "0.87",
+  "success": "true",
+  "processing_time_ms": "3420",
+  "completed_at": "2026-05-10T12:00:00Z",
+  "research_relevant": true,
+  "summary": "A comprehensive review of graph neural network architectures including GCN, GAT, GraphSAGE, and their applications to molecular property prediction, social network analysis, and recommendation systems.",
+  "stages": {
+    "ingested": { "completed_at": "2026-05-10T11:55:00Z", "success": true },
+    "extracted": { "completed_at": "2026-05-10T11:55:30Z", "success": true },
+    "categorized": { "completed_at": "2026-05-10T11:56:00Z", "success": true },
+    "embedded": { "completed_at": "2026-05-10T11:57:00Z", "success": true },
+    "stored": { "completed_at": "2026-05-10T11:57:30Z", "success": true },
+    "chunked": { "completed_at": "2026-05-10T11:58:00Z", "success": true },
+    "auto_related": { "completed_at": "2026-05-10T11:59:00Z", "success": true },
+    "research_bridged": { "completed_at": "2026-05-10T11:59:30Z", "success": true },
+    "url_discovered": { "completed_at": "2026-05-10T11:59:45Z", "success": true },
+    "completed": { "completed_at": "2026-05-10T12:00:00Z", "success": true }
+  }
+}

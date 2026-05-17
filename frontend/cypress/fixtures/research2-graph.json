@@ -1,0 +1,14 @@
+{
+  "id": "test-research2-graph",
+  "project_id": "test-project",
+  "name": "Research v2",
+  "current_version": 1,
+  "nodes": [
+    { "id": "r2-bridge-1", "type_id": "r2_bridge", "position_x": 50, "position_y": 50, "config": {}, "data": {} },
+    { "id": "r2-coord-1", "type_id": "r2_coordinator", "position_x": 550, "position_y": 50, "config": {}, "data": {} },
+    { "id": "r2-stats-1", "type_id": "r2_stats", "position_x": 50, "position_y": 500, "config": {}, "data": {} },
+    { "id": "r2-autorel-1", "type_id": "r2_autorel", "position_x": 550, "position_y": 500, "config": {}, "data": {} },
+    { "id": "r2-state-1", "type_id": "r2_state", "position_x": -1000, "position_y": -1000, "config": {}, "data": {} }
+  ],
+  "edges": []
+}

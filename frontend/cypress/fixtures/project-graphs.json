@@ -1,0 +1,5 @@
+[
+  { "id": "test-pipeline-graph", "name": "Pipeline", "current_version": 1 },
+  { "id": "test-research-graph", "name": "Research", "current_version": 1 },
+  { "id": "test-research2-graph", "name": "Research v2", "current_version": 1 }
+]

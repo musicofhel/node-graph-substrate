@@ -1,0 +1,122 @@
+[
+  {
+    "queue_id": "paper-001",
+    "title": "Graph Neural Networks: A Comprehensive Review",
+    "url": "https://arxiv.org/abs/2104.13478",
+    "category": "machine_learning",
+    "content_type": "arxiv",
+    "forge_score": "0.87",
+    "success": "true",
+    "processing_time_ms": "3420",
+    "completed_at": "2026-05-10T12:00:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-002",
+    "title": "Topological Data Analysis for Machine Learning",
+    "url": "https://arxiv.org/abs/2105.00001",
+    "category": "topology",
+    "content_type": "arxiv",
+    "forge_score": "0.92",
+    "success": "true",
+    "processing_time_ms": "2810",
+    "completed_at": "2026-05-10T12:05:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-003",
+    "title": "Persistent Homology in Neural Network Analysis",
+    "url": "https://arxiv.org/abs/2106.00002",
+    "category": "topology",
+    "content_type": "arxiv",
+    "forge_score": "0.78",
+    "success": "true",
+    "processing_time_ms": "4100",
+    "completed_at": "2026-05-10T12:10:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-004",
+    "title": "Attention Is All You Need: Revisited",
+    "url": "https://arxiv.org/abs/2107.00003",
+    "category": "nlp",
+    "content_type": "arxiv",
+    "forge_score": "0.55",
+    "success": "true",
+    "processing_time_ms": "1950",
+    "completed_at": "2026-05-10T12:15:00Z",
+    "research_relevant": false
+  },
+  {
+    "queue_id": "paper-005",
+    "title": "Betti Numbers and Feature Extraction",
+    "url": "https://arxiv.org/abs/2108.00004",
+    "category": "topology",
+    "content_type": "arxiv",
+    "forge_score": "0.81",
+    "success": "true",
+    "processing_time_ms": "2200",
+    "completed_at": "2026-05-10T12:20:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-006",
+    "title": "A Failed Extraction Example",
+    "url": "https://example.com/broken-link",
+    "category": "unknown",
+    "content_type": "web",
+    "forge_score": "0.12",
+    "success": "false",
+    "processing_time_ms": "15200",
+    "completed_at": "2026-05-10T12:25:00Z",
+    "research_relevant": false
+  },
+  {
+    "queue_id": "paper-007",
+    "title": "Confidence Calibration Methods",
+    "url": "https://arxiv.org/abs/2109.00005",
+    "category": "machine_learning",
+    "content_type": "arxiv",
+    "forge_score": "0.68",
+    "success": "true",
+    "processing_time_ms": "3100",
+    "completed_at": "2026-05-10T12:30:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-008",
+    "title": "Hidden State Geometry in Transformers",
+    "url": "https://arxiv.org/abs/2110.00006",
+    "category": "machine_learning",
+    "content_type": "arxiv",
+    "forge_score": "0.74",
+    "success": "true",
+    "processing_time_ms": "2600",
+    "completed_at": "2026-05-10T12:35:00Z",
+    "research_relevant": true
+  },
+  {
+    "queue_id": "paper-009",
+    "title": "Bridge Neurons and Layer Connectivity",
+    "url": "https://arxiv.org/abs/2111.00007",
+    "category": "neuroscience",
+    "content_type": "arxiv",
+    "forge_score": "0.44",
+    "success": "true",
+    "processing_time_ms": "1800",
+    "completed_at": "2026-05-10T12:40:00Z",
+    "research_relevant": false
+  },
+  {
+    "queue_id": "paper-010",
+    "title": "Wasserstein Distance Applications in TDA",
+    "url": "https://arxiv.org/abs/2112.00008",
+    "category": "topology",
+    "content_type": "arxiv",
+    "forge_score": "0.89",
+    "success": "true",
+    "processing_time_ms": "2950",
+    "completed_at": "2026-05-10T12:45:00Z",
+    "research_relevant": true
+  }
+]

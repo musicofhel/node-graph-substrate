@@ -1,0 +1,13 @@
+{
+  "id": "test-research-graph",
+  "project_id": "test-project",
+  "name": "Research",
+  "current_version": 1,
+  "nodes": [
+    { "id": "research-bridge-1", "type_id": "research_bridge", "position_x": 50, "position_y": 50, "config": {}, "data": {} },
+    { "id": "research-coord-1", "type_id": "research_coordinator", "position_x": 50, "position_y": 300, "config": {}, "data": {} },
+    { "id": "lf-autorel-1", "type_id": "lf_autorel", "position_x": 400, "position_y": 50, "config": {}, "data": {} },
+    { "id": "lf-stats-1", "type_id": "lf_stats", "position_x": 400, "position_y": 300, "config": {}, "data": {} }
+  ],
+  "edges": []
+}

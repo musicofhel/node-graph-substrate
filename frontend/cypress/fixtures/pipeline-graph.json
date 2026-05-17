@@ -1,0 +1,23 @@
+{
+  "id": "test-pipeline-graph",
+  "project_id": "test-project",
+  "name": "Pipeline",
+  "current_version": 1,
+  "nodes": [
+    { "id": "prompt-1", "type_id": "prompt_input", "position_x": 50, "position_y": 150, "config": { "prompt": "" }, "data": {} },
+    { "id": "cloud-1", "type_id": "hidden_state_cloud", "position_x": 350, "position_y": 20, "config": {}, "data": {} },
+    { "id": "features-1", "type_id": "feature_bars", "position_x": 350, "position_y": 350, "config": {}, "data": {} },
+    { "id": "diagram-1", "type_id": "persistence_diagram", "position_x": 700, "position_y": 20, "config": {}, "data": {} },
+    { "id": "gauge-1", "type_id": "confidence_gauge", "position_x": 700, "position_y": 350, "config": {}, "data": {} },
+    { "id": "monitor-1", "type_id": "bridge_monitor", "position_x": 1050, "position_y": 20, "config": {}, "data": {} },
+    { "id": "explain-1", "type_id": "explain_waterfall", "position_x": 1050, "position_y": 300, "config": {}, "data": {} }
+  ],
+  "edges": [
+    { "id": "e1", "source": "prompt-1", "target": "cloud-1", "source_handle": "features_out", "target_handle": "features_in" },
+    { "id": "e2", "source": "prompt-1", "target": "features-1", "source_handle": "features_out", "target_handle": "features_in" },
+    { "id": "e3", "source": "prompt-1", "target": "diagram-1", "source_handle": "features_out", "target_handle": "features_in" },
+    { "id": "e4", "source": "prompt-1", "target": "gauge-1", "source_handle": "features_out", "target_handle": "features_in" },
+    { "id": "e5", "source": "prompt-1", "target": "monitor-1", "source_handle": "features_out", "target_handle": "features_in" },
+    { "id": "e6", "source": "prompt-1", "target": "explain-1", "source_handle": "features_out", "target_handle": "features_in" }
+  ]
+}
