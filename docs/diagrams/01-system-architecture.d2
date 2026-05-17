@@ -13,7 +13,7 @@ browser: Browser {
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 
-  react: React Flow Canvas {
+  react: "React Flow Canvas\n3 canvases: Pipeline | Research | Research v2" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
@@ -24,17 +24,16 @@ browser: Browser {
   react -> ws_client: state updates
 }
 
+frontend: Vite Dev Server\n:5173\n(native WSL2) {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+}
+
 docker: Docker Compose {
   style.fill: "#11111b"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
-
-  frontend: Vite Dev Server\n:5173 {
-    style.fill: "#1e1e2e"
-    style.stroke: "#89b4fa"
-    style.font-color: "#cdd6f4"
-    icon: https://vitejs.dev/logo.svg
-  }
 
   server: FastAPI Server\n:8080 {
     style.fill: "#1e1e2e"
@@ -96,14 +95,14 @@ docker: Docker Compose {
   server.http -> postgres: asyncpg\nCRUD
   server.ws_handler -> server.streamhub: subscribe
   server.streamhub -> redis: XREAD BLOCK
-  daemon.adapter -> redis: XADD\n7 streams
+  daemon.adapter -> redis: XADD\n23 streams
   daemon.adapter <- redis: XREAD\ncontrol channel
 }
 
 browser.ws_client -> docker.server.ws_handler: "WebSocket\n/ws/canvas/{id}" {
   style.stroke: "#a6e3a1"
 }
-browser -> docker.frontend: "HTTP :5173" {
+browser -> frontend: "HTTP :5173" {
   style.stroke: "#89b4fa"
 }
 browser.ws_client <- docker.server.ws_handler: "stream_event\ncomputation_result\ngraph_loaded" {

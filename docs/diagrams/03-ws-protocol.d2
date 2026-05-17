@@ -160,6 +160,23 @@ server_msgs: "Server → Client" {
       ```
     |
   }
+
+  replay_gap: ReplayGap {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **ReplayGap**
+      ```json
+      {
+        "type": "replay_gap",
+        "node_id": "cloud-1",
+        "stream": "topoconf:scoring:...",
+        "requested_from": "0-0",
+        "earliest_available": "1715000000000-0"
+      }
+      ```
+    |
+  }
 }
 
 client -> client_msgs

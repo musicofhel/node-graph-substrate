@@ -1,7 +1,7 @@
 direction: right
 
 title: {
-  label: Redis Streams Schema
+  label: "Redis Streams Schema — 23 Streams"
   near: top-center
   shape: text
   style.font-size: 28
@@ -25,9 +25,9 @@ control: Control Channel {
   }
 }
 
-scoring: Scoring Streams (Daemon → Server) {
+scoring: "TopoConf Scoring (6 streams)" {
   style.fill: "#1e1e2e"
-  style.stroke: "#a6e3a1"
+  style.stroke: "#cba6f7"
   style.font-color: "#cdd6f4"
 
   s1: "hidden_state_cloud" {
@@ -102,12 +102,162 @@ scoring: Scoring Streams (Daemon → Server) {
   }
 }
 
+linkforge: "LinkForge Ingestion (10 streams)" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+
+  lf1: "ingested" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:ingested**
+      {paper_id, url, title, source}
+    |
+  }
+  lf2: "extracted" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:extracted**
+      {paper_id, abstract, authors, year}
+    |
+  }
+  lf3: "categorized" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:categorized**
+      {paper_id, categories, relevance}
+    |
+  }
+  lf4: "embedded" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:embedded**
+      {paper_id, vector_dim, model}
+    |
+  }
+  lf5: "stored" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:stored**
+      {paper_id, neo4j_id}
+    |
+  }
+  lf6: "chunked" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:chunked**
+      {paper_id, chunk_count}
+    |
+  }
+  lf7: "auto_related" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:auto_related**
+      {paper_id, related_ids, scores}
+    |
+  }
+  lf8: "research_bridged" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:research_bridged**
+      {paper_id, triage_candidate}
+    |
+  }
+  lf9: "url_discovered" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:url_discovered**
+      {url, source, context}
+    |
+  }
+  lf10: "completed" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+    label: |md
+      **linkforge:completed**
+      {paper_id, duration_ms, stages_ok}
+    |
+  }
+}
+
+autorel: "LinkForge AutoRel (1 stream)" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+
+  ar1: "sweep_completed" {
+    style.fill: "#313244"
+    style.font-color: "#f38ba8"
+    label: |md
+      **linkforge:autorel:sweep_completed**
+      {sweep_id, papers_scored,
+       new_relations, duration_ms}
+    |
+  }
+}
+
+research: "Research Lifecycle (5 streams)" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  r1: "triaged" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+    label: |md
+      **topoconf:research:triaged**
+      {paper_id, priority, rationale}
+    |
+  }
+  r2: "script_generated" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+    label: |md
+      **topoconf:research:script_generated**
+      {paper_id, script_path}
+    |
+  }
+  r3: "experiment_started" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+    label: |md
+      **topoconf:research:experiment_started**
+      {paper_id, run_id, gpu}
+    |
+  }
+  r4: "experiment_completed" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+    label: |md
+      **topoconf:research:experiment_completed**
+      {paper_id, run_id, metrics}
+    |
+  }
+  r5: "promoted" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+    label: |md
+      **topoconf:research:promoted**
+      {paper_id, target_pathway}
+    |
+  }
+}
+
 config: Stream Config {
   style.fill: "#1e1e2e"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
   label: |md
-    **All Streams**
+    **All 23 Streams**
     - MAXLEN ~ 10000 (approximate trimming)
     - Plain XREAD (not XREADGROUP)
     - Broadcast semantics

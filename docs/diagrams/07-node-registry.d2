@@ -1,123 +1,295 @@
 direction: down
 
 title: {
-  label: Node Registry — 7 Node Types
+  label: "Node Registry — 20 Node Types × 3 Canvases"
   near: top-center
   shape: text
   style.font-size: 28
   style.bold: true
 }
 
-input: Input {
-  style.fill: "#1e1e2e"
-  style.stroke: "#89b4fa"
+pipeline: "Pipeline Canvas (8 nodes)" {
+  style.fill: "#11111b"
+  style.stroke: "#cba6f7"
   style.font-color: "#cdd6f4"
 
-  prompt_input: prompt_input {
+  input: Input {
+    style.fill: "#1e1e2e"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+
+    prompt_input: prompt_input {
+      style.fill: "#313244"
+      style.stroke: "#89b4fa"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Prompt Input**
+        Kind: COMPUTED
+        Outputs: features_out
+        Config: prompt (text)
+      |
+    }
+  }
+
+  extraction: Extraction {
+    style.fill: "#1e1e2e"
+    style.stroke: "#3b82f6"
+    style.font-color: "#cdd6f4"
+
+    hidden_state_cloud: hidden_state_cloud {
+      style.fill: "#313244"
+      style.stroke: "#3b82f6"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Hidden State Cloud**
+        Kind: SUBSCRIBER + R3F
+        Stream: topoconf:scoring:hidden_state_cloud
+      |
+    }
+  }
+
+  topology: Topology {
+    style.fill: "#1e1e2e"
+    style.stroke: "#a78bfa"
+    style.font-color: "#cdd6f4"
+
+    feature_bars: feature_bars {
+      style.fill: "#313244"
+      style.stroke: "#22d3ee"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Feature Bars**
+        Kind: SUBSCRIBER
+        13 horizontal bars
+        Stream: topoconf:scoring:features_computed
+      |
+    }
+
+    persistence_diagram: persistence_diagram {
+      style.fill: "#313244"
+      style.stroke: "#a78bfa"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Persistence Diagram**
+        Kind: SUBSCRIBER
+        SVG birth-death scatter
+        Stream: topoconf:scoring:persistence_computed
+      |
+    }
+  }
+
+  scoring: Scoring {
+    style.fill: "#1e1e2e"
+    style.stroke: "#4ade80"
+    style.font-color: "#cdd6f4"
+
+    confidence_gauge: confidence_gauge {
+      style.fill: "#313244"
+      style.stroke: "#4ade80"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Confidence Gauge**
+        Kind: SUBSCRIBER
+        SVG arc gauge
+        Stream: topoconf:scoring:confidence_scored
+      |
+    }
+
+    bridge_monitor: bridge_monitor {
+      style.fill: "#313244"
+      style.stroke: "#fbbf24"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Bridge Monitor**
+        Kind: SUBSCRIBER
+        Layer table + health badge
+        Stream: topoconf:scoring:bridge_health
+      |
+    }
+
+    explain_waterfall: explain_waterfall {
+      style.fill: "#313244"
+      style.stroke: "#f87171"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Explain Waterfall**
+        Kind: SUBSCRIBER
+        13-bar contribution chart
+        Stream: topoconf:scoring:explain_result
+      |
+    }
+
+    drift_matrix: drift_matrix {
+      style.fill: "#313244"
+      style.stroke: "#f9e2af"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Drift Matrix**
+        Kind: SUBSCRIBER
+        PSI drift from node history
+        Streams: (none — local compute)
+      |
+    }
+  }
+
+  input.prompt_input -> topology.feature_bars: "features_out → features_in" {style.stroke: "#a6e3a1"}
+}
+
+research: "Research Canvas (7 node types)" {
+  style.fill: "#11111b"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+
+  coordinator: Coordination {
+    style.fill: "#1e1e2e"
+    style.stroke: "#fab387"
+    style.font-color: "#cdd6f4"
+
+    lf_coordinator: lf_coordinator {
+      style.fill: "#313244"
+      style.stroke: "#fab387"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **LF Coordinator**
+        Kind: SUBSCRIBER
+        10 linkforge streams
+        Orchestrates paper pipeline
+      |
+    }
+
+    research_coordinator: research_coordinator {
+      style.fill: "#313244"
+      style.stroke: "#a6e3a1"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Research Coordinator**
+        Kind: SUBSCRIBER
+        5 topoconf:research streams
+      |
+    }
+  }
+
+  stages: Paper Pipeline {
+    style.fill: "#1e1e2e"
+    style.stroke: "#89b4fa"
+    style.font-color: "#cdd6f4"
+
+    lf_stage: lf_stage {
+      style.fill: "#313244"
+      style.stroke: "#89b4fa"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **LF Stage Card**
+        Dynamic per-paper cards
+        Created by coordinator
+      |
+    }
+
+    lf_pipeline_group: lf_pipeline_group {
+      style.fill: "#313244"
+      style.stroke: "#585b70"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Pipeline Group**
+        Container node
+        Groups stage cards
+      |
+    }
+  }
+
+  metrics: Metrics {
+    style.fill: "#1e1e2e"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+
+    lf_stats: lf_stats {
+      style.fill: "#313244"
+      style.stroke: "#f9e2af"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **LF Stats**
+        Kind: SUBSCRIBER
+        Stream: linkforge:completed
+      |
+    }
+
+    lf_autorel: lf_autorel {
+      style.fill: "#313244"
+      style.stroke: "#f38ba8"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **LF AutoRel**
+        Kind: SUBSCRIBER
+        Stream: linkforge:autorel:sweep_completed
+      |
+    }
+
+    research_bridge: research_bridge {
+      style.fill: "#313244"
+      style.stroke: "#a6e3a1"
+      style.font-color: "#cdd6f4"
+      label: |md
+        **Research Bridge**
+        Kind: SUBSCRIBER
+        Stream: linkforge:research_bridged
+      |
+    }
+  }
+}
+
+r2: "Research v2 Canvas (5 nodes)" {
+  style.fill: "#11111b"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  bridge: r2_bridge {
+    style.fill: "#313244"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
+    label: |md
+      **R2 Bridge**
+      Kind: SUBSCRIBER
+    |
+  }
+
+  coord: r2_coordinator {
     style.fill: "#313244"
     style.stroke: "#89b4fa"
     style.font-color: "#cdd6f4"
     label: |md
-      **Prompt Input**
-      Kind: COMPUTED
-      Outputs: features_out (features)
-      Config: prompt (text)
-      Subscribes: (none)
+      **R2 Coordinator**
+      Kind: SUBSCRIBER
     |
   }
-}
 
-extraction: Extraction {
-  style.fill: "#1e1e2e"
-  style.stroke: "#3b82f6"
-  style.font-color: "#cdd6f4"
-
-  hidden_state_cloud: hidden_state_cloud {
+  stats: r2_stats {
     style.fill: "#313244"
-    style.stroke: "#3b82f6"
+    style.stroke: "#f9e2af"
     style.font-color: "#cdd6f4"
     label: |md
-      **Hidden State Cloud**
+      **R2 Stats**
       Kind: SUBSCRIBER
-      R3F 3D point cloud
-      Subscribes: topoconf:scoring:hidden_state_cloud
     |
   }
-}
 
-topology: Topology {
-  style.fill: "#1e1e2e"
-  style.stroke: "#a78bfa"
-  style.font-color: "#cdd6f4"
-
-  feature_bars: feature_bars {
+  autorel: r2_autorel {
     style.fill: "#313244"
-    style.stroke: "#22d3ee"
+    style.stroke: "#f38ba8"
     style.font-color: "#cdd6f4"
     label: |md
-      **Feature Bars**
+      **R2 AutoRel**
       Kind: SUBSCRIBER
-      Inputs: features_in (features)
-      13 horizontal bars, 5 color groups
-      Subscribes: topoconf:scoring:features_computed
     |
   }
 
-  persistence_diagram: persistence_diagram {
+  state: r2_state {
     style.fill: "#313244"
-    style.stroke: "#a78bfa"
+    style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
     label: |md
-      **Persistence Diagram**
+      **R2 State**
       Kind: SUBSCRIBER
-      SVG birth-death scatter (H0/H1/H2)
-      Subscribes: topoconf:scoring:persistence_computed
+      Starred paper list
     |
   }
-}
-
-scoring: Scoring {
-  style.fill: "#1e1e2e"
-  style.stroke: "#4ade80"
-  style.font-color: "#cdd6f4"
-
-  confidence_gauge: confidence_gauge {
-    style.fill: "#313244"
-    style.stroke: "#4ade80"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **Confidence Gauge**
-      Kind: SUBSCRIBER
-      SVG arc (green/yellow/red)
-      Subscribes: topoconf:scoring:confidence_scored
-    |
-  }
-
-  bridge_monitor: bridge_monitor {
-    style.fill: "#313244"
-    style.stroke: "#fbbf24"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **Bridge Monitor**
-      Kind: SUBSCRIBER
-      Layer table + health badge
-      Subscribes: topoconf:scoring:bridge_health
-    |
-  }
-
-  explain_waterfall: explain_waterfall {
-    style.fill: "#313244"
-    style.stroke: "#f87171"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **Explain Waterfall**
-      Kind: SUBSCRIBER
-      13-bar contribution waterfall
-      Subscribes: topoconf:scoring:explain_result
-    |
-  }
-}
-
-input.prompt_input -> topology.feature_bars: "features_out → features_in" {
-  style.stroke: "#a6e3a1"
 }

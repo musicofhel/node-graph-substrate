@@ -21,6 +21,7 @@ root: "node-graph-substrate/" {
       .env / .env.example
       CLAUDE.md / SPEC.md
       synthetic_daemon.py
+      synthetic_linkforge.py
     |
   }
 
@@ -69,7 +70,7 @@ root: "node-graph-substrate/" {
         |
       }
 
-      components: "components/" {
+      components: "components/ (13)" {
         style.fill: "#585b70"
         style.font-color: "#cdd6f4"
         label: |md
@@ -80,6 +81,12 @@ root: "node-graph-substrate/" {
           confidence_gauge.py (SUBSCRIBER)
           bridge_monitor.py (SUBSCRIBER)
           explain_waterfall.py (SUBSCRIBER)
+          drift_matrix.py (SUBSCRIBER)
+          lf_coordinator.py (SUBSCRIBER)
+          lf_stats.py (SUBSCRIBER)
+          lf_autorel.py (SUBSCRIBER)
+          research_bridge.py (SUBSCRIBER)
+          research_coordinator.py (SUBSCRIBER)
         |
       }
     }
@@ -94,7 +101,6 @@ root: "node-graph-substrate/" {
       style.fill: "#45475a"
       style.font-color: "#cdd6f4"
       label: |md
-        Dockerfile
         package.json
         vite.config.ts
         tsconfig.json
@@ -117,15 +123,94 @@ root: "node-graph-substrate/" {
         |
       }
 
+      canvas_dir: "components/canvas/" {
+        style.fill: "#585b70"
+        style.stroke: "#a6e3a1"
+        style.font-color: "#cdd6f4"
+        label: |md
+          SubstrateCanvas.tsx
+          TabBar.tsx
+          SplitPane.tsx
+          CanvasControls.tsx
+          PipelineTimeline.tsx
+          node-types.ts (20 types)
+        |
+      }
+
+      nodes_dir: "components/nodes/ (23 files)" {
+        style.fill: "#585b70"
+        style.stroke: "#f38ba8"
+        style.font-color: "#cdd6f4"
+        label: |md
+          BaseNodeShell.tsx + Sparkline.tsx
+          PromptInputNode, HiddenStateCloudNode
+          FeatureBarsNode, PersistenceDiagramNode
+          ConfidenceGaugeNode, BridgeMonitorNode
+          ExplainWaterfallNode, DriftMatrixNode
+          LfCoordinatorNode, LfStageCard
+          LfStatsNode, LfAutoRelNode
+          PipelineGroupNode, PaperPoolSection
+          ResearchBridgeNode, ResearchCoordinatorNode
+          R2BridgeNode, R2CoordinatorNode
+          R2StatsNode, R2AutoRelNode, R2StateNode
+        |
+      }
+
+      panels_dir: "components/panels/" {
+        style.fill: "#585b70"
+        style.stroke: "#f9e2af"
+        style.font-color: "#cdd6f4"
+        label: |md
+          DetailPanel.tsx (420px, 4 tabs)
+          EventLog.tsx
+        |
+      }
+
+      charts_dir: "components/charts/" {
+        style.fill: "#585b70"
+        style.stroke: "#89b4fa"
+        style.font-color: "#cdd6f4"
+        label: |md
+          TimeSeriesChart.tsx
+          DistributionChart.tsx
+          StatsSummary.tsx
+        |
+      }
+
+      edges_dir: "components/edges/" {
+        style.fill: "#585b70"
+        style.font-color: "#cdd6f4"
+        label: |md
+          edge-types.ts
+          StaleEdge.tsx
+        |
+      }
+
+      linkforge_dir: "components/linkforge/" {
+        style.fill: "#585b70"
+        style.stroke: "#fab387"
+        style.font-color: "#cdd6f4"
+        label: |md
+          PaperCard.tsx
+          PaperDetail.tsx
+          PaperPool.tsx
+        |
+      }
+
       lib_dir: "lib/" {
         style.fill: "#585b70"
         style.font-color: "#cdd6f4"
         label: |md
           ws/client.ts — SubstrateWS
-          store/canvas-store.ts — Zustand+zundo
+          store/canvas-store.ts (Zustand+zundo)
           store/ui-store.ts
-          nodes/registry.ts — NODE_REGISTRY
-          nodes/handle-colors.ts
+          store/drift-store.ts
+          store/event-log-store.ts
+          hooks/useNodeHistory.ts
+          hooks/useNodeStats.ts
+          drift/psi.ts
+          layout/elk-layout.ts
+          layout/elk-worker.ts
         |
       }
 
@@ -137,26 +222,18 @@ root: "node-graph-substrate/" {
           messages.ts
         |
       }
-
-      components_dir: "components/" {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          canvas/SubstrateCanvas.tsx
-          canvas/CanvasControls.tsx
-          canvas/node-types.ts
-          sidebar/NodePalette.tsx
-          nodes/BaseNodeShell.tsx
-          nodes/PromptInputNode.tsx
-          nodes/FeatureBarsNode.tsx
-          nodes/HiddenStateCloudNode.tsx
-          nodes/PersistenceDiagramNode.tsx
-          nodes/ConfidenceGaugeNode.tsx
-          nodes/BridgeMonitorNode.tsx
-          nodes/ExplainWaterfallNode.tsx
-        |
-      }
     }
+  }
+
+  tests: "tests/" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+    label: |md
+      visual/run_visual_tests.py
+      visual/specs/*.yaml (19 specs)
+      visual/screenshots/run-*/
+    |
   }
 
   daemons: "daemons/topoconf/" {
@@ -166,7 +243,7 @@ root: "node-graph-substrate/" {
     label: |md
       Dockerfile
       pyproject.toml
-      adapter.py — TopoBridge (7 stages)
+      adapter.py — TopoBridge
       topoconf_daemon.py — XREAD control loop
     |
   }

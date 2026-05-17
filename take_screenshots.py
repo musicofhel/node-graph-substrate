@@ -1,17 +1,70 @@
 #!/usr/bin/env python3
-"""Walk through the node-graph-substrate UI and capture gallery screenshots."""
+"""Walk through the node-graph-substrate UI and capture gallery screenshots.
+
+Covers all 3 canvas types, detail panel, event log, and individual nodes.
+Assumes services are running: docker compose up, npm run dev, synthetic_daemon.py.
+"""
 
 import asyncio
-import subprocess
-import time
+import os
 
 from playwright.async_api import async_playwright
 
 FRONTEND = "http://localhost:5173"
 SHOTS = "/home/musicofhel/node-graph-substrate/docs/screenshots"
 
+PIPELINE_NODES = {
+    "prompt_input": "04a-prompt-input-node",
+    "hidden_state_cloud": "04b-hidden-state-cloud-node",
+    "feature_bars": "04c-feature-bars-node",
+    "persistence_diagram": "04d-persistence-diagram-node",
+    "confidence_gauge": "04e-confidence-gauge-node",
+    "bridge_monitor": "04f-bridge-monitor-node",
+    "explain_waterfall": "04g-explain-waterfall-node",
+    "drift_matrix": "04h-drift-matrix-node",
+}
+
+
+async def screenshot_node(page, node, name, prefix, dest=SHOTS):
+    """Take a padded screenshot of a single node."""
+    box = await node.bounding_box()
+    if box:
+        pad = 15
+        await page.screenshot(
+            path=f"{dest}/{prefix}-{name}.png",
+            clip={
+                "x": max(0, box["x"] - pad),
+                "y": max(0, box["y"] - pad),
+                "width": box["width"] + 2 * pad,
+                "height": box["height"] + 2 * pad,
+            },
+        )
+        return True
+    return False
+
+
+async def click_tab(page, tab_name: str):
+    """Click a canvas tab by name."""
+    tab = page.locator(f'button:has-text("{tab_name}"), [role="tab"]:has-text("{tab_name}")').first
+    if await tab.count() > 0:
+        await tab.click()
+        await asyncio.sleep(2)
+        return True
+    return False
+
+
+async def fit_view(page):
+    """Click the React Flow fit-view control."""
+    fit_btn = page.locator(".react-flow__controls button").first
+    if await fit_btn.count() > 0:
+        await fit_btn.click(force=True)
+        await asyncio.sleep(1)
+
 
 async def main():
+    os.makedirs(SHOTS, exist_ok=True)
+    os.makedirs(f"{SHOTS}/detail-panel", exist_ok=True)
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         ctx = await browser.new_context(
@@ -20,125 +73,91 @@ async def main():
         )
         page = await ctx.new_page()
 
-        # ── 1. Full canvas — initial load ──
-        print("1. Loading canvas...")
+        # ── Load app ──
+        print("Loading canvas...")
         await page.goto(FRONTEND)
         await page.wait_for_selector(".react-flow__node", timeout=15000)
-        await asyncio.sleep(2)
-        await page.screenshot(path=f"{SHOTS}/01-full-canvas.png")
-        print("   ✓ Full canvas with all nodes + sidebar")
+        await asyncio.sleep(3)
 
-        # ── 2. Fit view to show all nodes cleanly ──
-        print("2. Fitting view...")
-        fit_btn = page.locator(".react-flow__controls button").first
-        await fit_btn.click()
-        await asyncio.sleep(1)
-        await page.screenshot(path=f"{SHOTS}/02-fit-view.png")
-        print("   ✓ Fit view")
+        # ── Pipeline Canvas ──
+        print("\n=== Pipeline Canvas ===")
+        await fit_view(page)
+        await page.screenshot(path=f"{SHOTS}/20-pipeline-canvas.png")
+        print("  ✓ 20-pipeline-canvas.png")
 
-        # ── 3. Node palette / sidebar ──
-        print("3. Sidebar close-up...")
-        sidebar = page.locator('[class*="sidebar"], [class*="palette"], [class*="Palette"]').first
-        if await sidebar.count() > 0:
-            box = await sidebar.bounding_box()
-            if box:
-                await page.screenshot(
-                    path=f"{SHOTS}/03-node-palette.png",
-                    clip={"x": box["x"], "y": box["y"], "width": box["width"] + 20, "height": min(box["height"], 900)},
-                )
-                print("   ✓ Node palette sidebar")
-        else:
-            print("   ⚠ Sidebar not found, taking full page")
-            await page.screenshot(path=f"{SHOTS}/03-node-palette.png")
-
-        # ── 4. Individual node close-ups ──
-        node_types = {
-            "prompt_input": "04a-prompt-input-node",
-            "hidden_state_cloud": "04b-hidden-state-cloud-node",
-            "feature_bars": "04c-feature-bars-node",
-            "persistence_diagram": "04d-persistence-diagram-node",
-            "confidence_gauge": "04e-confidence-gauge-node",
-            "bridge_monitor": "04f-bridge-monitor-node",
-            "explain_waterfall": "04g-explain-waterfall-node",
-        }
-        print("4. Individual node screenshots...")
+        # Individual pipeline node close-ups (empty + live since daemon is running)
         nodes = await page.query_selector_all(".react-flow__node")
         for node in nodes:
-            data_id = await node.get_attribute("data-id")
-            # Get the type from the node's class or data attribute
+            inner_text = (await node.inner_text()).lower()
             classes = await node.get_attribute("class") or ""
-            # Try to determine node type
-            inner_text = await node.inner_text()
-            inner_text_lower = inner_text.lower()
-
-            matched_name = None
-            for type_key, filename in node_types.items():
+            for type_key, filename in PIPELINE_NODES.items():
                 type_readable = type_key.replace("_", " ")
-                if type_readable in inner_text_lower or type_key in classes:
-                    matched_name = filename
+                if type_readable in inner_text or type_key in classes:
+                    if await screenshot_node(page, node, "", filename):
+                        print(f"  ✓ {filename}.png")
                     break
 
-            if not matched_name:
-                # Fallback: use first line of text
-                first_line = inner_text.split("\n")[0][:30].strip()
-                matched_name = f"04x-{first_line.lower().replace(' ', '-')}"
-
-            box = await node.bounding_box()
-            if box:
-                pad = 15
-                await page.screenshot(
-                    path=f"{SHOTS}/{matched_name}.png",
-                    clip={
-                        "x": max(0, box["x"] - pad),
-                        "y": max(0, box["y"] - pad),
-                        "width": box["width"] + 2 * pad,
-                        "height": box["height"] + 2 * pad,
-                    },
-                )
-                print(f"   ✓ {matched_name}")
-
-        # ── 5. Start synthetic daemon for live data ──
-        print("5. Starting synthetic daemon for live streaming data...")
-        daemon = subprocess.Popen(
-            ["python3", "/home/musicofhel/node-graph-substrate/synthetic_daemon.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        await asyncio.sleep(6)  # Wait for 3 cycles of data
-
-        # ── 6. Canvas with live streaming data ──
-        print("6. Canvas with live data...")
-        await page.screenshot(path=f"{SHOTS}/05-live-streaming-data.png")
-        print("   ✓ Full canvas with live streaming data")
-
-        # ── 7. Fit view with data ──
-        await fit_btn.click()
-        await asyncio.sleep(1)
-        await page.screenshot(path=f"{SHOTS}/06-fit-view-with-data.png")
-        print("   ✓ Fit view with streaming data")
-
-        # ── 8. Close-ups of nodes with live data ──
-        print("7. Node close-ups with live data...")
-        nodes = await page.query_selector_all(".react-flow__node")
+        # Live data close-ups with node type prefix
         for node in nodes:
-            inner_text = await node.inner_text()
-            inner_text_lower = inner_text.lower()
-
-            matched_name = None
-            for type_key, _ in node_types.items():
+            inner_text = (await node.inner_text()).lower()
+            classes = await node.get_attribute("class") or ""
+            for type_key in PIPELINE_NODES:
                 type_readable = type_key.replace("_", " ")
-                if type_readable in inner_text_lower or type_key in (await node.get_attribute("class") or ""):
-                    matched_name = f"07{list(node_types.keys()).index(type_key) + 1:02d}-{type_key}-live"
+                if type_readable in inner_text or type_key in classes:
+                    idx = list(PIPELINE_NODES.keys()).index(type_key) + 1
+                    name = f"07{idx:02d}-{type_key}-live"
+                    if await screenshot_node(page, node, "", name):
+                        print(f"  ✓ {name}.png")
                     break
 
-            if not matched_name:
-                continue
+        # ── Detail Panel — click a node to open it ──
+        print("\n=== Detail Panel ===")
+        gauge_node = page.locator('.react-flow__node:has-text("Confidence")').first
+        if await gauge_node.count() > 0:
+            await gauge_node.click()
+            await asyncio.sleep(1)
 
-            box = await node.bounding_box()
+            # Overview tab (default)
+            await page.screenshot(path=f"{SHOTS}/detail-panel/dp-01-overview.png")
+            print("  ✓ dp-01-overview.png")
+
+            # Series tab
+            series_tab = page.locator('button:has-text("Series")').first
+            if await series_tab.count() > 0:
+                await series_tab.click()
+                await asyncio.sleep(1)
+                await page.screenshot(path=f"{SHOTS}/detail-panel/dp-02-timeseries.png")
+                print("  ✓ dp-02-timeseries.png")
+
+            # Config tab
+            config_tab = page.locator('button:has-text("Config")').first
+            if await config_tab.count() > 0:
+                await config_tab.click()
+                await asyncio.sleep(1)
+                await page.screenshot(path=f"{SHOTS}/detail-panel/dp-03-config.png")
+                print("  ✓ dp-03-config.png")
+
+            # Drift tab
+            drift_tab = page.locator('button:has-text("Drift")').first
+            if await drift_tab.count() > 0:
+                await drift_tab.click()
+                await asyncio.sleep(1)
+                await page.screenshot(path=f"{SHOTS}/detail-panel/dp-04-drift.png")
+                print("  ✓ dp-04-drift.png")
+
+            # Deselect
+            await page.locator(".react-flow__pane").click()
+            await asyncio.sleep(0.5)
+
+        # ── Tab Bar close-up ──
+        print("\n=== Tab Bar ===")
+        tabbar = page.locator('[class*="tab-bar"], [class*="TabBar"], [role="tablist"]').first
+        if await tabbar.count() > 0:
+            box = await tabbar.bounding_box()
             if box:
-                pad = 15
+                pad = 10
                 await page.screenshot(
-                    path=f"{SHOTS}/{matched_name}.png",
+                    path=f"{SHOTS}/23-tab-bar.png",
                     clip={
                         "x": max(0, box["x"] - pad),
                         "y": max(0, box["y"] - pad),
@@ -146,110 +165,98 @@ async def main():
                         "height": box["height"] + 2 * pad,
                     },
                 )
-                print(f"   ✓ {matched_name}")
+                print("  ✓ 23-tab-bar.png")
+        else:
+            print("  ⚠ TabBar not found by selector, trying by text")
+            tab_area = page.locator('button:has-text("Pipeline")').first
+            if await tab_area.count() > 0:
+                box = await tab_area.bounding_box()
+                if box:
+                    await page.screenshot(
+                        path=f"{SHOTS}/23-tab-bar.png",
+                        clip={"x": 0, "y": max(0, box["y"] - 5), "width": 600, "height": 50},
+                    )
+                    print("  ✓ 23-tab-bar.png (fallback)")
 
-        # ── 9. Zoomed in view ──
-        print("8. Zoomed views...")
-        zoom_in = page.locator(".react-flow__controls button").nth(1)
-        for _ in range(3):
-            await zoom_in.click()
-            await asyncio.sleep(0.3)
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=f"{SHOTS}/08-zoomed-in.png")
-        print("   ✓ Zoomed in")
+        # ── Research Canvas ──
+        print("\n=== Research Canvas ===")
+        if await click_tab(page, "Research"):
+            await fit_view(page)
+            await page.screenshot(path=f"{SHOTS}/21-research-canvas.png")
+            print("  ✓ 21-research-canvas.png")
+        else:
+            print("  ⚠ Research tab not found")
 
-        # ── 10. Zoom out to see full graph ──
-        zoom_out = page.locator(".react-flow__controls button").nth(2)
-        for _ in range(6):
-            await zoom_out.click()
-            await asyncio.sleep(0.3)
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=f"{SHOTS}/09-zoomed-out.png")
-        print("   ✓ Zoomed out")
+        # ── Research v2 Canvas ──
+        print("\n=== Research v2 Canvas ===")
+        if await click_tab(page, "Research v2"):
+            await fit_view(page)
+            await page.screenshot(path=f"{SHOTS}/22-research-v2-canvas.png")
+            print("  ✓ 22-research-v2-canvas.png")
+        else:
+            print("  ⚠ Research v2 tab not found")
 
-        # ── 11. Fit view again, then interact with prompt input ──
-        print("9. Compute path — prompt input interaction...")
-        await fit_btn.click()
-        await asyncio.sleep(1)
+        # ── Switch back to Pipeline for remaining shots ──
+        await click_tab(page, "Pipeline")
+        await fit_view(page)
 
-        # Find the prompt input textarea
+        # ── Resizable node handles ──
+        print("\n=== Feature Screenshots ===")
+        first_node = page.locator(".react-flow__node").first
+        if await first_node.count() > 0:
+            await first_node.click()
+            await asyncio.sleep(0.5)
+            if await screenshot_node(page, first_node, "", "30-resizable-node"):
+                print("  ✓ 30-resizable-node.png")
+            await page.locator(".react-flow__pane").click()
+
+        # ── Event Log ──
+        event_log = page.locator('[class*="event-log"], [class*="EventLog"]').first
+        if await event_log.count() > 0:
+            box = await event_log.bounding_box()
+            if box:
+                pad = 5
+                await page.screenshot(
+                    path=f"{SHOTS}/32-event-log.png",
+                    clip={
+                        "x": max(0, box["x"] - pad),
+                        "y": max(0, box["y"] - pad),
+                        "width": box["width"] + 2 * pad,
+                        "height": min(box["height"] + 2 * pad, 400),
+                    },
+                )
+                print("  ✓ 32-event-log.png")
+
+        # ── Prompt interaction ──
+        print("\n=== Compute Path ===")
         textarea = page.locator("textarea").first
         if await textarea.count() > 0:
             await textarea.click()
             await textarea.fill("What is the meaning of consciousness?")
             await asyncio.sleep(0.5)
             await page.screenshot(path=f"{SHOTS}/10-prompt-entered.png")
-            print("   ✓ Prompt entered")
+            print("  ✓ 10-prompt-entered.png")
 
-            # Click Analyze button
             analyze_btn = page.locator("button", has_text="Analyze")
             if await analyze_btn.count() > 0:
                 await analyze_btn.first.click()
                 await asyncio.sleep(2)
                 await page.screenshot(path=f"{SHOTS}/11-after-analyze.png")
-                print("   ✓ After Analyze click")
+                print("  ✓ 11-after-analyze.png")
 
-        # ── 12. MiniMap close-up ──
-        print("10. MiniMap...")
-        minimap = page.locator(".react-flow__minimap")
-        if await minimap.count() > 0:
-            box = await minimap.bounding_box()
-            if box:
-                pad = 5
-                await page.screenshot(
-                    path=f"{SHOTS}/12-minimap.png",
-                    clip={
-                        "x": max(0, box["x"] - pad),
-                        "y": max(0, box["y"] - pad),
-                        "width": box["width"] + 2 * pad,
-                        "height": box["height"] + 2 * pad,
-                    },
-                )
-                print("   ✓ MiniMap close-up")
-
-        # ── 13. Controls close-up ──
-        controls = page.locator(".react-flow__controls")
-        if await controls.count() > 0:
-            box = await controls.bounding_box()
-            if box:
-                pad = 5
-                await page.screenshot(
-                    path=f"{SHOTS}/13-controls.png",
-                    clip={
-                        "x": max(0, box["x"] - pad),
-                        "y": max(0, box["y"] - pad),
-                        "width": box["width"] + 2 * pad,
-                        "height": box["height"] + 2 * pad,
-                    },
-                )
-                print("   ✓ Controls panel")
-
-        # ── 14. Edge connections visible ──
-        print("11. Edge connections...")
-        await fit_btn.click()
-        await asyncio.sleep(1)
-        # Take a wider shot focusing on the center where edges converge
-        await page.screenshot(path=f"{SHOTS}/14-edges-and-connections.png")
-        print("   ✓ Edge connections")
-
-        # ── 15. Dark background detail ──
-        print("12. Final overview...")
+        # ── Final overview ──
+        await fit_view(page)
         await page.screenshot(path=f"{SHOTS}/15-final-overview.png")
-        print("   ✓ Final overview")
+        print("  ✓ 15-final-overview.png")
 
-        # Cleanup
-        daemon.terminate()
-        daemon.wait()
         await browser.close()
 
-    print(f"\n✅ All screenshots saved to {SHOTS}/")
-    # List all screenshots
-    import os
-    files = sorted(os.listdir(SHOTS))
-    print(f"   {len(files)} screenshots captured:")
-    for f in files:
-        size = os.path.getsize(f"{SHOTS}/{f}")
-        print(f"   - {f} ({size // 1024}KB)")
+    # Summary
+    total = 0
+    for dirpath, _, filenames in os.walk(SHOTS):
+        pngs = [f for f in filenames if f.endswith(".png")]
+        total += len(pngs)
+    print(f"\n✅ Done — {total} total screenshots in {SHOTS}/")
 
 
 if __name__ == "__main__":

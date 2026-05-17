@@ -8,40 +8,43 @@ title: {
   style.bold: true
 }
 
-daemon: TopoConf Daemon {
-  style.fill: "#1e1e2e"
-  style.stroke: "#cba6f7"
+sources: Data Sources {
+  style.fill: "#11111b"
+  style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
 
-  s1: "Stage 1\nhidden states" {
-    style.fill: "#313244"
+  daemon: TopoConf Daemon {
+    style.fill: "#1e1e2e"
+    style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
+
+    s1: "hidden states" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s2: "PCA + cluster" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s3: "persistence PH" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s4: "13 features" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s5: "confidence" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s6: "bridge health" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s7: "explain" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    s1 -> s2 -> s3 -> s4 -> s5 -> s6 -> s7
   }
-  s2: "Stage 2\nPCA + cluster" {
-    style.fill: "#313244"
+
+  linkforge: LinkForge Bot {
+    style.fill: "#1e1e2e"
+    style.stroke: "#fab387"
     style.font-color: "#cdd6f4"
+
+    ingest: "Paper ingestion\n10-stage waterfall" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    autorel: "AutoRel sweeps" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
+    ingest -> autorel
   }
-  s3: "Stage 3\npersistence PH" {
-    style.fill: "#313244"
+
+  research: Research Pipeline {
+    style.fill: "#1e1e2e"
+    style.stroke: "#a6e3a1"
     style.font-color: "#cdd6f4"
+
+    lifecycle: "5-stage lifecycle\ntriage → promote" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
   }
-  s4: "Stage 4\n13 features" {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-  }
-  s5: "Stage 5\nconfidence" {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-  }
-  s6: "Stage 6\nbridge health" {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-  }
-  s7: "Stage 7\nexplain" {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-  }
-  s1 -> s2 -> s3 -> s4 -> s5 -> s6 -> s7
 }
 
 redis: Redis Streams {
@@ -50,29 +53,25 @@ redis: Redis Streams {
   style.font-color: "#cdd6f4"
   shape: cylinder
 
-  st1: "topoconf:scoring:\nhidden_state_cloud" {
+  topo_streams: "topoconf:scoring:*\n6 streams" {
     style.fill: "#313244"
-    style.font-color: "#89b4fa"
+    style.font-color: "#cba6f7"
   }
-  st2: "topoconf:scoring:\npersistence_computed" {
+  lf_streams: "linkforge:*\n10 streams" {
     style.fill: "#313244"
-    style.font-color: "#89b4fa"
+    style.font-color: "#fab387"
   }
-  st3: "topoconf:scoring:\nfeatures_computed" {
+  autorel_stream: "linkforge:autorel:*\n1 stream" {
     style.fill: "#313244"
-    style.font-color: "#89b4fa"
+    style.font-color: "#fab387"
   }
-  st4: "topoconf:scoring:\nconfidence_scored" {
+  research_streams: "topoconf:research:*\n5 streams" {
     style.fill: "#313244"
-    style.font-color: "#89b4fa"
+    style.font-color: "#a6e3a1"
   }
-  st5: "topoconf:scoring:\nbridge_health" {
+  control: "topoconf:control\n1 stream" {
     style.fill: "#313244"
-    style.font-color: "#89b4fa"
-  }
-  st6: "topoconf:scoring:\nexplain_result" {
-    style.fill: "#313244"
-    style.font-color: "#89b4fa"
+    style.font-color: "#585b70"
   }
 }
 
@@ -81,7 +80,7 @@ hub: StreamHub {
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
 
-  readers: "1 asyncio.Task\nper stream\nXREAD BLOCK 5000" {
+  readers: "1 asyncio.Task\nper stream (23 total)\nXREAD BLOCK 5000" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
@@ -117,19 +116,30 @@ client: Browser {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
-  nodes: "React Flow Nodes\nuseNodesData(id)" {
+
+  pipeline_nodes: "Pipeline Nodes (6)\nhidden_state_cloud, persistence_diagram\nfeature_bars, confidence_gauge\nbridge_monitor, explain_waterfall" {
     style.fill: "#313244"
-    style.font-color: "#cdd6f4"
+    style.font-color: "#cba6f7"
   }
-  raf -> store -> nodes
+  lf_nodes: "LinkForge Nodes (5)\nlf_coordinator, lf_stats\nlf_autorel, lf_stage\nresearch_bridge" {
+    style.fill: "#313244"
+    style.font-color: "#fab387"
+  }
+  research_nodes: "Research Node (1)\nresearch_coordinator" {
+    style.fill: "#313244"
+    style.font-color: "#a6e3a1"
+  }
+
+  raf -> store
+  store -> pipeline_nodes
+  store -> lf_nodes
+  store -> research_nodes
 }
 
-daemon.s2 -> redis.st1: XADD {style.stroke: "#cba6f7"}
-daemon.s3 -> redis.st2: XADD {style.stroke: "#cba6f7"}
-daemon.s4 -> redis.st3: XADD {style.stroke: "#cba6f7"}
-daemon.s5 -> redis.st4: XADD {style.stroke: "#cba6f7"}
-daemon.s6 -> redis.st5: XADD {style.stroke: "#cba6f7"}
-daemon.s7 -> redis.st6: XADD {style.stroke: "#cba6f7"}
+sources.daemon -> redis.topo_streams: "XADD × 6" {style.stroke: "#cba6f7"}
+sources.linkforge.ingest -> redis.lf_streams: "XADD × 10" {style.stroke: "#fab387"}
+sources.linkforge.autorel -> redis.autorel_stream: XADD {style.stroke: "#fab387"}
+sources.research -> redis.research_streams: "XADD × 5" {style.stroke: "#a6e3a1"}
 
 redis -> hub.readers: "XREAD\nBLOCK" {style.stroke: "#f38ba8"}
 hub.fanout -> ws.send: "per-node\nmessage" {style.stroke: "#a6e3a1"}

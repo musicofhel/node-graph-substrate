@@ -1,6 +1,6 @@
 # node-graph-substrate
 
-React Flow canvas + FastAPI + Redis Streams + PostgreSQL for real-time topo-confidence observability. Seven visualization nodes subscribe to a streaming ML scoring pipeline and update live as each stage completes.
+React Flow canvas + FastAPI + Redis Streams + PostgreSQL for real-time topo-confidence observability. Twenty node types across three canvas types (Pipeline, Research, Research v2) subscribe to 23 Redis streams and update live as each stage completes. Includes resizable nodes, detail panels with time-series and drift detection, and a visual test suite.
 
 The substrate server **never imports topo-confidence**. All communication happens via Redis Streams. The topo-confidence adapter runs in a separate daemon container.
 
@@ -20,25 +20,46 @@ Three Docker Compose services (plus an opt-in daemon). Frontend runs natively in
 | **Redis** | 6381 | redis:7-alpine | Docker |
 | **TopoConf Daemon** | — | topo-confidence wrapper (opt-in `--profile topoconf`) | Docker |
 
+Three canvas types: **Pipeline** (topo-confidence scoring), **Research** (link-forge paper ingestion waterfall), **Research v2** (R2 nodes with paper starring).
+
 ---
 
 ## Quick Start
 
 ```bash
-# Start infra + server
-docker compose up
+# PREFERRED — unified pipeline script starts NGS alongside link-forge + research-graph + autopilot:
+bash ~/start-research-pipeline.sh
+bash ~/start-research-pipeline.sh --status     # check what's running
 
-# In another terminal — frontend (native, not Docker on WSL2)
-cd frontend && npm run dev
+# MANUAL — NGS only:
+docker compose up                # postgres, redis, fastapi
+cd frontend && npm run dev       # vite (native — not in Docker on WSL2)
 
 # With real topo-confidence daemon (needs GPU + model cache)
 docker compose --profile topoconf up
 
 # Synthetic test data (no GPU needed)
-python synthetic_daemon.py
+python synthetic_daemon.py       # topoconf scoring streams
+python synthetic_linkforge.py    # linkforge ingestion streams
 ```
 
-Open `http://localhost:5173`. A default canvas with all 7 nodes pre-wired is created on first visit.
+Open `http://localhost:5173`. Per-canvas nodes are seeded on first visit (Pipeline: 7, Research: 4, R2: 5).
+
+---
+
+## Multi-Canvas Architecture
+
+Three canvas types share a single graph + WebSocket connection but display different node sets:
+
+| Canvas | Tab Name | Seeded Nodes | Stream Source |
+|--------|----------|-------------|---------------|
+| Pipeline | Pipeline | 7 scoring nodes | topoconf:scoring:* (6 streams) |
+| Research | Research | 4 linkforge nodes | linkforge:* (10 streams + autorel) |
+| Research v2 | Research v2 | 5 R2 nodes | topoconf:research:* (5 streams) |
+
+**TabBar** switches between canvases. **NodePalette** filters available node types per canvas. Each canvas type has its own seeding logic.
+
+![Pipeline Canvas](docs/screenshots/20-pipeline-canvas.png)
 
 ---
 
@@ -81,6 +102,7 @@ Single endpoint: `ws://host:8080/ws/canvas/{graph_id}`
 | `computation_result` | Response to compute_request (ok/error) |
 | `stream_event` | Redis stream payload relayed to a subscriber node |
 | `node_state_updated` | Config change broadcast to all canvas clients |
+| `replay_gap` | Requested cursor predates earliest available entry |
 | `error` | Parse errors, invalid requests |
 
 All messages are JSON. Client messages are validated via Pydantic discriminated unions.
@@ -109,9 +131,17 @@ Guard rails: subscriber nodes reject compute with `ok: false`; unknown nodes are
 
 ![Subscriber Path](docs/diagrams/05-subscriber-path.png)
 
-The streaming pipeline from daemon through to React nodes:
+Three data source pipelines feed 23 Redis streams through a shared StreamHub:
 
-1. **Daemon** processes prompt through 7 stages, publishing to 6 Redis streams
+| Pipeline | Source | Streams | Target Nodes |
+|----------|--------|---------|-------------|
+| **TopoConf Scoring** | Daemon / synthetic | 6 topoconf:scoring:* | hidden_state_cloud, persistence_diagram, feature_bars, confidence_gauge, bridge_monitor, explain_waterfall |
+| **LinkForge Ingestion** | link-forge bot | 10 linkforge:* + autorel | lf_coordinator, lf_stats, lf_autorel, lf_stage, research_bridge |
+| **Research Lifecycle** | research pipeline | 5 topoconf:research:* | research_coordinator |
+
+The streaming path:
+
+1. **Sources** publish to Redis streams via `XADD`
 2. **StreamHub** maintains one `asyncio.Task` per stream doing `XREAD BLOCK 5000`
 3. New entries fan out to all subscribed WebSockets (per-node addressing)
 4. **SubstrateWS** client coalesces `stream_event` messages using `requestAnimationFrame`
@@ -129,17 +159,50 @@ This architecture handles high-frequency updates without frame drops — multipl
 ### Component Hierarchy
 
 - **App.tsx** — Graph initialization, WS lifecycle, compute event handler
-- **SubstrateCanvas** — React Flow wrapper with palette sidebar
-  - **NodePalette** — 4 categories, 12 node types, drag-to-add
+- **TabBar** — Pipeline / Research / Research v2 canvas switcher
+- **SplitPane** — Canvas (top) + PaperPool (bottom, Research canvases)
+- **SubstrateCanvas** — React Flow wrapper with:
+  - **NodePalette** — Filters by canvas type, drag-to-add
   - **ReactFlow** — Background, Controls, MiniMap
-  - **CanvasControls** — Save/Load buttons
-- **12 Custom Nodes** — All `memo()`'d, all wrap `BaseNodeShell`
+  - **CanvasControls** — Save / Load / Layout
+  - **PipelineTimeline** — LinkForge stage timeline
+  - **DetailPanel** — 420px sidebar, 4 tabs (Overview, Series, Config, Drift)
+  - **EventLog** — Real-time stream inspector
+- **20 Custom Nodes** — All `memo()`'d, all wrap `BaseNodeShell`
+- **Charts** — TimeSeriesChart, DistributionChart, StatsSummary
 
 ### State Management
 
-- **canvas-store** (Zustand + zundo) — nodes, edges, graph metadata, save/load, undo history (50 levels)
-- **ui-store** (Zustand) — sidebar state
-- **SubstrateWS** (class) — WS connection with exponential backoff and RAF coalescing
+| Store | Purpose |
+|-------|---------|
+| **canvas-store** (Zustand + zundo) | Nodes, edges, graph metadata, save/load, undo history (50 levels) |
+| **ui-store** | Split pane ratio, event log open/closed, selected node ID |
+| **drift-store** | PSI baselines, drift alerts, distribution snapshots |
+| **event-log-store** | Stream event buffer, filters |
+
+### Hooks
+
+- **useNodeHistory** — Time-windowed data buffer per node
+- **useNodeStats** — Aggregate statistics from node history
+
+### WebSocket Client
+
+**SubstrateWS** — Exponential backoff (1s→10s), RAF coalescing, auto-resubscribe on reconnect.
+
+---
+
+## Detail Panel
+
+Click any node to open a 420px sidebar with 4 tabs:
+
+| Tab | Content |
+|-----|---------|
+| **Overview** | Node metadata, current values, health status |
+| **Series** | TimeSeriesChart — scrolling time-windowed plot via useNodeHistory |
+| **Config** | Node-specific config (sliders, toggles, text fields) |
+| **Drift** | DistributionChart + PSI score — Population Stability Index vs baseline |
+
+![Detail Panel Overview](docs/screenshots/detail-panel/dp-01-overview.png)
 
 ---
 
@@ -147,7 +210,9 @@ This architecture handles high-frequency updates without frame drops — multipl
 
 ![Node Registry](docs/diagrams/07-node-registry.png)
 
-Twelve node types across four categories:
+Twenty node types across three canvases:
+
+### Pipeline Canvas (8 nodes)
 
 | Node | Category | Kind | Visualization | Subscribes To |
 |------|----------|------|---------------|---------------|
@@ -158,8 +223,49 @@ Twelve node types across four categories:
 | **Confidence Gauge** | scoring | SUBSCRIBER | SVG arc gauge (green/yellow/red) | `confidence_scored` |
 | **Bridge Monitor** | scoring | SUBSCRIBER | Layer table + health badge | `bridge_health` |
 | **Explain Waterfall** | scoring | SUBSCRIBER | 13-bar contribution waterfall | `explain_result` |
+| **Drift Matrix** | scoring | SUBSCRIBER | PSI drift heatmap | — (local compute) |
 
-Connection validation enforces handle type compatibility via `NODE_REGISTRY`.
+### Research Canvas (7 node types)
+
+| Node | Category | Kind | Visualization | Subscribes To |
+|------|----------|------|---------------|---------------|
+| **LF Coordinator** | coordination | SUBSCRIBER | Paper count + 10-stream status | `linkforge:*` (10 streams) |
+| **LF Stage Card** | pipeline | dynamic | Per-paper stage cards | (created by coordinator) |
+| **LF Stats** | metrics | SUBSCRIBER | Success/fail counts, avg time | `linkforge:completed` |
+| **LF AutoRel** | metrics | SUBSCRIBER | Edge creation/pruning metrics | `linkforge:autorel:sweep_completed` |
+| **Research Coordinator** | coordination | SUBSCRIBER | Triage → experiment → promote | `topoconf:research:*` (5 streams) |
+| **Research Bridge** | coordination | SUBSCRIBER | Cross-pipeline bridge status | `linkforge:research_bridged` |
+| **Pipeline Group** | container | — | Groups stage cards | — |
+
+### Research v2 Canvas (5 nodes)
+
+| Node | Category | Kind | Visualization | Subscribes To |
+|------|----------|------|---------------|---------------|
+| **R2 Bridge** | input | SUBSCRIBER | Bridge state | — |
+| **R2 Coordinator** | coordination | SUBSCRIBER | Lifecycle coordination | — |
+| **R2 Stats** | metrics | SUBSCRIBER | Aggregate statistics | — |
+| **R2 AutoRel** | metrics | SUBSCRIBER | Auto-relation metrics | — |
+| **R2 State** | state | SUBSCRIBER | Starred paper list | — |
+
+All nodes use **BaseNodeShell** which provides NodeResizer handles, selection state, category color coding, and health status bands.
+
+---
+
+## Drift Detection
+
+Nodes track value distributions over time via `useNodeHistory`. The drift system computes **Population Stability Index (PSI)** against a baseline distribution:
+
+- **Green**: PSI < 0.1 — no significant drift
+- **Yellow**: PSI 0.1–0.2 — moderate drift
+- **Red**: PSI > 0.2 — significant drift (alert glow on node)
+
+PSI computation lives in `frontend/src/lib/drift/psi.ts`. Baselines are stored in the drift-store and can be reset per-node.
+
+---
+
+## Resizable Nodes
+
+All nodes support drag-to-resize via React Flow's `NodeResizer`. Dimensions are persisted to Postgres on save. **BaseNodeShell** renders blue resize handles on selection.
 
 ---
 
@@ -185,7 +291,25 @@ class MyComponent(Component):
 **COMPUTED** nodes implement `build()` — called via `compute_request`.
 **SUBSCRIBER** nodes declare `subscribed_streams` — StreamHub auto-subscribes them on WS connect.
 
-The `ComponentRegistry` handles registration, manifest generation, and instance creation. All 7 components self-register via `import substrate.components` at startup.
+The `ComponentRegistry` handles registration, manifest generation, and instance creation. All 13 components self-register via `import substrate.components` at startup.
+
+### Implementations (13)
+
+| Component | Kind | Streams |
+|-----------|------|---------|
+| PromptInputComponent | COMPUTED | — |
+| HiddenStateCloudComponent | SUBSCRIBER | `topoconf:scoring:hidden_state_cloud` |
+| FeatureBarsComponent | SUBSCRIBER | `topoconf:scoring:features_computed` |
+| PersistenceDiagramComponent | SUBSCRIBER | `topoconf:scoring:persistence_computed` |
+| ConfidenceGaugeComponent | SUBSCRIBER | `topoconf:scoring:confidence_scored` |
+| BridgeMonitorComponent | SUBSCRIBER | `topoconf:scoring:bridge_health` |
+| ExplainWaterfallComponent | SUBSCRIBER | `topoconf:scoring:explain_result` |
+| DriftMatrixComponent | SUBSCRIBER | — (local drift compute) |
+| LfCoordinatorComponent | SUBSCRIBER | `linkforge:*` (10 streams) |
+| LfStatsComponent | SUBSCRIBER | `linkforge:completed` |
+| LfAutoRelComponent | SUBSCRIBER | `linkforge:autorel:sweep_completed` |
+| ResearchBridgeComponent | SUBSCRIBER | `linkforge:research_bridged` |
+| ResearchCoordinatorComponent | SUBSCRIBER | `topoconf:research:*` (5 streams) |
 
 ---
 
@@ -196,7 +320,7 @@ The `ComponentRegistry` handles registration, manifest generation, and instance 
 ### First Visit
 1. Check URL `?graph=` param or localStorage cache
 2. If neither, create default project + graph via HTTP
-3. Seed 7 default nodes + 6 edges
+3. Seed per-canvas nodes (Pipeline: 7, Research: 4, R2: 5)
 4. `saveGraph()` persists to Postgres
 
 ### Save Flow
@@ -221,7 +345,7 @@ On 409: client receives `current_version` + full state, calls `loadGraph()` to r
 |--------|---------|------|
 | `topoconf:control` | `{command, prompt, run_id}` | ~1 KB |
 
-### Scoring Streams (Daemon → Server)
+### TopoConf Scoring Streams (Daemon → Server) — 6 streams
 
 | Stream | Payload | Size |
 |--------|---------|------|
@@ -232,7 +356,38 @@ On 409: client receives `current_version` + full state, calls `loadGraph()` to r
 | `topoconf:scoring:bridge_health` | `{healthy, bridge_at_pos0, silhouette_by_layer}` | ~1 KB |
 | `topoconf:scoring:explain_result` | `{features: {raw, scaled, coef, contrib}, top_contributor}` | ~2 KB |
 
-All streams: `MAXLEN ~ 10000`, plain `XREAD` (not `XREADGROUP`) for broadcast semantics, max 256 KB payload assertion.
+### LinkForge Ingestion Streams — 10 streams
+
+| Stream | Payload |
+|--------|---------|
+| `linkforge:ingested` | `{paper_id, url, title, source}` |
+| `linkforge:extracted` | `{paper_id, abstract, authors, year}` |
+| `linkforge:categorized` | `{paper_id, categories, relevance}` |
+| `linkforge:embedded` | `{paper_id, vector_dim, model}` |
+| `linkforge:stored` | `{paper_id, neo4j_id}` |
+| `linkforge:chunked` | `{paper_id, chunk_count}` |
+| `linkforge:auto_related` | `{paper_id, related_ids, scores}` |
+| `linkforge:research_bridged` | `{paper_id, triage_candidate}` |
+| `linkforge:url_discovered` | `{url, source, context}` |
+| `linkforge:completed` | `{paper_id, duration_ms, stages_ok}` |
+
+### LinkForge AutoRel — 1 stream
+
+| Stream | Payload |
+|--------|---------|
+| `linkforge:autorel:sweep_completed` | `{sweep_id, papers_scored, new_relations, duration_ms}` |
+
+### Research Lifecycle — 5 streams
+
+| Stream | Payload |
+|--------|---------|
+| `topoconf:research:triaged` | `{paper_id, priority, rationale}` |
+| `topoconf:research:script_generated` | `{paper_id, script_path}` |
+| `topoconf:research:experiment_started` | `{paper_id, run_id, gpu}` |
+| `topoconf:research:experiment_completed` | `{paper_id, run_id, metrics}` |
+| `topoconf:research:promoted` | `{paper_id, target_pathway}` |
+
+All 23 streams: `MAXLEN ~ 10000`, plain `XREAD` (not `XREADGROUP`) for broadcast semantics, max 256 KB payload assertion.
 
 ---
 
@@ -243,34 +398,59 @@ All streams: `MAXLEN ~ 10000`, plain `XREAD` (not `XREADGROUP`) for broadcast se
 ```
 node-graph-substrate/
 ├── docker-compose.yml
+├── synthetic_daemon.py          # Fake topoconf scoring data
+├── synthetic_linkforge.py       # Fake linkforge ingestion data
+├── take_screenshots.py          # Playwright gallery capture
 ├── migrations/
 │   ├── 001_init.sql
 │   └── 002_schema_fixes.sql
 ├── server/substrate/
-│   ├── main.py            # FastAPI app, HTTP routes, WS handler
-│   ├── db.py              # asyncpg pool + migration runner
-│   ├── crud.py            # DB queries + optimistic locking
-│   ├── ws.py              # ConnectionManager (per-socket lock)
-│   ├── streamhub.py       # Redis stream reader tasks + fan-out
-│   ├── sdk.py             # Component base class + Socket/NodeKind
-│   ├── registry.py        # ComponentRegistry singleton
-│   ├── schemas.py         # Pydantic HTTP models
-│   ├── messages.py        # WS message discriminated unions
-│   └── components/        # 7 registered components
+│   ├── main.py                  # FastAPI app, HTTP routes, WS handler
+│   ├── db.py                    # asyncpg pool + migration runner
+│   ├── crud.py                  # DB queries + optimistic locking
+│   ├── ws.py                    # ConnectionManager (per-socket lock)
+│   ├── streamhub.py             # Redis stream reader tasks + fan-out
+│   ├── sdk.py                   # Component base class + Socket/NodeKind
+│   ├── registry.py              # ComponentRegistry singleton
+│   ├── schemas.py               # Pydantic HTTP models
+│   ├── messages.py              # WS message discriminated unions
+│   └── components/              # 13 registered components
+│       ├── prompt_input.py      # COMPUTED
+│       ├── feature_bars.py      # SUBSCRIBER
+│       ├── hidden_state_cloud.py
+│       ├── persistence_diagram.py
+│       ├── confidence_gauge.py
+│       ├── bridge_monitor.py
+│       ├── explain_waterfall.py
+│       ├── drift_matrix.py
+│       ├── lf_coordinator.py
+│       ├── lf_stats.py
+│       ├── lf_autorel.py
+│       ├── research_bridge.py
+│       └── research_coordinator.py
 ├── frontend/src/
-│   ├── App.tsx             # Init + WS lifecycle + event handling
-│   ├── lib/ws/client.ts    # SubstrateWS (backoff + RAF coalescing)
-│   ├── lib/store/          # Zustand stores (canvas + UI)
-│   ├── lib/nodes/          # Registry + handle colors
-│   ├── types/              # Node + message TypeScript types
-│   └── components/
-│       ├── canvas/         # SubstrateCanvas + Controls + node-types
-│       ├── nodes/          # 7 node components + BaseNodeShell
-│       └── sidebar/        # NodePalette
+│   ├── App.tsx
+│   ├── components/
+│   │   ├── canvas/              # SubstrateCanvas, TabBar, SplitPane,
+│   │   │                        # CanvasControls, PipelineTimeline, node-types
+│   │   ├── nodes/               # 20 node components + BaseNodeShell + Sparkline
+│   │   ├── panels/              # DetailPanel (420px, 4 tabs) + EventLog
+│   │   ├── charts/              # TimeSeriesChart, DistributionChart, StatsSummary
+│   │   ├── edges/               # edge-types, StaleEdge
+│   │   └── linkforge/           # PaperCard, PaperDetail, PaperPool
+│   ├── lib/
+│   │   ├── ws/client.ts         # SubstrateWS (backoff + RAF coalescing)
+│   │   ├── store/               # canvas-store, ui-store, drift-store, event-log-store
+│   │   ├── hooks/               # useNodeHistory, useNodeStats
+│   │   ├── drift/psi.ts         # Population Stability Index computation
+│   │   └── layout/              # elk-layout, elk-worker
+│   └── types/                   # nodes.ts, messages.ts
 ├── daemons/topoconf/
-│   ├── adapter.py          # TopoBridge (7-stage pipeline)
-│   └── topoconf_daemon.py  # XREAD control loop
-└── synthetic_daemon.py     # Fake stream data for testing
+│   ├── adapter.py               # TopoBridge (7-stage pipeline)
+│   └── topoconf_daemon.py       # XREAD control loop
+└── tests/visual/
+    ├── run_visual_tests.py      # 19 YAML specs, 3 canvas types
+    └── specs/                   # Per-node test definitions
 ```
 
 ---
@@ -297,6 +477,31 @@ node-graph-substrate/
 
 ---
 
+## Event Log
+
+Real-time stream inspector that shows raw Redis stream events as they flow through the system. Toggle via the event-log-store. Useful for debugging stream connectivity and payload inspection.
+
+---
+
+## Visual Test Suite
+
+19 YAML specs covering all 3 canvas types. Each spec defines a node to find, wait ticks, and optional detail panel interaction.
+
+```bash
+# Run all specs
+python tests/visual/run_visual_tests.py
+
+# Specific node, non-headless
+python tests/visual/run_visual_tests.py --spec confidence_gauge --no-headless
+
+# Custom timing
+python tests/visual/run_visual_tests.py --duration 30 --interval 3 --wait-ticks 5
+```
+
+Latest run: 17/19 pass, 84 screenshots across 3 canvas types.
+
+---
+
 ## Key Design Decisions
 
 - **Substrate isolation**: Server never imports topo-confidence. `grep -r "topo_confidence" server/substrate/` = 0 lines.
@@ -306,6 +511,7 @@ node-graph-substrate/
 - **Optimistic concurrency**: `expected_version` on save prevents silent overwrites. 409 triggers full re-sync.
 - **Server-side ID tracking**: Client tracks `_serverNodeIds`/`_serverEdgeIds` to compute remove ops on save.
 - **R3F `frameloop="demand"`**: 3D point cloud only re-renders when data changes, not every animation frame.
+- **BaseNodeShell pattern**: All 20 nodes wrap the same shell for consistent resize, selection, and health band behavior.
 
 ---
 
@@ -321,20 +527,27 @@ docker compose logs -f server
 # Redis stream inspection
 redis-cli -p 6381 XLEN topoconf:scoring:features_computed
 redis-cli -p 6381 XRANGE topoconf:scoring:features_computed - + COUNT 1
+redis-cli -p 6381 XLEN linkforge:ingested
 
 # Substrate isolation check
 grep -r "topo_confidence\|TopoConfidence" server/substrate/
+
+# Visual test suite
+python tests/visual/run_visual_tests.py
+
+# Screenshot gallery
+python take_screenshots.py
 ```
 
 ---
 
 ## Screenshots
 
-### Full Canvas — Empty State
+### Pipeline Canvas
 
-All 7 nodes pre-wired on first visit. Node Palette sidebar on the left with 4 categories (Input, Extraction, Topology, Scoring). Save/Load controls top-right.
+All 7 scoring nodes pre-wired on first visit. Node Palette sidebar on the left filters by canvas type. Save/Load controls top-right.
 
-![Full Canvas](docs/screenshots/01-full-canvas.png)
+![Pipeline Canvas](docs/screenshots/20-pipeline-canvas.png)
 
 ### Live Streaming Data
 
@@ -350,7 +563,7 @@ User enters a prompt and clicks "Analyze". The compute request flows through Web
 
 ![After Analyze](docs/screenshots/11-after-analyze.png)
 
-### Individual Nodes (with live data)
+### Individual Pipeline Nodes (with live data)
 
 <table>
 <tr>
@@ -403,58 +616,11 @@ User enters a prompt and clicks "Analyze". The compute request flows through Web
 </tr>
 </table>
 
-### Empty Nodes (waiting for data)
+### Research Canvas — Paper Digestion Pipeline
 
-Individual node close-ups before data arrives — each shows its placeholder state.
+The Research canvas visualizes the [link-forge](https://github.com/musicofhel/link-forge) paper ingestion pipeline in real time. Papers flow through 10 stages (Ingested → Extracted → Categorized → Embedded → Stored → Chunked → Auto Related → Research Bridged → URLs Discovered → Completed), with each stage rendered as a React Flow node in a vertical waterfall.
 
-<table>
-<tr>
-<td width="33%">
-
-![Prompt Input](docs/screenshots/04a-prompt-input-node.png)
-
-</td>
-<td width="33%">
-
-![Hidden State Cloud](docs/screenshots/04b-hidden-state-cloud-node.png)
-
-</td>
-<td width="33%">
-
-![Feature Bars](docs/screenshots/04c-feature-bars-node.png)
-
-</td>
-</tr>
-<tr>
-<td>
-
-![Persistence Diagram](docs/screenshots/04d-persistence-diagram-node.png)
-
-</td>
-<td>
-
-![Confidence Gauge](docs/screenshots/04e-confidence-gauge-node.png)
-
-</td>
-<td>
-
-![Bridge Monitor](docs/screenshots/04f-bridge-monitor-node.png)
-
-</td>
-</tr>
-</table>
-
----
-
-## Paper Digestion Pipeline (LinkForge)
-
-The substrate also visualizes the [link-forge](https://github.com/musicofhel/link-forge) paper ingestion pipeline in real time. Papers flow through 10 stages (Ingested → Extracted → Categorized → Embedded → Stored → Chunked → Auto Related → Research Bridged → URLs Discovered → Completed), with each stage rendered as a React Flow node in a vertical waterfall.
-
-### Live Waterfall
-
-Papers stream in via Redis and appear as waterfall columns of stage cards. Failed papers get red borders. The Paper Pool panel below shows completed papers with score bars, category badges, and sorting/filtering.
-
-![Live Waterfall](docs/screenshots/paper-pipeline/03-live-waterfall.png)
+![Research Canvas](docs/screenshots/21-research-canvas.png)
 
 ### Paper Pool & Detail View
 
@@ -479,121 +645,14 @@ Click any paper card to see its full pipeline progress, summary, and research li
 </tr>
 </table>
 
-### Filtering & Search
+### Research v2 Canvas
 
-<table>
-<tr>
-<td width="33%">
+R2 nodes with paper starring and lifecycle coordination.
 
-![Sorted by Score](docs/screenshots/paper-pipeline/07-sorted-by-score.png)
+![Research v2 Canvas](docs/screenshots/22-research-v2-canvas.png)
 
-**Sorted by Forge Score**
+### Detail Panel
 
-</td>
-<td width="33%">
+Click any node to open a 420px sidebar with 4 tabs:
 
-![Category Filter](docs/screenshots/paper-pipeline/08-category-filtered.png)
-
-**Category Filter**
-
-</td>
-<td width="33%">
-
-![Search](docs/screenshots/paper-pipeline/09-search-results.png)
-
-**Search**
-
-</td>
-</tr>
-</table>
-
-### LinkForge Nodes
-
-Four dedicated nodes for pipeline observability, plus stage cards created dynamically:
-
-| Node | Purpose |
-|------|---------|
-| **Pipeline Coordinator** | Watches all 10 linkforge streams, shows paper count |
-| **Pipeline Stats** | Running success/fail counts, average processing time |
-| **AutoRel Status** | Edge creation/pruning metrics from auto-relationship sweeps |
-| **Research Coordinator** | Research lifecycle tracking (triage → experiment → promote) |
-
-![LF Nodes on Canvas](docs/screenshots/paper-pipeline/02-lf-nodes-on-canvas.png)
-
-### Race Condition Audit v1 (E2E Playwright)
-
-Comprehensive race condition audit targeting burst ingestion, rapid UI interaction, tracker eviction, and console error monitoring. 27/27 tests pass.
-
-<table>
-<tr>
-<td width="50%">
-
-**Burst Ingestion** — 5 papers published at 50ms/stage. All 50 stage nodes created, 46 edges connected via bidirectional linking.
-
-![Burst Ingestion](docs/screenshots/race-audit/02-burst-ingestion.png)
-
-</td>
-<td width="50%">
-
-**Rapid Detail Selection** — 5 rapid paper clicks in 500ms. AbortController cancels stale fetches; detail panel shows final selection with no loading state.
-
-![Rapid Selection](docs/screenshots/race-audit/04-rapid-selection.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**Tracker Cleanup (35 papers)** — Exceeds 30-paper tracker limit. Oldest papers evicted cleanly, no duplicate node IDs, no orphaned nodes.
-
-![Tracker Cleanup](docs/screenshots/race-audit/05-tracker-cleanup-35-papers.png)
-
-</td>
-<td width="50%">
-
-**Final Overview** — 307 nodes, 271 edges. Zero console errors, zero React state-after-unmount warnings, zero unhandled rejections.
-
-![Final Overview](docs/screenshots/race-audit/14-final-overview.png)
-
-</td>
-</tr>
-</table>
-
-### Race Condition Audit v2 (E2E Playwright — Fresh Eyes)
-
-Second-pass audit found and fixed 5 additional issues: 14K React Flow handle warnings (missing target handles on 5 subscriber nodes), PaperPool `_isNew` timer leak, `fetchHistory` stale-closure race, TabBar missing AbortController, and dead `_lock` field in StreamHub. 37/37 tests pass, 0 console errors, 0 React Flow warnings.
-
-<table>
-<tr>
-<td width="50%">
-
-**Default Canvas** — 7 nodes with properly connected edges. All 5 subscriber nodes now render target handles via BaseNodeShell; zero React Flow handle warnings.
-
-![Default Canvas](docs/screenshots/race-audit-v2/01-canvas-initial.png)
-
-</td>
-<td width="50%">
-
-**Paper Detail** — Rapid switching between 8 papers in 400ms. AbortController cancels in-flight fetches; detail panel renders final selection correctly.
-
-![Rapid Detail](docs/screenshots/race-audit-v2/05-rapid-detail-switch.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**35-Paper Eviction** — All pipeline stages complete, tracker eviction bounds node count at 307. Paper pool shows complete detail with stage indicators.
-
-![Tracker Eviction](docs/screenshots/race-audit-v2/07-tracker-eviction-35.png)
-
-</td>
-<td width="50%">
-
-**Out-of-Order Arrival** — Stages published as categorized→ingested→embedded→extracted. Bidirectional edge linking creates 3 correct edges despite arrival disorder.
-
-![Out of Order](docs/screenshots/race-audit-v2/03-out-of-order.png)
-
-</td>
-</tr>
-</table>
+![Detail Panel](docs/screenshots/detail-panel/dp-01-overview.png)
