@@ -28,7 +28,7 @@ export const BridgeMonitorNode = memo(({ id, selected }: NodeProps) => {
           <>
             <div className="mb-2 flex items-center gap-2">
               <span
-                className={`inline-block h-3 w-3 rounded-full ${
+                className={`inline-block h-3 w-3 rounded-full transition-colors duration-500 ${
                   data.healthy ? "bg-emerald-500" : "bg-red-500"
                 }`}
               />

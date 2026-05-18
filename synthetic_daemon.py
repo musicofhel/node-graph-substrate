@@ -147,7 +147,7 @@ async def main():
 
             if tick % 10 == 0:
                 print(f"Published tick {tick}")
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
     except KeyboardInterrupt:
         pass
     finally:

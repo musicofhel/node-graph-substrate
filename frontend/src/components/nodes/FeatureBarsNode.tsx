@@ -92,7 +92,7 @@ export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
               </span>
               <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
                 <div
-                  className="absolute top-0 h-full rounded-sm"
+                  className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
                   style={{
                     width: `${pct * 100}%`,
                     backgroundColor: color,

@@ -31,6 +31,9 @@ export class SubstrateWS {
   private rafId: number | null = null;
   private batchFn: BatchUpdateFn | null = null;
   private activeSubscriptions: { stream: string; node_id: string }[] = [];
+  private lastFlushTs = 0;
+  private throttleMs = 500;
+  private throttleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(canvasId: string) {
     const wsBase =
@@ -123,16 +126,7 @@ export class SubstrateWS {
           const existing = this.pending.get(nodeId) ?? {};
           this.pending.set(nodeId, { ...existing, ...payload });
 
-          if (!this.rafScheduled) {
-            this.rafScheduled = true;
-            this.rafId = requestAnimationFrame(() => {
-              const updates = Array.from(this.pending.entries());
-              this.pending.clear();
-              this.rafScheduled = false;
-              this.rafId = null;
-              this.batchFn!(updates);
-            });
-          }
+          this.scheduleFlush();
           return;
         }
 
@@ -153,6 +147,29 @@ export class SubstrateWS {
       console.error("[WS] error", err);
       this.ws?.close();
     };
+  }
+
+  private scheduleFlush(): void {
+    if (this.throttleTimer !== null) return;
+    const elapsed = Date.now() - this.lastFlushTs;
+    if (elapsed >= this.throttleMs) {
+      this.flushPending();
+    } else {
+      this.throttleTimer = setTimeout(() => {
+        this.throttleTimer = null;
+        this.flushPending();
+      }, this.throttleMs - elapsed);
+    }
+  }
+
+  private flushPending(): void {
+    if (this.pending.size === 0) return;
+    this.lastFlushTs = Date.now();
+    const updates = Array.from(this.pending.entries());
+    this.pending.clear();
+    if (this.batchFn) {
+      requestAnimationFrame(() => this.batchFn!(updates));
+    }
   }
 
   onMessage(handler: MessageHandler): () => void {
@@ -177,6 +194,10 @@ export class SubstrateWS {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
+    }
+    if (this.throttleTimer !== null) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
     }
     this.rafScheduled = false;
     this.pending.clear();

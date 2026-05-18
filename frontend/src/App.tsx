@@ -60,7 +60,8 @@ export default function App() {
   const wsRef = useRef<SubstrateWS | null>(null);
   const paperTrackerRef = useRef(new Map<string, PaperTracker>());
   const columnCounterRef = useRef(0);
-  const [showPool, setShowPool] = useState(false);
+  const [poolAvailable, setPoolAvailable] = useState(false);
+  const [poolExpanded, setPoolExpanded] = useState(false);
   const [livePapers, setLivePapers] = useState<PaperSummary[]>([]);
 
   const handleLinkforgeEvent = useCallback(
@@ -253,9 +254,9 @@ export default function App() {
           const cType = canvasTypeFromName(useCanvasStore.getState().graphName);
           if (cType !== "research2") handleLinkforgeEvent(stream, payload);
           if (stream === "linkforge:completed") {
-            setShowPool(true);
+            setPoolAvailable(true);
             const qid = String(payload.queue_id ?? "");
-            setLivePapers((prev) => [{
+            const stub = {
               queue_id: qid,
               success: String(payload.success ?? ""),
               processing_time_ms: String(payload.processing_time_ms ?? ""),
@@ -263,7 +264,19 @@ export default function App() {
               title: typeof payload.title === "string" ? payload.title : undefined,
               category: typeof payload.category === "string" ? payload.category : undefined,
               forge_score: typeof payload.forge_score === "string" ? payload.forge_score : undefined,
-            }, ...prev].slice(0, 200));
+            };
+            setLivePapers((prev) => [stub, ...prev].slice(0, 200));
+            if (!stub.title && qid) {
+              fetch(`${API_BASE}/api/linkforge/paper/${qid}`)
+                .then((r) => r.ok ? r.json() : null)
+                .then((full) => {
+                  if (!full) return;
+                  setLivePapers((prev) =>
+                    prev.map((p) => p.queue_id === qid ? { ...p, ...full, queue_id: qid } : p),
+                  );
+                })
+                .catch(() => {});
+            }
           }
         }
         return;
@@ -367,7 +380,7 @@ export default function App() {
           const histResp = await fetch(`${API_BASE}/api/linkforge/history?limit=1`);
           if (!cancelled && histResp.ok) {
             const hist = await histResp.json();
-            if (hist.length > 0) setShowPool(true);
+            if (hist.length > 0) setPoolAvailable(true);
           }
         } catch {}
 
@@ -512,7 +525,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen flex-col">
       <TabBar projectId={projectId} activeGraphId={graphId} onSelectGraph={handleSwitchGraph} />
-      {showPool && currentCanvasType !== "research2" ? (
+      {poolExpanded && currentCanvasType === "research" ? (
         <SplitPane
           ratio={canvasSplitRatio}
           onRatioChange={setCanvasSplitRatio}
@@ -523,6 +536,14 @@ export default function App() {
         <div className="relative min-h-0 flex-1">
           <SubstrateCanvas />
         </div>
+      )}
+      {poolAvailable && currentCanvasType === "research" && (
+        <button
+          onClick={() => setPoolExpanded((v) => !v)}
+          className="absolute bottom-2 right-2 z-50 rounded bg-neutral-800 px-3 py-1 text-xs text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 border border-neutral-700"
+        >
+          {poolExpanded ? "Hide Papers" : `Papers ▲`}
+        </button>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 const SPLIT_KEY = "substrate:splitRatio";
-const DEFAULT_SPLIT = 0.55;
+const DEFAULT_SPLIT = 0.75;
 
 function loadSplitRatio(): number {
   try {

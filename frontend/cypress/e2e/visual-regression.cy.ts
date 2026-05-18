@@ -61,7 +61,11 @@ describe("Visual Regression Checks", () => {
   });
 
   it("split pane divider is visible when paper pool shown", () => {
-    cy.get("[class*='cursor-row-resize']").should("exist");
+    cy.contains("button", "Research").first().click();
+    cy.wait(1000);
+    cy.get(".react-flow__node", { timeout: 10000 }).should("have.length.at.least", 1);
+    cy.contains("button", "Papers", { timeout: 5000 }).click();
+    cy.get("[class*='cursor-row-resize']", { timeout: 5000 }).should("exist");
   });
 
   it("node palette does not overlap canvas content", () => {
