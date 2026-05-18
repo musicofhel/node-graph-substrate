@@ -1,146 +1,114 @@
-direction: right
+direction: down
 
 title: {
-  label: "Data Flow: Subscriber Path (Redis Streams → React Nodes)"
+  label: "Data Flow: Subscriber Path"
   near: top-center
   shape: text
   style.font-size: 28
   style.bold: true
 }
 
-sources: Data Sources {
+sources: "Data Sources" {
   style.fill: "#11111b"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
 
-  daemon: TopoConf Daemon {
+  daemon: "TopoConf Daemon\n7-stage pipeline → 6 scoring streams" {
     style.fill: "#1e1e2e"
     style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
-
-    s1: "hidden states" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s2: "PCA + cluster" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s3: "persistence PH" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s4: "13 features" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s5: "confidence" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s6: "bridge health" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s7: "explain" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    s1 -> s2 -> s3 -> s4 -> s5 -> s6 -> s7
   }
 
-  linkforge: LinkForge Bot {
+  linkforge: "LinkForge Bot\n10-stage waterfall + AutoRel sweeps" {
     style.fill: "#1e1e2e"
     style.stroke: "#fab387"
     style.font-color: "#cdd6f4"
-
-    ingest: "Paper ingestion\n10-stage waterfall" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    autorel: "AutoRel sweeps" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
-    ingest -> autorel
   }
 
-  research: Research Pipeline {
+  research: "Research Pipeline\n5-stage lifecycle (triage → promote)" {
     style.fill: "#1e1e2e"
     style.stroke: "#a6e3a1"
     style.font-color: "#cdd6f4"
-
-    lifecycle: "5-stage lifecycle\ntriage → promote" {style.fill: "#313244"; style.font-color: "#cdd6f4"}
   }
 }
 
-redis: Redis Streams {
+redis: "Redis Streams (23 total)" {
   style.fill: "#1e1e2e"
   style.stroke: "#f38ba8"
   style.font-color: "#cdd6f4"
   shape: cylinder
-
-  topo_streams: "topoconf:scoring:*\n6 streams" {
-    style.fill: "#313244"
-    style.font-color: "#cba6f7"
-  }
-  lf_streams: "linkforge:*\n10 streams" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-  }
-  autorel_stream: "linkforge:autorel:*\n1 stream" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-  }
-  research_streams: "topoconf:research:*\n5 streams" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-  }
-  control: "topoconf:control\n1 stream" {
-    style.fill: "#313244"
-    style.font-color: "#585b70"
-  }
 }
 
-hub: StreamHub {
+hub: "StreamHub" {
   style.fill: "#1e1e2e"
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
 
-  readers: "1 asyncio.Task\nper stream (23 total)\nXREAD BLOCK 5000" {
+  readers: "1 asyncio.Task per stream\nXREAD BLOCK 5000" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
-  fanout: "Fan-out to\nall subscribed\nWebSockets" {
+  fanout: "Fan-out to all\nsubscribed WebSockets" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
-  readers -> fanout
+  readers -> fanout: "per-node addressing" {
+    style.stroke-width: 2
+    style.font-color: "#cdd6f4"
+  }
 }
 
-ws: WebSocket {
+ws: "WebSocket → Browser" {
   style.fill: "#1e1e2e"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
 
-  send: "stream_event\nmessages" {
+  send: "stream_event messages\nper-node addressing" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 }
 
-client: Browser {
+client: "Browser Client" {
   style.fill: "#1e1e2e"
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 
-  raf: "RAF Coalescing\nbatch per frame" {
+  throttle: "500ms throttled flush\n(replaces per-frame RAF)" {
     style.fill: "#313244"
     style.stroke: "#f9e2af"
     style.font-color: "#cdd6f4"
   }
-  store: "Zustand Store\nbatchUpdateNodeData()" {
+  store: "Zustand canvas-store\nbatchUpdateNodeData()" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 
-  pipeline_nodes: "Pipeline Nodes (6)\nhidden_state_cloud, persistence_diagram\nfeature_bars, confidence_gauge\nbridge_monitor, explain_waterfall" {
+  pipeline_nodes: "Pipeline Nodes (6)\ngauge, bars, cloud, diagram\nmonitor, waterfall" {
     style.fill: "#313244"
-    style.font-color: "#cba6f7"
+    style.stroke: "#cba6f7"
+    style.font-color: "#cdd6f4"
   }
-  lf_nodes: "LinkForge Nodes (5)\nlf_coordinator, lf_stats\nlf_autorel, lf_stage\nresearch_bridge" {
+  lf_nodes: "LinkForge Nodes (5)\ncoordinator, stats\nautorel, stage, bridge" {
     style.fill: "#313244"
-    style.font-color: "#fab387"
+    style.stroke: "#fab387"
+    style.font-color: "#cdd6f4"
   }
   research_nodes: "Research Node (1)\nresearch_coordinator" {
     style.fill: "#313244"
-    style.font-color: "#a6e3a1"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
   }
 
-  raf -> store
-  store -> pipeline_nodes
-  store -> lf_nodes
-  store -> research_nodes
+  throttle -> store: "" {style.stroke-width: 2}
+  store -> pipeline_nodes: "useNodesData(id)" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#cba6f7"}
+  store -> lf_nodes: "useNodesData(id)" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#fab387"}
+  store -> research_nodes: "useNodesData(id)" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#a6e3a1"}
 }
 
-sources.daemon -> redis.topo_streams: "XADD × 6" {style.stroke: "#cba6f7"}
-sources.linkforge.ingest -> redis.lf_streams: "XADD × 10" {style.stroke: "#fab387"}
-sources.linkforge.autorel -> redis.autorel_stream: XADD {style.stroke: "#fab387"}
-sources.research -> redis.research_streams: "XADD × 5" {style.stroke: "#a6e3a1"}
-
-redis -> hub.readers: "XREAD\nBLOCK" {style.stroke: "#f38ba8"}
-hub.fanout -> ws.send: "per-node\nmessage" {style.stroke: "#a6e3a1"}
-ws.send -> client.raf: "onmessage" {style.stroke: "#89b4fa"}
+sources.daemon -> redis: "XADD × 6" {style.stroke: "#cba6f7"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+sources.linkforge -> redis: "XADD × 11" {style.stroke: "#fab387"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+sources.research -> redis: "XADD × 5" {style.stroke: "#a6e3a1"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+redis -> hub.readers: "XREAD BLOCK" {style.stroke: "#f38ba8"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+hub.fanout -> ws.send: "per-node msg" {style.stroke: "#a6e3a1"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+ws.send -> client.throttle: "onmessage" {style.stroke: "#89b4fa"; style.stroke-width: 2; style.font-color: "#cdd6f4"}

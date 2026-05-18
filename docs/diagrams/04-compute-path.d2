@@ -78,14 +78,24 @@ step10: "10. batchUpdateNodeData: React re-renders nodes" {
   style.font-color: "#cdd6f4"
 }
 
-step1 -> step2 -> step3 -> step4 -> step5 -> step6 -> step7 -> step8 -> step9 -> step10
+step1 -> step2: "" {style.stroke-width: 2}
+step2 -> step3: "" {style.stroke-width: 2}
+step3 -> step4: "" {style.stroke-width: 2}
+step4 -> step5: "" {style.stroke-width: 2}
+step5 -> step6: "" {style.stroke-width: 2}
+step6 -> step7: "" {style.stroke-width: 2}
+step7 -> step8: "" {style.stroke-width: 2}
+step8 -> step9: "" {style.stroke-width: 2}
+step9 -> step10: "" {style.stroke-width: 2}
+
+step10 -> guards: "" {style.stroke: "#f38ba8"; style.stroke-width: 2; style.stroke-dash: 3}
 
 guards: Guard Rails {
   style.fill: "#11111b"
   style.stroke: "#f38ba8"
   style.font-color: "#cdd6f4"
 
-  g1: "SUBSCRIBER node: returns ok false (cannot compute)" {
+  g1: "SUBSCRIBER node: returns ok: false (cannot compute)" {
     style.fill: "#313244"
     style.font-color: "#f38ba8"
   }
@@ -93,7 +103,7 @@ guards: Guard Rails {
     style.fill: "#313244"
     style.font-color: "#f9e2af"
   }
-  g3: "build() throws: returns ok false with error message" {
+  g3: "build() throws: returns ok: false with error message" {
     style.fill: "#313244"
     style.font-color: "#f38ba8"
   }
@@ -101,4 +111,7 @@ guards: Guard Rails {
     style.fill: "#313244"
     style.font-color: "#f38ba8"
   }
+  g1 -> g2: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+  g2 -> g3: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+  g3 -> g4: "" {style.stroke: "#585b70"; style.stroke-width: 1}
 }

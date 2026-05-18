@@ -144,23 +144,23 @@ The streaming path:
 1. **Sources** publish to Redis streams via `XADD`
 2. **StreamHub** maintains one `asyncio.Task` per stream doing `XREAD BLOCK 5000`
 3. New entries fan out to all subscribed WebSockets (per-node addressing)
-4. **SubstrateWS** client coalesces `stream_event` messages using `requestAnimationFrame`
+4. **SubstrateWS** client coalesces `stream_event` messages using 500ms throttled flushing
 5. Batched updates go through `batchUpdateNodeData()` in the Zustand store
 6. React Flow nodes re-render via `useNodesData(id)` (per-node subscription, not global)
 
-This architecture handles high-frequency updates without frame drops — multiple stream events arriving within a single frame are merged into one store update.
+This architecture handles high-frequency updates without frame drops — multiple stream events arriving within a 500ms window are merged into one store update.
 
 ---
 
 ## Frontend Components
 
-![Frontend Components](docs/diagrams/06-frontend-components.png)
+![Component Tree](docs/diagrams/06a-component-tree.png)
 
 ### Component Hierarchy
 
 - **App.tsx** — Graph initialization, WS lifecycle, compute event handler
 - **TabBar** — Pipeline / Research / Research v2 canvas switcher
-- **SplitPane** — Canvas (top) + PaperPool (bottom, Research canvases)
+- **SplitPane** — Canvas (top) + PaperPool (bottom, Research canvas only)
 - **SubstrateCanvas** — React Flow wrapper with:
   - **NodePalette** — Filters by canvas type, drag-to-add
   - **ReactFlow** — Background, Controls, MiniMap
@@ -172,6 +172,8 @@ This architecture handles high-frequency updates without frame drops — multipl
 - **Charts** — TimeSeriesChart, DistributionChart, StatsSummary
 
 ### State Management
+
+![State Management](docs/diagrams/06b-state-management.png)
 
 | Store | Purpose |
 |-------|---------|
@@ -187,7 +189,7 @@ This architecture handles high-frequency updates without frame drops — multipl
 
 ### WebSocket Client
 
-**SubstrateWS** — Exponential backoff (1s→10s), RAF coalescing, auto-resubscribe on reconnect.
+**SubstrateWS** — Exponential backoff (1s→10s), 500ms throttled flushing, auto-resubscribe on reconnect.
 
 ---
 
@@ -439,7 +441,7 @@ node-graph-substrate/
 │   │   ├── edges/               # edge-types, StaleEdge
 │   │   └── linkforge/           # PaperCard, PaperDetail, PaperPool
 │   ├── lib/
-│   │   ├── ws/client.ts         # SubstrateWS (backoff + RAF coalescing)
+│   │   ├── ws/client.ts         # SubstrateWS (backoff + throttled flush)
 │   │   ├── store/               # canvas-store, ui-store, drift-store, event-log-store
 │   │   ├── hooks/               # useNodeHistory, useNodeStats
 │   │   ├── drift/psi.ts         # Population Stability Index computation
@@ -461,7 +463,7 @@ node-graph-substrate/
 
 ### Connection Flow
 1. `App.tsx` resolves `graphId` → creates `SubstrateWS(graphId)`
-2. Enables RAF coalescing, registers message handler, sets subscriptions
+2. Enables throttled flushing, registers message handler, sets subscriptions
 3. `ws.connect()` opens WebSocket to `/ws/canvas/{graphId}`
 4. Server loads graph, sends `graph_loaded`, instantiates components, subscribes streams
 
@@ -506,7 +508,7 @@ Latest run: 17/19 pass, 84 screenshots across 3 canvas types.
 
 - **Substrate isolation**: Server never imports topo-confidence. `grep -r "topo_confidence" server/substrate/` = 0 lines.
 - **Broadcast semantics**: Plain `XREAD` (not consumer groups) — every connected client sees every event.
-- **RAF coalescing**: Multiple stream events within a single frame are merged before hitting React state.
+- **Throttled flushing**: Multiple stream events within a 500ms window are merged before hitting React state.
 - **Per-node subscriptions**: `useNodesData(id)` instead of `useNodes()` — only the affected node re-renders.
 - **Optimistic concurrency**: `expected_version` on save prevents silent overwrites. 409 triggers full re-sync.
 - **Server-side ID tracking**: Client tracks `_serverNodeIds`/`_serverEdgeIds` to compute remove ops on save.
@@ -551,7 +553,7 @@ All 7 scoring nodes pre-wired on first visit. Node Palette sidebar on the left f
 
 ### Live Streaming Data
 
-Synthetic daemon publishing to 6 Redis Streams every 2s. All subscriber nodes update in real-time via WebSocket + RAF coalescing.
+Synthetic daemon publishing to 6 Redis Streams every 5s. All subscriber nodes update in real-time via WebSocket + throttled flushing.
 
 ![Live Streaming Data](docs/screenshots/06-fit-view-with-data.png)
 

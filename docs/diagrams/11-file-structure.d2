@@ -1,4 +1,4 @@
-direction: right
+direction: down
 
 title: {
   label: Project File Structure
@@ -8,243 +8,81 @@ title: {
   style.bold: true
 }
 
-root: "node-graph-substrate/" {
+config: "Root Config\ndocker-compose.yml\nsynthetic_daemon.py\nsynthetic_linkforge.py\nCLAUDE.md, SPEC.md" {
+  style.fill: "#313244"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+}
+
+migrations: "migrations/\n001_init.sql\n002_schema_fixes.sql" {
+  style.fill: "#313244"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+}
+
+server: "server/substrate/" {
   style.fill: "#1e1e2e"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
 
-  config: Config {
+  core: "Core (9 modules)\nmain.py — FastAPI + WS handler\ndb.py — asyncpg pool + migrations\ncrud.py — queries + optimistic lock\nws.py — ConnectionManager\nstreamhub.py — Redis stream readers\nsdk.py — Component base class\nregistry.py — ComponentRegistry\nschemas.py, messages.py" {
     style.fill: "#313244"
-    style.font-color: "#585b70"
-    label: |md
-      docker-compose.yml
-      .env / .env.example
-      CLAUDE.md / SPEC.md
-      synthetic_daemon.py
-      synthetic_linkforge.py
-    |
+    style.font-color: "#cdd6f4"
   }
 
-  migrations_dir: "migrations/" {
+  components: "components/ (13 registered)\nprompt_input.py (COMPUTED)\n12 SUBSCRIBER components" {
     style.fill: "#313244"
-    style.stroke: "#f9e2af"
     style.font-color: "#cdd6f4"
-    label: |md
-      001_init.sql
-      002_schema_fixes.sql
-    |
-  }
-
-  server: "server/" {
-    style.fill: "#313244"
-    style.stroke: "#a6e3a1"
-    style.font-color: "#cdd6f4"
-
-    infra: Infrastructure {
-      style.fill: "#45475a"
-      style.font-color: "#cdd6f4"
-      label: |md
-        Dockerfile
-        pyproject.toml
-      |
-    }
-
-    substrate: "substrate/" {
-      style.fill: "#45475a"
-      style.stroke: "#a6e3a1"
-      style.font-color: "#cdd6f4"
-
-      core: Core {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          main.py — FastAPI app + WS
-          db.py — asyncpg pool + migrations
-          crud.py — DB queries + optimistic lock
-          ws.py — ConnectionManager
-          streamhub.py — Redis stream readers
-          sdk.py — Component base class
-          registry.py — ComponentRegistry
-          schemas.py — Pydantic models
-          messages.py — WS message types
-        |
-      }
-
-      components: "components/ (13)" {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          prompt_input.py (COMPUTED)
-          feature_bars.py (SUBSCRIBER)
-          hidden_state_cloud.py (SUBSCRIBER)
-          persistence_diagram.py (SUBSCRIBER)
-          confidence_gauge.py (SUBSCRIBER)
-          bridge_monitor.py (SUBSCRIBER)
-          explain_waterfall.py (SUBSCRIBER)
-          drift_matrix.py (SUBSCRIBER)
-          lf_coordinator.py (SUBSCRIBER)
-          lf_stats.py (SUBSCRIBER)
-          lf_autorel.py (SUBSCRIBER)
-          research_bridge.py (SUBSCRIBER)
-          research_coordinator.py (SUBSCRIBER)
-        |
-      }
-    }
-  }
-
-  frontend: "frontend/" {
-    style.fill: "#313244"
-    style.stroke: "#89b4fa"
-    style.font-color: "#cdd6f4"
-
-    infra2: Infrastructure {
-      style.fill: "#45475a"
-      style.font-color: "#cdd6f4"
-      label: |md
-        package.json
-        vite.config.ts
-        tsconfig.json
-        index.html
-      |
-    }
-
-    src: "src/" {
-      style.fill: "#45475a"
-      style.stroke: "#89b4fa"
-      style.font-color: "#cdd6f4"
-
-      entry: Entry {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          main.tsx
-          App.tsx
-          index.css
-        |
-      }
-
-      canvas_dir: "components/canvas/" {
-        style.fill: "#585b70"
-        style.stroke: "#a6e3a1"
-        style.font-color: "#cdd6f4"
-        label: |md
-          SubstrateCanvas.tsx
-          TabBar.tsx
-          SplitPane.tsx
-          CanvasControls.tsx
-          PipelineTimeline.tsx
-          node-types.ts (20 types)
-        |
-      }
-
-      nodes_dir: "components/nodes/ (23 files)" {
-        style.fill: "#585b70"
-        style.stroke: "#f38ba8"
-        style.font-color: "#cdd6f4"
-        label: |md
-          BaseNodeShell.tsx + Sparkline.tsx
-          PromptInputNode, HiddenStateCloudNode
-          FeatureBarsNode, PersistenceDiagramNode
-          ConfidenceGaugeNode, BridgeMonitorNode
-          ExplainWaterfallNode, DriftMatrixNode
-          LfCoordinatorNode, LfStageCard
-          LfStatsNode, LfAutoRelNode
-          PipelineGroupNode, PaperPoolSection
-          ResearchBridgeNode, ResearchCoordinatorNode
-          R2BridgeNode, R2CoordinatorNode
-          R2StatsNode, R2AutoRelNode, R2StateNode
-        |
-      }
-
-      panels_dir: "components/panels/" {
-        style.fill: "#585b70"
-        style.stroke: "#f9e2af"
-        style.font-color: "#cdd6f4"
-        label: |md
-          DetailPanel.tsx (420px, 4 tabs)
-          EventLog.tsx
-        |
-      }
-
-      charts_dir: "components/charts/" {
-        style.fill: "#585b70"
-        style.stroke: "#89b4fa"
-        style.font-color: "#cdd6f4"
-        label: |md
-          TimeSeriesChart.tsx
-          DistributionChart.tsx
-          StatsSummary.tsx
-        |
-      }
-
-      edges_dir: "components/edges/" {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          edge-types.ts
-          StaleEdge.tsx
-        |
-      }
-
-      linkforge_dir: "components/linkforge/" {
-        style.fill: "#585b70"
-        style.stroke: "#fab387"
-        style.font-color: "#cdd6f4"
-        label: |md
-          PaperCard.tsx
-          PaperDetail.tsx
-          PaperPool.tsx
-        |
-      }
-
-      lib_dir: "lib/" {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          ws/client.ts — SubstrateWS
-          store/canvas-store.ts (Zustand+zundo)
-          store/ui-store.ts
-          store/drift-store.ts
-          store/event-log-store.ts
-          hooks/useNodeHistory.ts
-          hooks/useNodeStats.ts
-          drift/psi.ts
-          layout/elk-layout.ts
-          layout/elk-worker.ts
-        |
-      }
-
-      types_dir: "types/" {
-        style.fill: "#585b70"
-        style.font-color: "#cdd6f4"
-        label: |md
-          nodes.ts
-          messages.ts
-        |
-      }
-    }
-  }
-
-  tests: "tests/" {
-    style.fill: "#313244"
-    style.stroke: "#f9e2af"
-    style.font-color: "#cdd6f4"
-    label: |md
-      visual/run_visual_tests.py
-      visual/specs/*.yaml (19 specs)
-      visual/screenshots/run-*/
-    |
-  }
-
-  daemons: "daemons/topoconf/" {
-    style.fill: "#313244"
-    style.stroke: "#cba6f7"
-    style.font-color: "#cdd6f4"
-    label: |md
-      Dockerfile
-      pyproject.toml
-      adapter.py — TopoBridge
-      topoconf_daemon.py — XREAD control loop
-    |
   }
 }
+
+frontend: "frontend/src/" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+
+  canvas: "components/canvas/ (6 files)\nSubstrateCanvas, TabBar, SplitPane\nCanvasControls, PipelineTimeline\nnode-types.ts (20 type mappings)" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  nodes: "components/nodes/ (23 files)\nBaseNodeShell + Sparkline\n8 Pipeline + 7 Research + 5 R2\nDriftMatrix + PaperPoolSection" {
+    style.fill: "#313244"
+    style.stroke: "#f38ba8"
+    style.font-color: "#cdd6f4"
+  }
+
+  panels: "components/panels/\nDetailPanel (420px, 4 tabs)\nEventLog" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  lib: "lib/\nws/client.ts — SubstrateWS\nstore/ — 4 Zustand stores\nhooks/ — useNodeHistory, useNodeStats\ndrift/psi.ts, layout/elk-*" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  linkforge: "components/linkforge/\nPaperPool, PaperCard, PaperDetail" {
+    style.fill: "#313244"
+    style.stroke: "#fab387"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+daemons: "daemons/topoconf/\nadapter.py — TopoBridge (7 stages)\ntopoconf_daemon.py — XREAD loop" {
+  style.fill: "#313244"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+}
+
+tests: "tests/visual/\nrun_visual_tests.py (19 specs)\nspecs/*.yaml per node" {
+  style.fill: "#313244"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+}
+
+config -> migrations: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+migrations -> server: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+server -> frontend: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+frontend -> daemons: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+daemons -> tests: "" {style.stroke: "#585b70"; style.stroke-width: 1}

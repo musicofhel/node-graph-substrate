@@ -1,4 +1,4 @@
-direction: right
+direction: down
 
 title: {
   label: WebSocket Protocol
@@ -8,176 +8,41 @@ title: {
   style.bold: true
 }
 
-client: Browser {
-  style.fill: "#1e1e2e"
-  style.stroke: "#89b4fa"
-  style.font-color: "#cdd6f4"
-}
-
-server: FastAPI WS {
-  style.fill: "#1e1e2e"
+endpoint: "Single endpoint: ws://host:8080/ws/canvas/{graph_id}" {
+  style.fill: "#313244"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
 }
 
-client_msgs: "Client → Server" {
-  style.fill: "#11111b"
+client_to_server: "Client → Server (3 message types)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
-
-  compute: ComputeRequest {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **ComputeRequest**
-      ```json
-      {
-        "type": "compute_request",
-        "request_id": "abc123",
-        "node_id": "prompt-1",
-        "inputs": { "config": { "prompt": "..." } }
-      }
-      ```
-    |
-  }
-
-  config: ConfigUpdateMsg {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **ConfigUpdateMsg**
-      ```json
-      {
-        "type": "config_update",
-        "node_id": "prompt-1",
-        "config": { "prompt": "new text" }
-      }
-      ```
-    |
-  }
-
-  resub: Resubscribe {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **Resubscribe**
-      ```json
-      {
-        "type": "resubscribe",
-        "subscriptions": [
-          { "stream": "topoconf:scoring:...", "node_id": "cloud-1" }
-        ]
-      }
-      ```
-    |
-  }
+  compute_request: "request_id, node_id, inputs.config.prompt" {constraint: "trigger build()"}
+  config_update: "node_id, config (JSONB patch)" {constraint: "persist + broadcast"}
+  resubscribe: "subscriptions: [{stream, node_id}]" {constraint: "after reconnect"}
 }
 
-server_msgs: "Server → Client" {
-  style.fill: "#11111b"
+server_to_client: "Server → Client (6 message types)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
-
-  loaded: GraphLoaded {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **GraphLoaded** (on connect)
-      ```json
-      {
-        "type": "graph_loaded",
-        "graph_id": "uuid",
-        "version": 3,
-        "nodes": [...],
-        "edges": [...],
-        "manifests": [...]
-      }
-      ```
-    |
-  }
-
-  stream: StreamEvent {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **StreamEvent** (from Redis)
-      ```json
-      {
-        "type": "stream_event",
-        "node_id": "cloud-1",
-        "stream": "topoconf:scoring:...",
-        "cursor": "1715000000000-0",
-        "payload": { ... },
-        "ts": 1715000000.0
-      }
-      ```
-    |
-  }
-
-  result: ComputationResult {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **ComputationResult**
-      ```json
-      {
-        "type": "computation_result",
-        "request_id": "abc123",
-        "node_id": "prompt-1",
-        "ok": true,
-        "outputs": { "features": {...} }
-      }
-      ```
-    |
-  }
-
-  state: NodeStateUpdated {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **NodeStateUpdated**
-      ```json
-      {
-        "type": "node_state_updated",
-        "node_id": "prompt-1",
-        "data_patch": { "config": {...} }
-      }
-      ```
-    |
-  }
-
-  error: ErrorMsg {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **ErrorMsg**
-      ```json
-      {
-        "type": "error",
-        "code": "parse_error",
-        "message": "..."
-      }
-      ```
-    |
-  }
-
-  replay_gap: ReplayGap {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **ReplayGap**
-      ```json
-      {
-        "type": "replay_gap",
-        "node_id": "cloud-1",
-        "stream": "topoconf:scoring:...",
-        "requested_from": "0-0",
-        "earliest_available": "1715000000000-0"
-      }
-      ```
-    |
-  }
+  graph_loaded: "graph_id, version, nodes[], edges[], manifests[]" {constraint: "on connect"}
+  stream_event: "node_id, stream, cursor, payload, ts" {constraint: "from Redis"}
+  computation_result: "request_id, node_id, ok, outputs/error" {constraint: "build() response"}
+  node_state_updated: "node_id, data_patch (config change)" {constraint: "broadcast"}
+  replay_gap: "node_id, stream, requested_from, earliest" {constraint: "cursor too old"}
+  error: "code, message" {constraint: "parse/validation"}
 }
 
-client -> client_msgs
-server -> server_msgs
+validation: "All messages: JSON, validated via Pydantic discriminated unions" {
+  style.fill: "#313244"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+}
+
+endpoint -> client_to_server: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+client_to_server -> server_to_client: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+server_to_client -> validation: "" {style.stroke: "#585b70"; style.stroke-width: 1}

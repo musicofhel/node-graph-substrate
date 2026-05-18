@@ -94,20 +94,32 @@ migrations: _migrations {
 
 projects -> graphs: "1:N ON DELETE CASCADE" {
   style.stroke: "#89b4fa"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
 }
 graphs -> graph_versions: "1:N ON DELETE CASCADE" {
   style.stroke: "#a6e3a1"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
 }
 graphs -> nodes: "1:N ON DELETE CASCADE" {
   style.stroke: "#a6e3a1"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
 }
 nodes -> node_configs: "1:1 ON DELETE CASCADE" {
   style.stroke: "#f38ba8"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
 }
 graphs -> edges: "1:N ON DELETE CASCADE" {
   style.stroke: "#a6e3a1"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
 }
 nodes -> edges: "source FK CASCADE" {
   style.stroke: "#f38ba8"
+  style.stroke-width: 2
   style.stroke-dash: 3
+  style.font-color: "#cdd6f4"
 }

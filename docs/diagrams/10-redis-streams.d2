@@ -1,267 +1,80 @@
-direction: right
+direction: down
 
 title: {
-  label: "Redis Streams Schema — 23 Streams"
+  label: "Redis Streams — 23 Streams"
   near: top-center
   shape: text
   style.font-size: 28
   style.bold: true
 }
 
-control: Control Channel {
-  style.fill: "#1e1e2e"
-  style.stroke: "#cba6f7"
-  style.font-color: "#cdd6f4"
-
-  ctrl: "topoconf:control" {
-    style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:control**
-      Direction: Server → Daemon
-      Payload: {command, prompt, run_id}
-      Size: ~1 KB
-    |
-  }
-}
-
-scoring: "TopoConf Scoring (6 streams)" {
-  style.fill: "#1e1e2e"
-  style.stroke: "#cba6f7"
-  style.font-color: "#cdd6f4"
-
-  s1: "hidden_state_cloud" {
-    style.fill: "#313244"
-    style.stroke: "#3b82f6"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:hidden_state_cloud**
-      {prompt_id, umap_3d (N x 3),
-       clusters, bridge_idx, bridge_silhouette}
-      ~40 KB
-    |
-  }
-
-  s2: "persistence_computed" {
-    style.fill: "#313244"
-    style.stroke: "#a78bfa"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:persistence_computed**
-      {prompt_id, H0: [[b,d]...],
-       H1: [[b,d]...], H2: [[b,d]...]}
-      ~5 KB
-    |
-  }
-
-  s3: "features_computed" {
-    style.fill: "#313244"
-    style.stroke: "#22d3ee"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:features_computed**
-      {prompt_id, features: {name: value x 13}}
-      ~1 KB
-    |
-  }
-
-  s4: "confidence_scored" {
-    style.fill: "#313244"
-    style.stroke: "#4ade80"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:confidence_scored**
-      {prompt_id, confidence: 0.82, mode: "heuristic"}
-      ~0.5 KB
-    |
-  }
-
-  s5: "bridge_health" {
-    style.fill: "#313244"
-    style.stroke: "#fbbf24"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:bridge_health**
-      {prompt_id, healthy, bridge_at_pos0,
-       silhouette_by_layer, anomaly_reason}
-      ~1 KB
-    |
-  }
-
-  s6: "explain_result" {
-    style.fill: "#313244"
-    style.stroke: "#f87171"
-    style.font-color: "#cdd6f4"
-    label: |md
-      **topoconf:scoring:explain_result**
-      {prompt_id, confidence, features:
-       {name: {raw, scaled, coef, contrib}},
-       top_contributor}
-      ~2 KB
-    |
-  }
-}
-
-linkforge: "LinkForge Ingestion (10 streams)" {
-  style.fill: "#1e1e2e"
-  style.stroke: "#fab387"
-  style.font-color: "#cdd6f4"
-
-  lf1: "ingested" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:ingested**
-      {paper_id, url, title, source}
-    |
-  }
-  lf2: "extracted" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:extracted**
-      {paper_id, abstract, authors, year}
-    |
-  }
-  lf3: "categorized" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:categorized**
-      {paper_id, categories, relevance}
-    |
-  }
-  lf4: "embedded" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:embedded**
-      {paper_id, vector_dim, model}
-    |
-  }
-  lf5: "stored" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:stored**
-      {paper_id, neo4j_id}
-    |
-  }
-  lf6: "chunked" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:chunked**
-      {paper_id, chunk_count}
-    |
-  }
-  lf7: "auto_related" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:auto_related**
-      {paper_id, related_ids, scores}
-    |
-  }
-  lf8: "research_bridged" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:research_bridged**
-      {paper_id, triage_candidate}
-    |
-  }
-  lf9: "url_discovered" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:url_discovered**
-      {url, source, context}
-    |
-  }
-  lf10: "completed" {
-    style.fill: "#313244"
-    style.font-color: "#fab387"
-    label: |md
-      **linkforge:completed**
-      {paper_id, duration_ms, stages_ok}
-    |
-  }
-}
-
-autorel: "LinkForge AutoRel (1 stream)" {
-  style.fill: "#1e1e2e"
-  style.stroke: "#f38ba8"
-  style.font-color: "#cdd6f4"
-
-  ar1: "sweep_completed" {
-    style.fill: "#313244"
-    style.font-color: "#f38ba8"
-    label: |md
-      **linkforge:autorel:sweep_completed**
-      {sweep_id, papers_scored,
-       new_relations, duration_ms}
-    |
-  }
-}
-
-research: "Research Lifecycle (5 streams)" {
-  style.fill: "#1e1e2e"
-  style.stroke: "#a6e3a1"
-  style.font-color: "#cdd6f4"
-
-  r1: "triaged" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-    label: |md
-      **topoconf:research:triaged**
-      {paper_id, priority, rationale}
-    |
-  }
-  r2: "script_generated" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-    label: |md
-      **topoconf:research:script_generated**
-      {paper_id, script_path}
-    |
-  }
-  r3: "experiment_started" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-    label: |md
-      **topoconf:research:experiment_started**
-      {paper_id, run_id, gpu}
-    |
-  }
-  r4: "experiment_completed" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-    label: |md
-      **topoconf:research:experiment_completed**
-      {paper_id, run_id, metrics}
-    |
-  }
-  r5: "promoted" {
-    style.fill: "#313244"
-    style.font-color: "#a6e3a1"
-    label: |md
-      **topoconf:research:promoted**
-      {paper_id, target_pathway}
-    |
-  }
-}
-
-config: Stream Config {
+control: "Control Channel (1 stream)" {
+  shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
-  label: |md
-    **All 23 Streams**
-    - MAXLEN ~ 10000 (approximate trimming)
-    - Plain XREAD (not XREADGROUP)
-    - Broadcast semantics
-    - Payload field: "data" (JSON string)
-    - Max payload: 256 KB assertion
-  |
+  topoconf_control: "Server → Daemon: {command, prompt, run_id} ~1KB" {constraint: "→ daemon"}
 }
+
+scoring: "TopoConf Scoring (6 streams)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+  hidden_state_cloud: "{umap_3d (Nx3), clusters, bridge_idx} ~40KB" {constraint: "scoring"}
+  persistence_computed: "{H0, H1, H2 birth-death pairs} ~5KB" {constraint: "scoring"}
+  features_computed: "{features: {name: value} x 13} ~1KB" {constraint: "scoring"}
+  confidence_scored: "{confidence, mode} ~0.5KB" {constraint: "scoring"}
+  bridge_health: "{healthy, bridge_at_pos0, silhouette_by_layer} ~1KB" {constraint: "scoring"}
+  explain_result: "{features: {raw, scaled, coef, contrib}} ~2KB" {constraint: "scoring"}
+}
+
+linkforge: "LinkForge Ingestion (10 streams)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+  ingested: "{paper_id, url, title, source}" {constraint: "linkforge"}
+  extracted: "{paper_id, abstract, authors, year}" {constraint: "linkforge"}
+  categorized: "{paper_id, categories, relevance}" {constraint: "linkforge"}
+  embedded: "{paper_id, vector_dim, model}" {constraint: "linkforge"}
+  stored: "{paper_id, neo4j_id}" {constraint: "linkforge"}
+  chunked: "{paper_id, chunk_count}" {constraint: "linkforge"}
+  auto_related: "{paper_id, related_ids, scores}" {constraint: "linkforge"}
+  research_bridged: "{paper_id, triage_candidate}" {constraint: "linkforge"}
+  url_discovered: "{url, source, context}" {constraint: "linkforge"}
+  completed: "{paper_id, duration_ms, stages_ok}" {constraint: "linkforge"}
+}
+
+autorel: "LinkForge AutoRel (1 stream)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+  sweep_completed: "{sweep_id, papers_scored, new_relations, duration_ms}" {constraint: "autorel"}
+}
+
+research: "Research Lifecycle (5 streams)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+  triaged: "{paper_id, priority, rationale}" {constraint: "research"}
+  script_generated: "{paper_id, script_path}" {constraint: "research"}
+  experiment_started: "{paper_id, run_id, gpu}" {constraint: "research"}
+  experiment_completed: "{paper_id, run_id, metrics}" {constraint: "research"}
+  promoted: "{paper_id, target_pathway}" {constraint: "research"}
+}
+
+config: "Stream Configuration" {
+  style.fill: "#313244"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+  label: "Stream Configuration\n\nAll 23 streams: MAXLEN ~ 10000\nPlain XREAD (not XREADGROUP) — broadcast\nPayload field: \"data\" (JSON string)\nMax payload: 256 KB assertion"
+}
+
+control -> scoring: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+scoring -> linkforge: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+linkforge -> autorel: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+autorel -> research: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+research -> config: "" {style.stroke: "#585b70"; style.stroke-width: 1}

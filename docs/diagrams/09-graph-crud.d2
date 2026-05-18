@@ -39,8 +39,10 @@ first_visit: First Visit {
     style.font-color: "#cdd6f4"
   }
 
-  check -> create_proj: "no cached ID"
-  create_proj -> create_graph -> seed -> save
+  check -> create_proj: "no cached ID" {style.stroke-width: 2; style.font-color: "#cdd6f4"}
+  create_proj -> create_graph: "" {style.stroke-width: 2}
+  create_graph -> seed: "" {style.stroke-width: 2}
+  seed -> save: "" {style.stroke-width: 2}
 }
 
 load: Load Graph {
@@ -64,7 +66,8 @@ load: Load Graph {
     style.font-color: "#cdd6f4"
   }
 
-  fetch -> hydrate -> track
+  fetch -> hydrate: "" {style.stroke-width: 2}
+  hydrate -> track: "" {style.stroke-width: 2}
 }
 
 save_flow: Save Graph {
@@ -98,7 +101,10 @@ save_flow: Save Graph {
     style.font-color: "#cdd6f4"
   }
 
-  diff -> build_ops -> patch -> version -> update
+  diff -> build_ops: "" {style.stroke-width: 2}
+  build_ops -> patch: "" {style.stroke-width: 2}
+  patch -> version: "" {style.stroke-width: 2}
+  version -> update: "" {style.stroke-width: 2}
 }
 
 conflict: Version Conflict (409) {
@@ -122,8 +128,10 @@ conflict: Version Conflict (409) {
     style.font-color: "#f9e2af"
   }
 
-  detect -> respond -> reload
+  detect -> respond: "" {style.stroke-width: 2}
+  respond -> reload: "" {style.stroke-width: 2}
 }
 
-first_visit -> load: "next visit"
-save_flow.patch -> conflict.detect: "version mismatch" {style.stroke: "#f38ba8"; style.stroke-dash: 3}
+first_visit -> load: "next visit" {style.stroke-width: 2; style.font-color: "#cdd6f4"}
+load -> save_flow: "" {style.stroke-width: 2; style.stroke: "#585b70"}
+save_flow.patch -> conflict.detect: "version mismatch" {style.stroke: "#f38ba8"; style.stroke-width: 2; style.stroke-dash: 3; style.font-color: "#cdd6f4"}

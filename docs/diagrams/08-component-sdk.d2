@@ -1,135 +1,76 @@
 direction: down
 
 title: {
-  label: "Backend Component SDK — 13 Components"
+  label: "Backend Component SDK"
   near: top-center
   shape: text
   style.font-size: 28
   style.bold: true
 }
 
-enums: Enums {
+enums: "Enums" {
   style.fill: "#1e1e2e"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
 
-  socket_type: "SocketType (str Enum)\nPROMPT EXTRACTION FEATURES\nCONFIDENCE BRIDGE_HEALTH\nEXPLANATION DIAGRAMS" {
+  socket_type: "SocketType (str Enum)\nPROMPT, EXTRACTION, FEATURES\nCONFIDENCE, BRIDGE_HEALTH\nEXPLANATION, DIAGRAMS" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 
-  node_kind: "NodeKind (str Enum)\nCOMPUTED SUBSCRIBER" {
+  node_kind: "NodeKind (str Enum)\nCOMPUTED, SUBSCRIBER" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 }
 
-socket: "Socket (dataclass)\nid str\ntype SocketType\nlabel str" {
+socket: "Socket (dataclass)\nid: str, type: SocketType, label: str" {
   style.fill: "#1e1e2e"
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 }
 
-manifest: "ComponentManifest (dataclass)\ntype_id kind label category\ninputs/outputs list of Socket\nsubscribed_streams list of str\nconfig_fields list of dict" {
+manifest: "ComponentManifest (dataclass)\ntype_id, kind, label, category\ninputs/outputs: list[Socket]\nsubscribed_streams: list[str]\nconfig_fields: list[dict]" {
   style.fill: "#1e1e2e"
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
 }
 
-base: "Component (base class)\n\nClass: type_id kind label category\n  inputs outputs subscribed_streams\n\nInstance: node_id config\n\nMethods: manifest() on_init()\n  build(**inputs) on_event()\n  on_config_change() on_destroy()" {
+base: "Component (base class)\n\nClass attrs: type_id, kind, label, category\n  inputs, outputs, subscribed_streams\n\nMethods: manifest(), build(**inputs)\n  on_init(), on_event(), on_config_change()\n  on_destroy()" {
   style.fill: "#1e1e2e"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
 }
 
-registry_cls: "ComponentRegistry\n\nregister(cls) - decorator\nget(type_id) - lookup\nmanifests() - all manifests\ncreate_instance(type_id node_id config)" {
+registry: "ComponentRegistry\nregister(cls) — decorator\nget(type_id) — lookup\nmanifests() — all manifests\ncreate_instance(type_id, node_id, config)" {
   style.fill: "#1e1e2e"
   style.stroke: "#cba6f7"
   style.font-color: "#cdd6f4"
 }
 
-impls: "Implementations (13)" {
+impls: "Registered Implementations (13)" {
+  shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#f38ba8"
   style.font-color: "#cdd6f4"
-
-  topo: TopoConf Scoring {
-    style.fill: "#313244"
-    style.stroke: "#cba6f7"
-    style.font-color: "#cdd6f4"
-
-    pi: "PromptInputComponent\nCOMPUTED" {
-      style.fill: "#45475a"
-      style.font-color: "#89b4fa"
-    }
-    fb: "FeatureBarsComponent\nSUBSCRIBER features_computed" {
-      style.fill: "#45475a"
-      style.font-color: "#22d3ee"
-    }
-    hsc: "HiddenStateCloudComponent\nSUBSCRIBER hidden_state_cloud" {
-      style.fill: "#45475a"
-      style.font-color: "#3b82f6"
-    }
-    pd: "PersistenceDiagramComponent\nSUBSCRIBER persistence_computed" {
-      style.fill: "#45475a"
-      style.font-color: "#a78bfa"
-    }
-    cg: "ConfidenceGaugeComponent\nSUBSCRIBER confidence_scored" {
-      style.fill: "#45475a"
-      style.font-color: "#4ade80"
-    }
-    bm: "BridgeMonitorComponent\nSUBSCRIBER bridge_health" {
-      style.fill: "#45475a"
-      style.font-color: "#fbbf24"
-    }
-    ew: "ExplainWaterfallComponent\nSUBSCRIBER explain_result" {
-      style.fill: "#45475a"
-      style.font-color: "#f87171"
-    }
-  }
-
-  lf: LinkForge {
-    style.fill: "#313244"
-    style.stroke: "#fab387"
-    style.font-color: "#cdd6f4"
-
-    lfc: "LfCoordinatorComponent\nSUBSCRIBER 10 linkforge:* streams" {
-      style.fill: "#45475a"
-      style.font-color: "#fab387"
-    }
-    lfs: "LfStatsComponent\nSUBSCRIBER linkforge:completed" {
-      style.fill: "#45475a"
-      style.font-color: "#f9e2af"
-    }
-    lfa: "LfAutoRelComponent\nSUBSCRIBER linkforge:autorel:sweep_completed" {
-      style.fill: "#45475a"
-      style.font-color: "#f38ba8"
-    }
-  }
-
-  research: Research {
-    style.fill: "#313244"
-    style.stroke: "#a6e3a1"
-    style.font-color: "#cdd6f4"
-
-    dm: "DriftMatrixComponent\nno streams — local drift compute" {
-      style.fill: "#45475a"
-      style.font-color: "#f9e2af"
-    }
-    rb: "ResearchBridgeComponent\nSUBSCRIBER linkforge:research_bridged" {
-      style.fill: "#45475a"
-      style.font-color: "#a6e3a1"
-    }
-    rc: "ResearchCoordinatorComponent\nSUBSCRIBER 5 topoconf:research:* streams" {
-      style.fill: "#45475a"
-      style.font-color: "#89b4fa"
-    }
-  }
+  PromptInputComponent: "COMPUTED — input" {constraint: "topoconf"}
+  HiddenStateCloudComponent: "SUBSCRIBER — extraction" {constraint: "topoconf"}
+  FeatureBarsComponent: "SUBSCRIBER — topology" {constraint: "topoconf"}
+  PersistenceDiagramComponent: "SUBSCRIBER — topology" {constraint: "topoconf"}
+  ConfidenceGaugeComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
+  BridgeMonitorComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
+  ExplainWaterfallComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
+  DriftMatrixComponent: "SUBSCRIBER — scoring (local)" {constraint: "topoconf"}
+  LfCoordinatorComponent: "SUBSCRIBER — coordination" {constraint: "linkforge"}
+  LfStatsComponent: "SUBSCRIBER — metrics" {constraint: "linkforge"}
+  LfAutoRelComponent: "SUBSCRIBER — metrics" {constraint: "linkforge"}
+  ResearchBridgeComponent: "SUBSCRIBER — coordination" {constraint: "research"}
+  ResearchCoordinatorComponent: "SUBSCRIBER — coordination" {constraint: "research"}
 }
 
-enums.socket_type -> socket
-socket -> manifest
-enums.node_kind -> manifest
-base -> manifest: "classmethod manifest()"
-base -> impls: extends {style.stroke-dash: 3}
-impls -> registry_cls: "@registry.register" {style.stroke: "#cba6f7"}
+enums.socket_type -> socket: "" {style.stroke-width: 2; style.stroke: "#585b70"}
+enums.node_kind -> manifest: "" {style.stroke-width: 2; style.stroke: "#585b70"}
+socket -> manifest: "" {style.stroke-width: 2; style.stroke: "#89b4fa"}
+base -> manifest: "classmethod manifest()" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#a6e3a1"}
+base -> impls: "extends" {style.stroke-width: 2; style.stroke-dash: 3; style.font-color: "#cdd6f4"; style.stroke: "#f38ba8"}
+impls -> registry: "@registry.register" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#cba6f7"}

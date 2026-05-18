@@ -12,6 +12,10 @@ import { NODE_REGISTRY, canvasTypeFromName } from "./lib/nodes/registry";
 
 const API_BASE = `http://${window.location.hostname}:8080`;
 
+if (import.meta.env.DEV) {
+  (window as any).__canvasStore = useCanvasStore;
+}
+
 const STREAM_TO_STAGE: Record<string, string> = {
   "linkforge:ingested": "ingested",
   "linkforge:extracted": "extracted",

@@ -1,0 +1,100 @@
+direction: down
+
+title: {
+  label: Frontend Component Tree
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+app: "App.tsx\nGraph init, WS lifecycle, compute handler" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+}
+
+tabbar: "TabBar\nPipeline | Research | Research v2" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+}
+
+splitpane: "SplitPane\ntop: canvas, bottom: paper pool (Research)" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#585b70"
+  style.font-color: "#cdd6f4"
+}
+
+canvas: SubstrateCanvas {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+
+  palette: "NodePalette\nfilters by canvas type, drag-to-add" {
+    style.fill: "#313244"
+    style.stroke: "#cba6f7"
+    style.font-color: "#cdd6f4"
+  }
+
+  rf: "ReactFlow\nBackground + Controls + MiniMap" {
+    style.fill: "#313244"
+    style.stroke: "#a6e3a1"
+    style.font-color: "#cdd6f4"
+  }
+
+  controls: "CanvasControls\nSave / Load / Layout" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+  }
+
+  timeline: "PipelineTimeline\nLinkForge stage timeline" {
+    style.fill: "#313244"
+    style.stroke: "#fab387"
+    style.font-color: "#cdd6f4"
+  }
+
+  detail: "DetailPanel (420px sidebar)\nOverview | Series | Config | Drift" {
+    style.fill: "#313244"
+    style.stroke: "#f38ba8"
+    style.font-color: "#cdd6f4"
+  }
+
+  eventlog: "EventLog\nreal-time stream inspector" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+nodes: "20 Custom Nodes (all memo'd)" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+
+  shell: "BaseNodeShell\nNodeResizer + selection + category color + health band" {
+    style.fill: "#313244"
+    style.stroke: "#f9e2af"
+    style.font-color: "#cdd6f4"
+  }
+}
+
+charts: "Charts\nTimeSeriesChart, DistributionChart, StatsSummary" {
+  style.fill: "#313244"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+}
+
+linkforge: "LinkForge UI\nPaperPool, PaperCard, PaperDetail" {
+  style.fill: "#313244"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+}
+
+app -> tabbar: "" {style.stroke-width: 2; style.stroke: "#89b4fa"}
+tabbar -> splitpane: "" {style.stroke-width: 2; style.stroke: "#cba6f7"}
+splitpane -> canvas: "top pane" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#a6e3a1"}
+splitpane -> linkforge: "bottom pane (Research)" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#fab387"}
+canvas.rf -> nodes: "renders" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#f38ba8"}
+canvas.detail -> charts: "uses" {style.stroke-width: 2; style.stroke-dash: 3; style.font-color: "#cdd6f4"; style.stroke: "#89b4fa"}

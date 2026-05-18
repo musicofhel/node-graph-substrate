@@ -61,6 +61,9 @@ export function SubstrateCanvas() {
 
   const handleInit = useCallback((instance: ReactFlowInstance) => {
     rfInstance.current = instance;
+    if (import.meta.env.DEV) {
+      (window as any).__rfInstance = instance;
+    }
   }, []);
 
   const isValidConnection = useCallback((connection: Edge | Connection) => {

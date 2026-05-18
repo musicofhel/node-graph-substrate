@@ -1,0 +1,89 @@
+direction: down
+
+title: {
+  label: State Management
+  near: top-center
+  shape: text
+  style.font-size: 28
+  style.bold: true
+}
+
+ws: "SubstrateWS (client.ts)\nExponential backoff 1s→10s\n500ms throttled flush\nAuto-resubscribe on reconnect" {
+  style.fill: "#1e1e2e"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+}
+
+canvas_store: "canvas-store (Zustand + zundo)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+  nodes: "Node[] — React Flow node state" {constraint: "state"}
+  edges: "Edge[] — React Flow edge state" {constraint: "state"}
+  graphId: "string — current graph UUID" {constraint: "state"}
+  graphVersion: "number — optimistic lock version" {constraint: "state"}
+  saveGraph: "() → PATCH /api/graphs/{id}/ops" {constraint: "action"}
+  loadGraph: "(id) → GET /api/graphs/{id}" {constraint: "action"}
+  batchUpdateNodeData: "(updates) → merge stream data" {constraint: "action"}
+}
+
+ui_store: "ui-store" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+  canvasSplitRatio: "number — resizable split pane (0.2–0.8)" {constraint: "state"}
+  eventLogOpen: "boolean — toggle event log panel" {constraint: "state"}
+  sidebarOpen: "boolean — detail panel visibility" {constraint: "state"}
+  detailPanelTab: "overview | timeseries | config | drift" {constraint: "state"}
+}
+
+drift_store: "drift-store" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f9e2af"
+  style.font-color: "#cdd6f4"
+  baselines: "Map<nodeId, number[]> — PSI reference" {constraint: "state"}
+  alerts: "Map<nodeId, DriftAlert> — active alerts" {constraint: "state"}
+  psiValues: "Map<nodeId, number> — current PSI scores" {constraint: "state"}
+}
+
+event_log_store: "event-log-store" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+  events: "StreamEvent[] — buffered log entries" {constraint: "state"}
+  filters: "stream, node_id, type filters" {constraint: "state"}
+  paused: "boolean — freeze log display" {constraint: "state"}
+}
+
+hooks: "Hooks\nuseNodeHistory — time-windowed data buffer\nuseNodeStats — aggregate stats from history" {
+  style.fill: "#313244"
+  style.stroke: "#a6e3a1"
+  style.font-color: "#cdd6f4"
+}
+
+ws -> canvas_store: "batchUpdateNodeData()\nvia throttled flush" {
+  style.stroke: "#a6e3a1"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
+}
+ws -> event_log_store: "stream events" {
+  style.stroke: "#f38ba8"
+  style.stroke-width: 2
+  style.font-color: "#cdd6f4"
+}
+hooks -> canvas_store: "reads node data" {
+  style.stroke: "#89b4fa"
+  style.stroke-width: 2
+  style.stroke-dash: 3
+  style.font-color: "#cdd6f4"
+}
+hooks -> drift_store: "writes PSI values" {
+  style.stroke: "#f9e2af"
+  style.stroke-width: 2
+  style.stroke-dash: 3
+  style.font-color: "#cdd6f4"
+}

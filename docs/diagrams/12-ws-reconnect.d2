@@ -34,7 +34,9 @@ connect: Initial Connect {
     style.font-color: "#cdd6f4"
   }
 
-  init -> create_ws -> ws_connect -> server_accept
+  init -> create_ws: "" {style.stroke-width: 2}
+  create_ws -> ws_connect: "" {style.stroke-width: 2}
+  ws_connect -> server_accept: "" {style.stroke-width: 2}
 }
 
 steady: Steady State {
@@ -42,7 +44,7 @@ steady: Steady State {
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 
-  incoming: "stream_event / node_state_updated\n→ RAF coalescing → batchUpdateNodeData()" {
+  incoming: "stream_event / node_state_updated\n→ 500ms throttled flush → batchUpdateNodeData()" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
@@ -73,8 +75,8 @@ disconnect: Disconnect {
     style.font-color: "#f38ba8"
   }
 
-  ws_close -> server_cleanup
-  ws_close -> client_cleanup
+  ws_close -> server_cleanup: "" {style.stroke-width: 2}
+  ws_close -> client_cleanup: "" {style.stroke-width: 2}
 }
 
 reconnect: Reconnect {
@@ -103,23 +105,25 @@ reconnect: Reconnect {
     style.font-color: "#a6e3a1"
   }
 
-  backoff -> retry -> resub -> server_resub
+  backoff -> retry: "" {style.stroke-width: 2}
+  retry -> resub: "" {style.stroke-width: 2}
+  resub -> server_resub: "" {style.stroke-width: 2}
 }
 
 graceful: Graceful Disconnect {
   style.fill: "#1e1e2e"
-  style.stroke: "#585b70"
+  style.stroke: "#6c7086"
   style.font-color: "#cdd6f4"
 
   unmount: "React unmount / graphId change\nshouldReconnect = false\nws.disconnect()" {
     shape: step
     style.fill: "#313244"
-    style.font-color: "#585b70"
+    style.font-color: "#cdd6f4"
   }
 }
 
-connect -> steady
-steady -> disconnect: "connection lost"
-disconnect -> reconnect: "shouldReconnect = true"
-reconnect.server_resub -> steady: "back to steady state"
-steady -> graceful: "component cleanup"
+connect -> steady: "" {style.stroke-width: 2; style.stroke: "#a6e3a1"}
+steady -> disconnect: "connection lost" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#f38ba8"}
+disconnect -> reconnect: "shouldReconnect = true" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#f9e2af"}
+reconnect.server_resub -> steady: "back to steady state" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#a6e3a1"}
+steady -> graceful: "component cleanup" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#6c7086"}
