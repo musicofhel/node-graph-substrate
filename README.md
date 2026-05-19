@@ -251,6 +251,12 @@ Twenty node types across three canvases:
 
 All nodes use **BaseNodeShell** which provides NodeResizer handles, selection state, category color coding, and health status bands.
 
+### Proposed: Layer Breathing Heatmap
+
+![Layer Breathing Heatmap Mockup](docs/mockups/breathing-heatmap-node.png)
+
+Visualizes the **dimensional breathing pattern** — how Participation Ratio (PR) of hidden states evolves across all 28 Qwen-2.5 layers during chain-of-thought generation. X-axis is layer depth (L0–L27), Y-axis is generation position (prefill → final token), color intensity maps PR value. The L19 (2/3-depth) column is highlighted as the signal layer where breathing is strongest. A sidebar sparkline shows the L19 temporal curve. Footer displays correctness outcome and collapse ratio (final/peak PR — lower = harder collapse = correct answer).
+
 ---
 
 ## Drift Detection

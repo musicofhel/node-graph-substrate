@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Layer Breathing Heatmap – Node Mockup</title>
+<style>
+  body {
+    background: #11111b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+  .canvas-bg {
+    background: #1e1e2e;
+    padding: 60px;
+    border-radius: 12px;
+    position: relative;
+  }
+  .canvas-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, #333 1px, transparent 1px);
+    background-size: 20px 20px;
+    border-radius: 12px;
+    opacity: 0.3;
+  }
+</style>
+</head>
+<body>
+<div class="canvas-bg">
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="440" viewBox="0 0 520 440">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="healthBand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Node shell -->
+  <rect x="10" y="10" width="500" height="420" rx="8" ry="8"
+        fill="#1e1e2e" stroke="#313244" stroke-width="1.5" filter="url(#shadow)"/>
+
+  <!-- Health band (top accent) -->
+  <rect x="10" y="10" width="500" height="3" rx="8" ry="8" fill="#10b981" opacity="0.7"/>
+
+  <!-- Selection ring (simulated) -->
+  <rect x="8" y="8" width="504" height="424" rx="10" ry="10"
+        fill="none" stroke="#10b981" stroke-width="1" opacity="0.4" stroke-dasharray="4,3"/>
+
+  <!-- Header bar -->
+  <rect x="10" y="10" width="500" height="36" rx="8" ry="0" fill="#181825"/>
+  <rect x="10" y="38" width="500" height="8" fill="#181825"/>
+
+  <!-- Category dot -->
+  <circle cx="28" cy="28" r="5" fill="#10b981"/>
+
+  <!-- Title -->
+  <text x="40" y="33" fill="#cdd6f4" font-size="13" font-weight="600"
+        font-family="Inter, system-ui, sans-serif">Layer Breathing Heatmap</text>
+
+  <!-- Status indicator -->
+  <circle cx="484" cy="28" r="4" fill="#10b981" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="470" y="32" fill="#a6adc8" font-size="9" text-anchor="end"
+        font-family="Inter, system-ui, sans-serif">LIVE</text>
+
+  <!-- Input handle (top) -->
+  <rect x="253" y="4" width="14" height="14" rx="3" fill="#313244" stroke="#525252" stroke-width="1"/>
+  <rect x="256" y="7" width="8" height="8" rx="2" fill="#3b82f6"/>
+
+  <!-- Subtitle -->
+  <text x="24" y="62" fill="#6c7086" font-size="10"
+        font-family="Inter, system-ui, sans-serif">Qwen-2.5-1.5B · MATH-500 · Problem #347</text>
+
+  <!-- ═══ HEATMAP AREA ═══ -->
+  <!-- Y-axis labels (generation positions) -->
+  <text x="22" y="92" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">prefill</text>
+  <text x="22" y="127" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 1</text>
+  <text x="22" y="162" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 10</text>
+  <text x="22" y="197" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 25</text>
+  <text x="22" y="232" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 50</text>
+  <text x="22" y="267" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 100</text>
+  <text x="22" y="302" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">pos 200</text>
+  <text x="22" y="337" fill="#a6adc8" font-size="9" font-family="monospace" text-anchor="start">final</text>
+
+  <!-- Heatmap grid: 28 layers × 8 positions -->
+  <!-- Each cell is 13×30 px, starting at x=68, y=78 -->
+  <!-- Color scale: #1e3a5f (low ~5) → #155e75 (mid-low ~12) → #0e7490 (mid ~18) → #10b981 (mid-high ~24) → #f59e0b (high ~30) → #ef4444 (peak ~35) -->
+
+  <!-- Row 0: prefill (PR ~13-14 across most layers, slightly lower at edges) -->
+  <rect x="68" y="78" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="82" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="96" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="110" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="124" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="138" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="152" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="166" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="180" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="194" y="78" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="208" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="222" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="236" y="78" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="250" y="78" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="264" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="278" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="292" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="306" y="78" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="320" y="78" width="13" height="30" rx="1" fill="#177e87"/><!-- L18 -->
+  <rect x="334" y="78" width="13" height="30" rx="1" fill="#188e90"/><!-- L19 - slightly higher -->
+  <rect x="348" y="78" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="362" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="376" y="78" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="390" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="404" y="78" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="418" y="78" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="432" y="78" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="446" y="78" width="13" height="30" rx="1" fill="#124060"/>
+
+  <!-- Row 1: pos 1 (PR ~14-15, slightly up) -->
+  <rect x="68" y="113" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="82" y="113" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="96" y="113" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="110" y="113" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="124" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="138" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="152" y="113" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="166" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="180" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="194" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="208" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="222" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="236" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="250" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="264" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="278" y="113" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="292" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="306" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="320" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="334" y="113" width="13" height="30" rx="1" fill="#199e99"/><!-- L19 -->
+  <rect x="348" y="113" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="362" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="376" y="113" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="390" y="113" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="404" y="113" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="418" y="113" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="432" y="113" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="446" y="113" width="13" height="30" rx="1" fill="#124060"/>
+
+  <!-- Row 2: pos 10 (PR rising ~16-20, L19 starting to separate) -->
+  <rect x="68" y="148" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="82" y="148" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="96" y="148" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="110" y="148" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="124" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="138" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="152" y="148" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="166" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="180" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="194" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="208" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="222" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="236" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="250" y="148" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="264" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="278" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="292" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="306" y="148" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="320" y="148" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="334" y="148" width="13" height="30" rx="1" fill="#2ec4a0"/><!-- L19 - separating -->
+  <rect x="348" y="148" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="362" y="148" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="376" y="148" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="390" y="148" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="404" y="148" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="418" y="148" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="432" y="148" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="446" y="148" width="13" height="30" rx="1" fill="#134e6e"/>
+
+  <!-- Row 3: pos 25 (PR ~18-24, expansion visible, L19 hot) -->
+  <rect x="68" y="183" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="82" y="183" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="96" y="183" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="110" y="183" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="124" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="138" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="152" y="183" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="166" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="180" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="194" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="208" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="222" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="236" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="250" y="183" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="264" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="278" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="292" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="306" y="183" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="320" y="183" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="334" y="183" width="13" height="30" rx="1" fill="#84cc16"/><!-- L19 - hot -->
+  <rect x="348" y="183" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="362" y="183" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="376" y="183" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="390" y="183" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="404" y="183" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="418" y="183" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="432" y="183" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="446" y="183" width="13" height="30" rx="1" fill="#155e75"/>
+
+  <!-- Row 4: pos 50 (PEAK — PR ~22-32, L19 brightest ~30+) -->
+  <rect x="68" y="218" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="82" y="218" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="96" y="218" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="110" y="218" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="124" y="218" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="138" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="152" y="218" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="166" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="180" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="194" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="208" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="222" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="236" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="250" y="218" width="13" height="30" rx="1" fill="#84cc16"/>
+  <rect x="264" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="278" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="292" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="306" y="218" width="13" height="30" rx="1" fill="#84cc16"/>
+  <rect x="320" y="218" width="13" height="30" rx="1" fill="#a3e635"/>
+  <rect x="334" y="218" width="13" height="30" rx="1" fill="#eab308"/><!-- L19 — PEAK -->
+  <rect x="348" y="218" width="13" height="30" rx="1" fill="#a3e635"/>
+  <rect x="362" y="218" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="376" y="218" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="390" y="218" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="404" y="218" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="418" y="218" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="432" y="218" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="446" y="218" width="13" height="30" rx="1" fill="#166e7e"/>
+
+  <!-- Row 5: pos 100 (still high, slight decline from peak) -->
+  <rect x="68" y="253" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="82" y="253" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="96" y="253" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="110" y="253" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="124" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="138" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="152" y="253" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="166" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="180" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="194" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="208" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="222" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="236" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="250" y="253" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="264" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="278" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="292" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="306" y="253" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="320" y="253" width="13" height="30" rx="1" fill="#84cc16"/>
+  <rect x="334" y="253" width="13" height="30" rx="1" fill="#a3e635"/><!-- L19 still hot -->
+  <rect x="348" y="253" width="13" height="30" rx="1" fill="#6ee78c"/>
+  <rect x="362" y="253" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="376" y="253" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="390" y="253" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="404" y="253" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="418" y="253" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="432" y="253" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="446" y="253" width="13" height="30" rx="1" fill="#155e75"/>
+
+  <!-- Row 6: pos 200 (declining, starting to collapse) -->
+  <rect x="68" y="288" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="82" y="288" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="96" y="288" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="110" y="288" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="124" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="138" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="152" y="288" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="166" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="180" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="194" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="208" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="222" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="236" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="250" y="288" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="264" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="278" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="292" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="306" y="288" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="320" y="288" width="13" height="30" rx="1" fill="#4dd89e"/>
+  <rect x="334" y="288" width="13" height="30" rx="1" fill="#6ee78c"/><!-- L19 declining -->
+  <rect x="348" y="288" width="13" height="30" rx="1" fill="#2ec4a0"/>
+  <rect x="362" y="288" width="13" height="30" rx="1" fill="#1aaea2"/>
+  <rect x="376" y="288" width="13" height="30" rx="1" fill="#199e99"/>
+  <rect x="390" y="288" width="13" height="30" rx="1" fill="#188e90"/>
+  <rect x="404" y="288" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="418" y="288" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="432" y="288" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="446" y="288" width="13" height="30" rx="1" fill="#134e6e"/>
+
+  <!-- Row 7: final (COLLAPSE — PR drops to ~8-22, L19 collapses hard if correct) -->
+  <rect x="68" y="323" width="13" height="30" rx="1" fill="#124060"/>
+  <rect x="82" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="96" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="110" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="124" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="138" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="152" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="166" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="180" y="323" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="194" y="323" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="208" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="222" y="323" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="236" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="250" y="323" width="13" height="30" rx="1" fill="#177e87"/>
+  <rect x="264" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="278" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="292" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="306" y="323" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="320" y="323" width="13" height="30" rx="1" fill="#166e7e"/>
+  <rect x="334" y="323" width="13" height="30" rx="1" fill="#1e3a5f"/><!-- L19 — COLLAPSED (correct answer) -->
+  <rect x="348" y="323" width="13" height="30" rx="1" fill="#155e75"/>
+  <rect x="362" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="376" y="323" width="13" height="30" rx="1" fill="#134e6e"/>
+  <rect x="390" y="323" width="13" height="30" rx="1" fill="#124060"/>
+  <rect x="404" y="323" width="13" height="30" rx="1" fill="#124060"/>
+  <rect x="418" y="323" width="13" height="30" rx="1" fill="#112040"/>
+  <rect x="432" y="323" width="13" height="30" rx="1" fill="#112040"/>
+  <rect x="446" y="323" width="13" height="30" rx="1" fill="#0f1830"/>
+
+  <!-- L19 column highlight border -->
+  <rect x="333" y="77" width="15" height="277" rx="1"
+        fill="none" stroke="#f9e2af" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>
+  <text x="340" y="74" fill="#f9e2af" font-size="8" text-anchor="middle"
+        font-family="monospace" opacity="0.8">L19</text>
+
+  <!-- X-axis layer labels (selected) -->
+  <text x="74" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L0</text>
+  <text x="144" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L5</text>
+  <text x="214" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L10</text>
+  <text x="284" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L15</text>
+  <text x="340" y="368" fill="#f9e2af" font-size="7" font-family="monospace" text-anchor="middle" font-weight="bold">L19</text>
+  <text x="396" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L23</text>
+  <text x="452" y="368" fill="#585b70" font-size="7" font-family="monospace" text-anchor="middle">L27</text>
+
+  <!-- ═══ L19 SPARKLINE (right sidebar) ═══ -->
+  <rect x="466" y="78" width="36" height="275" rx="3" fill="#181825" stroke="#313244" stroke-width="0.5"/>
+  <text x="484" y="72" fill="#f9e2af" font-size="7" font-family="monospace" text-anchor="middle">L19 PR</text>
+
+  <!-- Sparkline path: prefill(14) → 1(15) → 10(20) → 25(26) → 50(30) → 100(28) → 200(22) → final(4) -->
+  <!-- Y mapping: PR 0=y348, PR 35=y83. Scale: (35-pr)/35 * 265 + 83 -->
+  <!-- prefill:14→y157, 1:15→y149, 10:20→y113, 25:26→y78+(35-26)/35*265=y146...let me recalc -->
+  <!-- Actually: y = 348 - (pr/35)*265 -->
+  <!-- prefill(14): 348-(14/35)*265 = 348-106=242 at y_center of row0=93 → map to sparkline y -->
+  <!-- Sparkline y range: 83 to 348. Map positions evenly: 8 points at y=88,125,160,195,230,265,300,340 -->
+  <!-- PR values: 14,15,20,26,30,28,22,4 → normalized x within sparkline width (470-498) -->
+  <!-- Actually sparkline is a vertical line chart: y=position, x=PR value -->
+  <!-- x range: 470-498 (28px). PR 0→x470, PR 35→x498 -->
+  <!-- prefill(14): x=470+14/35*28=470+11.2=481, y=93 -->
+
+  <path d="M 481,93 L 482,128 L 486,163 L 491,198 L 494,233 L 492,268 L 488,303 L 473,338"
+        fill="none" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round"/>
+
+  <!-- Fill area under sparkline -->
+  <path d="M 481,93 L 482,128 L 486,163 L 491,198 L 494,233 L 492,268 L 488,303 L 473,338 L 470,338 L 470,93 Z"
+        fill="url(#sparkFill)"/>
+
+  <!-- Sparkline dots -->
+  <circle cx="481" cy="93" r="2" fill="#10b981" opacity="0.8"/>
+  <circle cx="494" cy="233" r="2.5" fill="#eab308"/><!-- peak -->
+  <circle cx="473" cy="338" r="2.5" fill="#3b82f6"/><!-- collapse -->
+
+  <!-- Peak/collapse annotations -->
+  <text x="498" y="230" fill="#eab308" font-size="6" font-family="monospace">30</text>
+  <text x="472" y="350" fill="#3b82f6" font-size="6" font-family="monospace" text-anchor="middle">4</text>
+
+  <!-- ═══ FOOTER ═══ -->
+  <line x1="20" y1="378" x2="500" y2="378" stroke="#313244" stroke-width="0.5"/>
+
+  <!-- Color legend -->
+  <text x="24" y="393" fill="#6c7086" font-size="8" font-family="Inter, system-ui, sans-serif">PR</text>
+  <rect x="38" y="385" width="20" height="10" rx="1" fill="#112040"/>
+  <rect x="59" y="385" width="20" height="10" rx="1" fill="#134e6e"/>
+  <rect x="80" y="385" width="20" height="10" rx="1" fill="#155e75"/>
+  <rect x="101" y="385" width="20" height="10" rx="1" fill="#188e90"/>
+  <rect x="122" y="385" width="20" height="10" rx="1" fill="#2ec4a0"/>
+  <rect x="143" y="385" width="20" height="10" rx="1" fill="#6ee78c"/>
+  <rect x="164" y="385" width="20" height="10" rx="1" fill="#a3e635"/>
+  <rect x="185" y="385" width="20" height="10" rx="1" fill="#eab308"/>
+  <text x="38" y="406" fill="#585b70" font-size="7" font-family="monospace">2</text>
+  <text x="110" y="406" fill="#585b70" font-size="7" font-family="monospace">15</text>
+  <text x="190" y="406" fill="#585b70" font-size="7" font-family="monospace">30+</text>
+
+  <!-- Outcome badge -->
+  <rect x="230" y="384" width="52" height="16" rx="8" fill="#10b981" opacity="0.15"/>
+  <text x="256" y="396" fill="#10b981" font-size="9" font-weight="600"
+        font-family="Inter, system-ui, sans-serif" text-anchor="middle">CORRECT</text>
+
+  <!-- Collapse ratio -->
+  <text x="300" y="396" fill="#6c7086" font-size="8"
+        font-family="Inter, system-ui, sans-serif">collapse ratio</text>
+  <text x="370" y="396" fill="#f9e2af" font-size="9" font-weight="600"
+        font-family="monospace">0.133</text>
+
+  <!-- Experiment tag -->
+  <rect x="400" y="384" width="96" height="16" rx="8" fill="#313244"/>
+  <text x="448" y="396" fill="#a6adc8" font-size="8"
+        font-family="Inter, system-ui, sans-serif" text-anchor="middle">exp-2026-05-18</text>
+
+  <!-- Phase annotations (left side) -->
+  <rect x="58" y="81" width="6" height="22" rx="3" fill="#3b82f6" opacity="0.5"/>
+  <rect x="58" y="155" width="6" height="130" rx="3" fill="#eab308" opacity="0.4"/>
+  <rect x="58" y="328" width="6" height="22" rx="3" fill="#3b82f6" opacity="0.5"/>
+
+  <!-- Output handle (bottom) -->
+  <rect x="253" y="424" width="14" height="14" rx="3" fill="#313244" stroke="#525252" stroke-width="1"/>
+  <rect x="256" y="427" width="8" height="8" rx="2" fill="#10b981"/>
+
+</svg>
+</div>
+</body>
+</html>
