@@ -25,13 +25,30 @@ bash ~/start-research-pipeline.sh --status     # check what's running
 # MANUAL — NGS only:
 docker compose up                # postgres, redis, fastapi
 cd frontend && npm run dev       # vite (native — not in Docker on WSL2)
-python synthetic_daemon.py       # fake streaming data (no GPU needed)
+
+# Synthetic daemon with real MATH-500 data (pre-computed, no GPU needed):
+python synthetic_daemon.py --math500-cache data/math500_breathing_cache.json
+
+# Pre-compute breathing cache from NPZ hidden states (one-time, ~5 min):
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/precompute_breathing_cache.py
 
 # Skip NGS when starting the rest of the pipeline:
 bash ~/start-research-pipeline.sh --no-dashboard
 ```
 
 NGS observes three pipelines via 23 Redis streams: topo-confidence compute scoring (7 streams), link-forge paper ingestion (10 streams + autorel), and topo-confidence research lifecycle (5 streams). Three canvas types: pipeline (topo scoring), research (link-forge waterfall), research2 (R2 nodes with paper starring).
+
+## MATH-500 breathing pipeline
+
+Real data from `~/topo-confidence/pathway8_layerwise/data/math500/` (500 NPZ files, Qwen2.5-1.5B-Instruct).
+
+- **Pre-compute**: `scripts/precompute_breathing_cache.py` — computes 8×28 participation ratio heatmaps (W=32 window) from real hidden states. Outputs `data/math500_breathing_cache.json` (daemon) + `frontend/public/math500_prompts.json` (frontend). Must set `OMP_NUM_THREADS=1` to avoid BLAS thread contention.
+- **Daemon**: `synthetic_daemon.py --math500-cache` loads cache on startup, serves real heatmaps + correctness when `math_idx` is present in control messages, falls back to fake data otherwise.
+- **Frontend**: PromptInputNode fetches `math500_prompts.json` on mount, pre-populates with MATH-500 problems. Navigation bar (◄/►) browses 500 problems. Demo mode auto-cycles every 15s with skip/back controls.
+- **BreathingHeatmapNode**: SVG visualization — 8 positions × 28 layers, color-coded PR values, L19 sparkline, peak/collapse markers, correctness badge, subject/level tag.
+- **ExplainWaterfallNode**: 13 TDA features with human-readable labels, clickable detail panels showing mechanistic interpretations, summary header with correctness + confidence + primary driver sentence. `top_n` and `sort_order` config fields wired up.
+
+Generated data files are gitignored: `data/math500_breathing_cache.json`, `frontend/public/math500_prompts.json`.
 
 ## Build order (tracer-bullet slices)
 
