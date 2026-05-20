@@ -232,6 +232,15 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     configFields: [],
     subscribesTo: [],
   },
+  breathing_heatmap: {
+    typeId: "breathing_heatmap",
+    label: "Layer Breathing Heatmap",
+    category: "topology",
+    inputs: [{ id: "features_in", type: "features", position: "top", label: "Features" }],
+    outputs: [],
+    configFields: [],
+    subscribesTo: ["topoconf:scoring:breathing_profile"],
+  },
 };
 
 export type CanvasType = "pipeline" | "research" | "research2";
@@ -239,7 +248,7 @@ export type CanvasType = "pipeline" | "research" | "research2";
 export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   pipeline: new Set([
     "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
-    "confidence_gauge", "bridge_monitor", "explain_waterfall", "drift_matrix",
+    "confidence_gauge", "bridge_monitor", "explain_waterfall", "drift_matrix", "breathing_heatmap",
   ]),
   research: new Set([
     "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",

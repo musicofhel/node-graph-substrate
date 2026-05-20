@@ -9,3 +9,5 @@ e2e_screenshots/
 tests/visual/screenshots/
 test-results/
 .claude/
+data/math500_breathing_cache.json
+frontend/public/math500_prompts.json

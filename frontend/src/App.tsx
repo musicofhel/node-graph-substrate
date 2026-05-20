@@ -408,6 +408,8 @@ export default function App() {
             { id: "gauge-1", type: "confidence_gauge", position: { x: 700, y: 350 }, data: {} },
             { id: "monitor-1", type: "bridge_monitor", position: { x: 1050, y: 20 }, data: {} },
             { id: "explain-1", type: "explain_waterfall", position: { x: 1050, y: 300 }, data: {} },
+            { id: "breathing-1", type: "breathing_heatmap", position: { x: 1400, y: 20 }, data: {} },
+            { id: "drift-1", type: "drift_matrix", position: { x: 1400, y: 300 }, data: {} },
           ];
           for (const n of defaultNodes) addNode(n);
 
@@ -419,6 +421,7 @@ export default function App() {
             { source: "prompt-1", target: "gauge-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "monitor-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "explain-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "breathing-1", sourceHandle: "features_out", targetHandle: "features_in" },
           ];
           for (const e of edges) {
             onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });

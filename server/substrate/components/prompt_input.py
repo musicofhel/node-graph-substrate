@@ -33,15 +33,19 @@ class PromptInputComponent(Component):
 
     async def build(self, **inputs: Any) -> dict[str, Any]:
         prompt = inputs.get("config", {}).get("prompt", "") or self.config.get("prompt", "")
+        math_idx = inputs.get("config", {}).get("math_idx")
         run_id = uuid.uuid4().hex[:8]
         features = {name: round(random.uniform(-2, 5), 4) for name in FEATURE_NAMES}
 
         try:
             from substrate.main import redis_client
             if redis_client:
+                payload: dict[str, Any] = {"command": "score", "prompt": prompt, "run_id": run_id}
+                if math_idx is not None:
+                    payload["math_idx"] = math_idx
                 await redis_client.xadd(
                     "topoconf:control",
-                    {"data": json.dumps({"command": "score", "prompt": prompt, "run_id": run_id})},
+                    {"data": json.dumps(payload)},
                     maxlen=10000,
                     approximate=True,
                 )
