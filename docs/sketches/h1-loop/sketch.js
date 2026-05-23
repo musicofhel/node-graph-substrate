@@ -1,13 +1,12 @@
 const EXPECTED_SCHEMA_MAJOR = 1;
 const DATA_BASE = "./data";
 const DEFAULT_IDX = 0;
+const TOTAL_PROBLEMS = 500;
 
 const COLOR_POINT = "#a0a0c0";
 const COLOR_BRIDGE = "#ffd700";
 const COLOR_CYCLE = "#00ffff";
 const COLOR_BG = "#0f0f23";
-const COLOR_CORRECT = "#10b981";
-const COLOR_INCORRECT = "#ef4444";
 
 const POINT_R = 2.5;
 const BRIDGE_R = 5.5;
@@ -16,12 +15,33 @@ const WIDTH = 600;
 const HEIGHT = 500;
 const MARGIN = { top: 20, right: 20, bottom: 20, left: 20 };
 
+const problemCache = new Map();
+const state = { manifest: null, currentIdx: DEFAULT_IDX };
+let navGeneration = 0;
+let dom = {};
+
+function cacheDom() {
+  dom = {
+    metadata: document.getElementById("metadata"),
+    cloudPanel: document.getElementById("cloud-panel"),
+    infoPanel: document.getElementById("info-panel"),
+    legend: document.getElementById("legend"),
+    navStatus: document.getElementById("nav-status"),
+    idxInput: document.getElementById("idx-input"),
+    btnPrev: document.getElementById("btn-prev"),
+    btnNext: document.getElementById("btn-next"),
+    errorBanner: document.getElementById("error-banner"),
+    app: document.getElementById("app"),
+    navBar: document.getElementById("nav-bar"),
+  };
+}
+
 function showError(msg) {
-  const banner = document.getElementById("error-banner");
-  banner.textContent = msg;
-  banner.classList.add("visible");
-  document.getElementById("app").style.display = "none";
-  document.getElementById("legend").style.display = "none";
+  dom.errorBanner.textContent = msg;
+  dom.errorBanner.classList.add("visible");
+  dom.app.style.display = "none";
+  dom.legend.style.display = "none";
+  dom.navBar.style.display = "none";
 }
 
 function checkSchema(obj, label) {
@@ -86,12 +106,30 @@ function padDomain(values, fraction) {
   return [min - pad, max + pad];
 }
 
+function clearCloud() {
+  d3.select("#cloud-panel").selectAll("svg").remove();
+}
+
+function updateNavStatus(idx) {
+  dom.idxInput.value = idx;
+  dom.navStatus.textContent = "/ " + TOTAL_PROBLEMS;
+}
+
+function setLoadingState(loading) {
+  dom.cloudPanel.classList.toggle("loading", loading);
+  dom.btnPrev.disabled = loading;
+  dom.btnNext.disabled = loading;
+  dom.idxInput.disabled = loading;
+  if (loading) {
+    clearCloud();
+  }
+}
+
 function renderMetadata(problem) {
-  const el = document.getElementById("metadata");
   const idx = String(problem.idx).padStart(3, "0");
   const correct = problem.correctness.default;
 
-  el.innerHTML = [
+  dom.metadata.innerHTML = [
     `<span class="badge badge-index">Problem #${idx}</span>`,
     `<span class="badge badge-subject">${problem.subject}</span>`,
     `<span class="badge badge-level">Level ${problem.level}</span>`,
@@ -104,6 +142,8 @@ function renderMetadata(problem) {
 }
 
 function renderCloud(problem) {
+  clearCloud();
+
   const pts = problem.points_2d;
   const xDomain = padDomain(pts.map((p) => p[0]), 0.05);
   const yDomain = padDomain(pts.map((p) => p[1]), 0.05);
@@ -170,7 +210,6 @@ function renderCloud(problem) {
 }
 
 function renderInfo(problem) {
-  const el = document.getElementById("info-panel");
   const rank0 = problem.h1_cycles.find((c) => c.rank === 0);
 
   let cycleHtml = "";
@@ -196,7 +235,7 @@ function renderInfo(problem) {
       </div>`;
   }
 
-  el.innerHTML = `
+  dom.infoPanel.innerHTML = `
     <div class="info-section">
       <h3>Point Cloud</h3>
       <div class="info-row"><span class="info-label">Original tokens</span><span class="info-value">${problem.n_tokens}</span></div>
@@ -208,8 +247,7 @@ function renderInfo(problem) {
 }
 
 function renderLegend() {
-  const el = document.getElementById("legend");
-  el.innerHTML = `
+  dom.legend.innerHTML = `
     <span class="legend-item">
       <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="${COLOR_CYCLE}" stroke-width="2"/></svg>
       Primary cycle (shortest path at birth)
@@ -224,13 +262,98 @@ function renderLegend() {
     </span>`;
 }
 
+function renderProblem(problem) {
+  renderMetadata(problem);
+  renderCloud(problem);
+  renderInfo(problem);
+  updateNavStatus(problem.idx);
+}
+
+async function goTo(idx) {
+  idx = Math.floor(idx);
+  if (isNaN(idx)) return;
+  idx = Math.max(0, Math.min(TOTAL_PROBLEMS - 1, idx));
+
+  state.currentIdx = idx;
+  const gen = ++navGeneration;
+  setLoadingState(true);
+  updateNavStatus(idx);
+
+  try {
+    let problem = problemCache.get(idx);
+    if (!problem) {
+      problem = await loadProblem(idx, state.manifest);
+      problemCache.set(idx, problem);
+    }
+    if (gen !== navGeneration) return;
+    renderProblem(problem);
+  } catch (e) {
+    if (gen !== navGeneration) return;
+    const padded = String(idx).padStart(3, "0");
+    dom.metadata.innerHTML =
+      `<span class="badge badge-index">Problem #${padded}</span>` +
+      `<span class="badge badge-incorrect">LOAD ERROR</span>`;
+    dom.infoPanel.innerHTML =
+      `<div class="info-section"><h3>Error</h3>` +
+      `<p style="color:var(--color-incorrect);font-size:13px;">${e.message}</p></div>`;
+  } finally {
+    if (gen === navGeneration) {
+      setLoadingState(false);
+    }
+  }
+}
+
+function goPrev() {
+  goTo((state.currentIdx - 1 + TOTAL_PROBLEMS) % TOTAL_PROBLEMS);
+}
+
+function goNext() {
+  goTo((state.currentIdx + 1) % TOTAL_PROBLEMS);
+}
+
+function bindEvents() {
+  dom.btnPrev.addEventListener("click", goPrev);
+  dom.btnNext.addEventListener("click", goNext);
+
+  dom.idxInput.addEventListener("change", () => {
+    const val = parseInt(dom.idxInput.value, 10);
+    if (!isNaN(val)) goTo(val);
+  });
+
+  dom.idxInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = parseInt(dom.idxInput.value, 10);
+      if (!isNaN(val)) goTo(val);
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.stopPropagation();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (document.activeElement === dom.idxInput) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goPrev();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goNext();
+    }
+  });
+}
+
 async function main() {
   try {
+    cacheDom();
+    bindEvents();
+
     const manifest = await loadManifest();
+    state.manifest = manifest;
+
     const problem = await loadProblem(DEFAULT_IDX, manifest);
-    renderMetadata(problem);
-    renderCloud(problem);
-    renderInfo(problem);
+    problemCache.set(DEFAULT_IDX, problem);
+    renderProblem(problem);
     renderLegend();
   } catch (e) {
     showError(e.message);
