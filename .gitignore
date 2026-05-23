@@ -11,3 +11,4 @@ test-results/
 .claude/
 data/math500_breathing_cache.json
 frontend/public/math500_prompts.json
+docs/sketches/h1-loop/data/
