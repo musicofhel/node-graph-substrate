@@ -20,6 +20,7 @@ import { R2AutoRelNode } from "../nodes/R2AutoRelNode";
 import { R2StateNode } from "../nodes/R2StateNode";
 import { DriftMatrixNode } from "../nodes/DriftMatrixNode";
 import { BreathingHeatmapNode } from "../nodes/BreathingHeatmapNode";
+import { H1LoopNode } from "../nodes/H1LoopNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -43,4 +44,5 @@ export const nodeTypes: NodeTypes = {
   r2_state: R2StateNode,
   drift_matrix: DriftMatrixNode,
   breathing_heatmap: BreathingHeatmapNode,
+  h1_loop: H1LoopNode,
 };

@@ -29,7 +29,31 @@ from ripser import ripser
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
+
+_TOKENIZER = None
+
+
+def _get_tokenizer():
+    """Lazy-init tokenizer (loaded once per worker process)."""
+    global _TOKENIZER
+    if _TOKENIZER is None:
+        from transformers import AutoTokenizer
+        _TOKENIZER = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+    return _TOKENIZER
+
+
+def _load_prompts_lookup():
+    """Load actual math prompts from frontend/public/math500_prompts.json."""
+    prompts_path = (
+        Path(__file__).resolve().parent.parent
+        / "frontend" / "public" / "math500_prompts.json"
+    )
+    if prompts_path.exists():
+        data = json.loads(prompts_path.read_text())
+        return {p["idx"]: p for p in data.get("problems", [])}
+    return {}
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -300,11 +324,11 @@ def process_problem(args):
     args is a tuple of (idx, npz_path, layer_index_npz, max_points,
                         seed_base, lifetime_threshold, birth_fraction,
                         birth_floor, max_dimension, breathing_cache,
-                        source_manifest)
+                        source_manifest, prompts_lookup)
     """
     (idx, npz_path, layer_index_npz, max_points, seed_base,
      lifetime_threshold, birth_fraction, birth_floor, max_dimension,
-     breathing_cache, source_manifest) = args
+     breathing_cache, source_manifest, prompts_lookup) = args
 
     npz_path = Path(npz_path)
     npz_sha = hashlib.sha256(npz_path.read_bytes()).hexdigest()
@@ -322,12 +346,22 @@ def process_problem(args):
             mean_logprob_raw = mean_logprob_raw.item()
         mean_logprob = float(mean_logprob_raw)
 
-        math_prompt = ""
+        generated_response = ""
         if "text" in data:
             text_val = data["text"]
             if isinstance(text_val, np.ndarray):
                 text_val = text_val.item()
-            math_prompt = str(text_val) if text_val else ""
+            generated_response = str(text_val) if text_val else ""
+
+    math_prompt = (prompts_lookup or {}).get(idx, {}).get("prompt", "")
+
+    token_texts = []
+    n_retokenized = 0
+    if generated_response:
+        tokenizer = _get_tokenizer()
+        token_ids = tokenizer.encode(generated_response, add_special_tokens=False)
+        token_texts = [tokenizer.decode([tid]) for tid in token_ids]
+        n_retokenized = len(token_texts)
 
     subject = "unknown"
     level = 0
@@ -370,6 +404,9 @@ def process_problem(args):
         "idx": idx,
         "schema_version": SCHEMA_VERSION,
         "math_prompt": math_prompt,
+        "generated_response": generated_response,
+        "token_texts": token_texts,
+        "n_retokenized": n_retokenized,
         "subject": subject,
         "level": level,
         "correctness": {"default": correctness},
@@ -379,6 +416,7 @@ def process_problem(args):
         "subsampled_token_indices": subsample_indices.tolist(),
         "points_2d": points_2d,
         "points_3d": points_3d,
+        "points_intermediate": ph_cloud.tolist(),
         "bridge_subsampled_index": 0,
         "distance_matrix_upper": distance_matrix_upper,
         "persistence_diagram": persistence_diagram,
@@ -676,6 +714,12 @@ def main():
         except (json.JSONDecodeError, OSError) as e:
             log.warning("Could not load breathing cache: %s", e)
 
+    prompts_lookup = _load_prompts_lookup()
+    if prompts_lookup:
+        log.info("Loaded %d math prompts for schema v1.1.0 fields", len(prompts_lookup))
+    else:
+        log.warning("No math prompts found — math_prompt field will be empty")
+
     # -----------------------------------------------------------------------
     # Pass 1: Fit PCA
     # -----------------------------------------------------------------------
@@ -772,7 +816,7 @@ def main():
             idx_val, str(idx_to_npz[idx_val]), args.layer_index_npz,
             args.subsample, args.subsample_seed_base,
             args.lifetime_threshold, 0.01, 1e-9, args.max_dimension,
-            breathing_cache, source_manifest,
+            breathing_cache, source_manifest, prompts_lookup,
         ))
 
     if not work_items:

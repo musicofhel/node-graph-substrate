@@ -241,6 +241,20 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     configFields: [],
     subscribesTo: ["topoconf:scoring:breathing_profile"],
   },
+  h1_loop: {
+    typeId: "h1_loop",
+    label: "H1 Topological Loops",
+    category: "topology",
+    inputs: [{ id: "features_in", type: "features", position: "top", label: "Features" }],
+    outputs: [],
+    configFields: [
+      { key: "reduction", label: "Reduction", type: "select",
+        options: [{ label: "PCA", value: "pca" }, { label: "UMAP", value: "umap" }], default: "pca" },
+      { key: "layer", label: "Layer", type: "select",
+        options: [{ label: "L28 (final)", value: "28" }, { label: "L19 (peak)", value: "19" }], default: "28" },
+    ],
+    subscribesTo: [],
+  },
 };
 
 export type CanvasType = "pipeline" | "research" | "research2";
@@ -249,6 +263,7 @@ export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   pipeline: new Set([
     "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
     "confidence_gauge", "bridge_monitor", "explain_waterfall", "drift_matrix", "breathing_heatmap",
+    "h1_loop",
   ]),
   research: new Set([
     "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",
