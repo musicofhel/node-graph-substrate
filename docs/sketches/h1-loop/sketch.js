@@ -33,6 +33,21 @@ const THREE_POINT_SIZE = 4;
 const THREE_BRIDGE_RADIUS = 0.04;
 const HOVER_DIST_THRESHOLD = 15;
 
+function cycleColor(rank, maxRank) {
+  if (maxRank <= 0) return d3.interpolateTurbo(0.92);
+  const t = 0.92 - (rank / maxRank) * 0.84;
+  return d3.interpolateTurbo(t);
+}
+
+function cycleColorHex(rank, maxRank) {
+  const rgb = d3.color(cycleColor(rank, maxRank));
+  return (rgb.r << 16) | (rgb.g << 8) | rgb.b;
+}
+
+function cycleOpacity(rank) {
+  return Math.max(0.25, 0.9 - rank * 0.03);
+}
+
 const problemCache = new Map();
 const state = {
   manifest: null,
@@ -229,25 +244,25 @@ function renderCloud2D(problem) {
     .attr("height", HEIGHT)
     .attr("fill", COLOR_BG);
 
-  const rank0 = problem.h1_cycles.find((c) => c.rank === 0);
-  if (rank0) {
-    const cyclePoints = rank0.representative_subsampled_indices.map(
+  const sortedCycles = [...problem.h1_cycles].sort((a, b) => b.rank - a.rank);
+  const maxRank = d3.max(problem.h1_cycles, c => c.rank) || 0;
+
+  for (const cycle of sortedCycles) {
+    const cyclePoints = cycle.representative_subsampled_indices.map(
       (i) => `${xScale(pts[i][0])},${yScale(pts[i][1])}`
     );
+    const isFallback = cycle.extraction_method === "cocycle_support_walk";
     svg
       .append("polygon")
       .attr("points", cyclePoints.join(" "))
-      .attr("class",
-        "cycle" + (rank0.extraction_method === "cocycle_support_walk" ? " fallback" : "")
-      )
-      .attr("data-rank", 0)
+      .attr("class", "cycle" + (isFallback ? " fallback" : ""))
+      .attr("data-rank", cycle.rank)
       .attr("fill", "none")
-      .attr("stroke", COLOR_CYCLE)
-      .attr("stroke-width", CYCLE_STROKE)
-      .attr("stroke-dasharray",
-        rank0.extraction_method === "cocycle_support_walk" ? "6,3" : "none"
-      )
-      .on("mouseenter", () => setHighlight(0))
+      .attr("stroke", cycleColor(cycle.rank, maxRank))
+      .attr("stroke-width", cycle.rank === 0 ? CYCLE_STROKE : 1.5)
+      .attr("stroke-dasharray", isFallback ? "6,3" : "none")
+      .attr("stroke-opacity", cycleOpacity(cycle.rank))
+      .on("mouseenter", () => setHighlight(cycle.rank))
       .on("mouseleave", () => clearHighlight());
   }
 
@@ -473,6 +488,7 @@ function renderCloud3D(problem) {
   scene.add(bridgeMesh);
 
   const cycleMeshes = new Map();
+  const maxRank = d3.max(problem.h1_cycles, c => c.rank) || 0;
   for (const cycle of problem.h1_cycles) {
     const indices = cycle.representative_subsampled_indices;
     const cyclePos = new Float32Array(indices.length * 3);
@@ -486,20 +502,17 @@ function renderCloud3D(problem) {
     lineGeo.setAttribute("position", new THREE.BufferAttribute(cyclePos, 3));
 
     const isFallback = cycle.extraction_method === "cocycle_support_walk";
+    const cHex = cycleColorHex(cycle.rank, maxRank);
+    const cOpacity = cycleOpacity(cycle.rank);
     let lineMat;
     if (isFallback) {
       lineMat = new THREE.LineDashedMaterial({
-        color: THREE_CYCLE_COLOR,
-        transparent: true,
-        opacity: cycle.rank === 0 ? 0.9 : 0.5,
-        dashSize: 0.05,
-        gapSize: 0.025,
+        color: cHex, transparent: true, opacity: cOpacity,
+        dashSize: 0.05, gapSize: 0.025,
       });
     } else {
       lineMat = new THREE.LineBasicMaterial({
-        color: THREE_CYCLE_COLOR,
-        transparent: true,
-        opacity: cycle.rank === 0 ? 0.9 : 0.5,
+        color: cHex, transparent: true, opacity: cOpacity,
       });
     }
 
@@ -515,7 +528,7 @@ function renderCloud3D(problem) {
 
   threeState = {
     renderer, scene, camera, trackball, pointsMesh, bridgeMesh,
-    cycleMeshes, positions, currentProblem: problem,
+    cycleMeshes, positions, maxRank, currentProblem: problem,
     disposed: false, animFrameId: 0,
   };
 
@@ -531,22 +544,33 @@ function renderCloud3D(problem) {
 }
 
 function renderInfo(problem) {
-  const rank0 = problem.h1_cycles.find((c) => c.rank === 0);
+  const maxRank = d3.max(problem.h1_cycles, c => c.rank) || 0;
 
   let cycleHtml = "";
-  if (rank0) {
-    const method =
-      rank0.extraction_method === "shortest_cycle_at_birth"
-        ? "Shortest cycle at birth"
-        : "Cocycle support walk (fallback)";
+  if (problem.h1_cycles.length > 0) {
+    const rows = problem.h1_cycles.map(c => {
+      const color = cycleColor(c.rank, maxRank);
+      const method = c.extraction_method === "shortest_cycle_at_birth" ? "shortest" : "fallback";
+      return `<tr class="cycle-row" data-rank="${c.rank}"
+                  onmouseenter="setHighlight(${c.rank})"
+                  onmouseleave="clearHighlight()">
+        <td><span class="cycle-swatch" style="background:${color}"></span>${c.rank}</td>
+        <td>${c.lifetime.toFixed(2)}</td>
+        <td>${c.birth.toFixed(2)}</td>
+        <td>${c.representative_subsampled_indices.length - 1}</td>
+        <td>${method}</td>
+      </tr>`;
+    }).join("");
+
     cycleHtml = `
       <div class="info-section">
-        <h3>Rank-0 H1 Cycle</h3>
-        <div class="info-row"><span class="info-label">Birth</span><span class="info-value">${rank0.birth.toFixed(3)}</span></div>
-        <div class="info-row"><span class="info-label">Death</span><span class="info-value">${rank0.death.toFixed(3)}</span></div>
-        <div class="info-row"><span class="info-label">Lifetime</span><span class="info-value">${rank0.lifetime.toFixed(3)}</span></div>
-        <div class="info-row"><span class="info-label">Vertices</span><span class="info-value">${rank0.representative_subsampled_indices.length - 1}</span></div>
-        <div class="info-row"><span class="info-label">Method</span><span class="info-value">${method}</span></div>
+        <h3>H1 Cycles (${problem.h1_cycles.length})</h3>
+        <div class="cycle-table-wrap">
+          <table class="cycle-table">
+            <thead><tr><th>Rank</th><th>Life</th><th>Birth</th><th>Verts</th><th>Method</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
       </div>`;
   } else {
     cycleHtml = `
@@ -572,6 +596,7 @@ function renderDiagram(problem) {
 
   const dims = ["H0", "H1", "H2"];
   const dimColors = { H0: COLOR_H0, H1: COLOR_H1, H2: COLOR_H2 };
+  const maxH1Rank = d3.max(problem.h1_cycles, c => c.rank) || 0;
 
   const h1Sorted = problem.persistence_diagram.H1
     .map(([b, d]) => ({ b, d, lifetime: d - b }))
@@ -687,7 +712,8 @@ function renderDiagram(problem) {
       .attr("cx", (d) => xScale(d.b))
       .attr("cy", (d) => yScale(d.d))
       .attr("r", (d) => (d.dim === "H1" && d.rank === 0 ? DIAG_DOT_R_HIGHLIGHT : DIAG_DOT_R))
-      .attr("fill", dimColors[dim])
+      .attr("fill", (d) => d.dim === "H1" && d.rank !== null
+        ? cycleColor(d.rank, maxH1Rank) : dimColors[d.dim])
       .attr("stroke", (d) => (d.dim === "H1" && d.rank === 0 ? "#fff" : "none"))
       .attr("stroke-width", (d) => (d.dim === "H1" && d.rank === 0 ? 1.5 : 0))
       .attr("opacity", 0.85)
@@ -734,8 +760,9 @@ function setHighlight(rank) {
         .classed("dimmed", r !== rank);
     });
   } else if (threeState && !threeState.disposed) {
+    const mr = threeState.maxRank;
     for (const [r, line] of threeState.cycleMeshes) {
-      line.material.color.setHex(r === rank ? THREE_CYCLE_HIGHLIGHT : THREE_CYCLE_COLOR);
+      line.material.color.setHex(r === rank ? THREE_CYCLE_HIGHLIGHT : cycleColorHex(r, mr));
       line.material.opacity = r === rank ? 1.0 : 0.15;
     }
   }
@@ -755,22 +782,34 @@ function clearHighlight() {
       .classed("highlighted", false)
       .classed("dimmed", false);
   } else if (threeState && !threeState.disposed) {
+    const mr = threeState.maxRank;
     for (const [r, line] of threeState.cycleMeshes) {
-      line.material.color.setHex(THREE_CYCLE_COLOR);
-      line.material.opacity = r === 0 ? 0.9 : 0.5;
+      line.material.color.setHex(cycleColorHex(r, mr));
+      line.material.opacity = cycleOpacity(r);
     }
   }
 }
 
 function renderLegend() {
+  const nSwatches = 12;
+  let rampSvg = '<svg width="80" height="12">';
+  for (let i = 0; i < nSwatches; i++) {
+    const t = 0.92 - (i / (nSwatches - 1)) * 0.84;
+    const color = d3.interpolateTurbo(t);
+    const x = (i / nSwatches) * 80;
+    const w = 80 / nSwatches + 0.5;
+    rampSvg += `<rect x="${x}" y="2" width="${w}" height="8" fill="${color}" rx="1"/>`;
+  }
+  rampSvg += '</svg>';
+
   dom.legend.innerHTML = `
     <span class="legend-item">
-      <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="${COLOR_CYCLE}" stroke-width="2"/></svg>
-      Primary cycle (shortest path at birth)
+      ${rampSvg}
+      H1 cycles (rank 0 &rarr; N)
     </span>
     <span class="legend-item">
-      <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="${COLOR_CYCLE}" stroke-width="2" stroke-dasharray="6,3"/></svg>
-      Fallback cycle (cocycle support walk)
+      <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#999" stroke-width="2" stroke-dasharray="6,3"/></svg>
+      Dashed = fallback method
     </span>
     <span class="legend-item">
       <svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="${COLOR_BRIDGE}"/></svg>
@@ -778,15 +817,15 @@ function renderLegend() {
     </span>
     <span class="legend-item">
       <svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="${COLOR_H0}"/></svg>
-      H0 (components)
+      H0
     </span>
     <span class="legend-item">
       <svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="${COLOR_H1}"/></svg>
-      H1 (loops)
+      H1
     </span>
     <span class="legend-item">
       <svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="${COLOR_H2}"/></svg>
-      H2 (voids)
+      H2
     </span>
     <span class="legend-item" style="color:var(--text-secondary);font-style:italic;">
       V: toggle 2D/3D
