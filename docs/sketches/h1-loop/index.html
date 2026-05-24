@@ -17,11 +17,18 @@
       <input id="idx-input" type="number" min="0" max="499" step="1" value="0">
       <span id="nav-status">/ 500</span>
     </div>
+    <div id="view-toggle" class="view-toggle">
+      <button id="btn-2d" class="view-btn active" title="2D view (V)">2D</button>
+      <button id="btn-3d" class="view-btn" title="3D view (V)">3D</button>
+    </div>
     <button id="btn-next" title="Next (Right arrow)">Next &#9654;</button>
   </nav>
   <main id="app">
     <div id="cloud-panel"></div>
-    <div id="info-panel"></div>
+    <div id="right-panel">
+      <div id="diagram-panel"></div>
+      <div id="info-panel"></div>
+    </div>
   </main>
   <footer id="legend"></footer>
   <script src="sketch.js" defer></script>

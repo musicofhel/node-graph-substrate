@@ -196,17 +196,35 @@ body {
   max-height: 80vh;
 }
 
-#info-panel {
+#right-panel {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-secondary);
-  padding: 24px;
   border-left: 1px solid #2a2a4a;
+  overflow-y: auto;
 }
 
 @media (max-width: 1199px) {
-  #info-panel {
+  #right-panel {
     border-left: none;
     border-top: 1px solid #2a2a4a;
   }
+}
+
+#diagram-panel {
+  padding: 16px;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+
+#diagram-panel svg {
+  width: 100%;
+  height: auto;
+}
+
+#info-panel {
+  padding: 24px;
+  flex: 1;
 }
 
 .info-section {
@@ -257,4 +275,66 @@ body {
 
 .legend-item svg {
   flex-shrink: 0;
+}
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.view-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 4px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-btn.active {
+  background: #3a3a5a;
+  color: var(--text-primary);
+}
+
+.view-btn:hover:not(.active) {
+  background: #2a2a3a;
+}
+
+.view-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+#cloud-panel canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.diagram-dot {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.diagram-dot.dimmed {
+  opacity: 0.15;
+}
+
+.cycle {
+  transition: stroke-opacity 0.15s, stroke-width 0.15s;
+  cursor: pointer;
+}
+
+.cycle.highlighted {
+  stroke-opacity: 1;
+  stroke-width: 3;
+}
+
+.cycle.dimmed {
+  stroke-opacity: 0.2;
 }
