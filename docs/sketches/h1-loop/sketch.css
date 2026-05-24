@@ -388,3 +388,145 @@ body {
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* ── Filtration bar ── */
+.filtration-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 24px;
+  border-bottom: 1px solid #2a2a4a;
+  background: var(--bg-primary);
+}
+
+.filt-btn {
+  background: #2a2a4a;
+  color: var(--text-primary);
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.filt-btn:hover:not(:disabled) {
+  background: #3a3a5a;
+}
+
+.filt-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.filt-btn.active {
+  background: #3a1a4a;
+  border-color: #6a3a8a;
+  color: #d0a0f0;
+}
+
+.filt-speed-btn {
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: bold;
+  min-width: 28px;
+}
+
+.filt-slider {
+  width: 200px;
+  accent-color: #ff6b6b;
+  cursor: pointer;
+}
+
+.filt-slider:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.filt-epsilon {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.filt-speed {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 24px;
+  text-align: center;
+}
+
+.filt-cycle-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.rips-edge {
+  stroke: #4a4a6a;
+  stroke-width: 0.8;
+  stroke-opacity: 0.25;
+  pointer-events: none;
+}
+
+.cycle.filt-unborn {
+  display: none;
+}
+
+.cycle.filt-dead {
+  stroke: #555566 !important;
+  stroke-opacity: 0.08 !important;
+}
+
+.diag-sweep-line {
+  pointer-events: none;
+}
+
+.diag-alive-zone {
+  pointer-events: none;
+}
+
+/* ── Tooltip ── */
+.tooltip {
+  display: none;
+  position: fixed;
+  background: rgba(15, 15, 35, 0.94);
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 1000;
+  max-width: 400px;
+  white-space: nowrap;
+}
+
+.tooltip.visible {
+  display: block;
+}
+
+/* ── Token trajectory ── */
+.trajectory-group {
+  pointer-events: none;
+}
+
+/* ── Prompt ── */
+.prompt-text {
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}

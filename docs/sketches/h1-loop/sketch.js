@@ -33,6 +33,26 @@ const THREE_POINT_SIZE = 4;
 const THREE_BRIDGE_RADIUS = 0.04;
 const HOVER_DIST_THRESHOLD = 15;
 
+const FILT_EDGE_COLOR = "#4a4a6a";
+const FILT_DEAD_CYCLE_OPACITY = 0.08;
+const FILT_SWEEP_LINE_COLOR = "#ff6b6b";
+const FILT_SWEEP_LINE_WIDTH = 1.5;
+const FILT_ALIVE_ZONE_COLOR = "rgba(34, 211, 238, 0.06)";
+const FILT_SPEEDS = [0.25, 0.5, 1, 2, 4];
+const FILT_DEFAULT_SPEED_IDX = 2;
+const FILT_BASE_DURATION_MS = 15000;
+const THREE_EDGE_COLOR = 0x4a4a6a;
+const THREE_EDGE_OPACITY = 0.25;
+
+const TRAJ_COLOR = "#7070a0";
+const TRAJ_WIDTH = 1;
+const TRAJ_OPACITY = 0.35;
+const TRAJ_ARROW_COLOR = "#9090b0";
+const TRAJ_ARROW_INTERVAL = 10;
+const TRAJ_ARROW_SIZE = 4;
+const THREE_TRAJ_COLOR = 0x7070a0;
+const THREE_TRAJ_OPACITY = 0.35;
+
 function cycleColor(rank, maxRank) {
   if (maxRank <= 0) return d3.interpolateTurbo(0.92);
   const t = 0.92 - (rank / maxRank) * 0.84;
@@ -54,10 +74,20 @@ const state = {
   currentIdx: DEFAULT_IDX,
   highlightedCycleRank: null,
   viewMode: localStorage.getItem(LS_VIEW_KEY) || "2d",
+  trajectoryVisible: false,
 };
 let threeState = null;
 let navGeneration = 0;
 let dom = {};
+let filtrationState = {
+  active: false, playing: false, epsilon: 0, epsilonMax: 0,
+  speedIdx: FILT_DEFAULT_SPEED_IDX, animFrameId: 0, lastFrameTime: 0,
+  sortedEdges: null, _problemIdx: null,
+  edgeGroup: null, edgeElements2D: null, cloud2dXScale: null, cloud2dYScale: null,
+  edgeMesh: null, edgeGeometry: null,
+  diagSweepV: null, diagSweepH: null, diagAliveRect: null,
+  diagXScale: null, diagYScale: null, diagDomainMax: 0,
+};
 
 function cacheDom() {
   dom = {
@@ -83,6 +113,27 @@ function showError(msg) {
   dom.app.style.display = "none";
   dom.legend.style.display = "none";
   dom.navBar.style.display = "none";
+}
+
+function showTooltip(x, y, text) {
+  const el = document.getElementById("tooltip");
+  el.textContent = text;
+  el.classList.add("visible");
+  const pad = 12;
+  let left = x + pad;
+  let top = y - pad;
+  if (left + 250 > window.innerWidth) left = x - 250 - pad;
+  if (top < 0) top = y + pad;
+  el.style.left = left + "px";
+  el.style.top = top + "px";
+}
+
+function hideTooltip() {
+  document.getElementById("tooltip").classList.remove("visible");
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function checkSchema(obj, label) {
@@ -147,6 +198,22 @@ function padDomain(values, fraction) {
   return [min - pad, max + pad];
 }
 
+function prepareFiltrationEdges(problem) {
+  if (filtrationState.sortedEdges && filtrationState._problemIdx === problem.idx) return;
+  const upper = problem.distance_matrix_upper;
+  const edges = [];
+  let k = 0;
+  for (let i = 0; i < problem.n_subsampled; i++)
+    for (let j = i + 1; j < problem.n_subsampled; j++) {
+      edges.push({ i, j, dist: upper[k] });
+      k++;
+    }
+  edges.sort((a, b) => a.dist - b.dist);
+  filtrationState.sortedEdges = edges;
+  filtrationState.epsilonMax = edges[edges.length - 1].dist;
+  filtrationState._problemIdx = problem.idx;
+}
+
 function disposeThreeState() {
   if (!threeState) return;
   threeState.disposed = true;
@@ -161,6 +228,19 @@ function disposeThreeState() {
   for (const line of threeState.cycleMeshes.values()) {
     line.geometry.dispose();
     line.material.dispose();
+  }
+  if (threeState.trajectoryMesh) {
+    threeState.trajectoryMesh.geometry.dispose();
+    threeState.trajectoryMesh.material.dispose();
+    threeState.scene.remove(threeState.trajectoryMesh);
+    threeState.trajectoryMesh = null;
+  }
+  if (filtrationState.edgeMesh) {
+    filtrationState.edgeMesh.geometry.dispose();
+    filtrationState.edgeMesh.material.dispose();
+    threeState.scene.remove(filtrationState.edgeMesh);
+    filtrationState.edgeMesh = null;
+    filtrationState.edgeGeometry = null;
   }
   threeState.renderer.dispose();
   const canvas = threeState.renderer.domElement;
@@ -262,20 +342,32 @@ function renderCloud2D(problem) {
       .attr("stroke-width", cycle.rank === 0 ? CYCLE_STROKE : 1.5)
       .attr("stroke-dasharray", isFallback ? "6,3" : "none")
       .attr("stroke-opacity", cycleOpacity(cycle.rank))
-      .on("mouseenter", () => setHighlight(cycle.rank))
-      .on("mouseleave", () => clearHighlight());
+      .on("mouseenter", (event) => {
+        setHighlight(cycle.rank);
+        showTooltip(event.clientX, event.clientY,
+          `Cycle ${cycle.rank} | life: ${cycle.lifetime.toFixed(2)} | birth: ${cycle.birth.toFixed(2)} → death: ${cycle.death.toFixed(2)}`);
+      })
+      .on("mouseleave", () => { clearHighlight(); hideTooltip(); });
   }
 
+  const pointData = pts.map((p, i) => [p[0], p[1], i]);
   svg
     .selectAll("circle.point")
-    .data(pts)
+    .data(pointData)
     .join("circle")
     .attr("class", "point")
     .attr("cx", (d) => xScale(d[0]))
     .attr("cy", (d) => yScale(d[1]))
     .attr("r", POINT_R)
     .attr("fill", COLOR_POINT)
-    .attr("opacity", 0.7);
+    .attr("opacity", 0.7)
+    .on("mouseenter", (event, d) => {
+      const tokenIdx = problem.subsampled_token_indices[d[2]];
+      const isBridge = d[2] === problem.bridge_subsampled_index;
+      showTooltip(event.clientX, event.clientY,
+        isBridge ? `Bridge (token ${tokenIdx})` : `Token ${tokenIdx} (point ${d[2]})`);
+    })
+    .on("mouseleave", () => hideTooltip());
 
   const bi = problem.bridge_subsampled_index;
   svg
@@ -286,6 +378,16 @@ function renderCloud2D(problem) {
     .attr("r", BRIDGE_R)
     .attr("fill", COLOR_BRIDGE)
     .attr("opacity", 1.0);
+
+  filtrationState.cloud2dXScale = xScale;
+  filtrationState.cloud2dYScale = yScale;
+
+  if (state.trajectoryVisible) renderTrajectory2D(problem);
+
+  if (filtrationState.active) {
+    createFiltrationEdgeLayer2D(problem);
+    applyFiltrationState(problem);
+  }
 }
 
 function normalizePoints3D(points3d) {
@@ -422,10 +524,40 @@ function onCanvasMouseMove(event) {
   } else if (closestRank === null && state.highlightedCycleRank !== null) {
     clearHighlight();
   }
+
+  const problem = problemCache.get(state.currentIdx);
+  if (closestRank !== null && problem) {
+    const cycle = problem.h1_cycles.find(c => c.rank === closestRank);
+    if (cycle) {
+      showTooltip(event.clientX, event.clientY,
+        `Cycle ${cycle.rank} | life: ${cycle.lifetime.toFixed(2)} | birth: ${cycle.birth.toFixed(2)} → death: ${cycle.death.toFixed(2)}`);
+    }
+  } else if (problem) {
+    const posAttr = threeState.pointsMesh.geometry.getAttribute("position");
+    let closestPtIdx = null;
+    let closestPtDist = HOVER_DIST_THRESHOLD;
+    for (let i = 0; i < posAttr.count; i++) {
+      const v = new THREE.Vector3(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+      v.project(threeState.camera);
+      const px = (v.x * 0.5 + 0.5) * cw;
+      const py = (-v.y * 0.5 + 0.5) * ch;
+      const d = Math.hypot(mx - px, my - py);
+      if (d < closestPtDist) { closestPtDist = d; closestPtIdx = i; }
+    }
+    if (closestPtIdx !== null) {
+      const tokenIdx = problem.subsampled_token_indices[closestPtIdx];
+      const isBridge = closestPtIdx === problem.bridge_subsampled_index;
+      showTooltip(event.clientX, event.clientY,
+        isBridge ? `Bridge (token ${tokenIdx})` : `Token ${tokenIdx} (point ${closestPtIdx})`);
+    } else {
+      hideTooltip();
+    }
+  }
 }
 
 function onCanvasMouseLeave() {
   if (state.highlightedCycleRank !== null) clearHighlight();
+  hideTooltip();
 }
 
 function renderCloud3D(problem) {
@@ -541,6 +673,13 @@ function renderCloud3D(problem) {
     renderer.render(scene, camera);
   }
   animate();
+
+  if (state.trajectoryVisible) renderTrajectory3D(problem);
+
+  if (filtrationState.active) {
+    createFiltrationEdgeLayer3D(problem);
+    applyFiltrationState(problem);
+  }
 }
 
 function renderInfo(problem) {
@@ -580,7 +719,16 @@ function renderInfo(problem) {
       </div>`;
   }
 
+  const promptText = problem.math_prompt || "";
+  const promptSection = promptText
+    ? `<div class="info-section">
+        <h3>Prompt</h3>
+        <p class="prompt-text">${escapeHtml(promptText)}</p>
+      </div>`
+    : "";
+
   dom.infoPanel.innerHTML = `
+    ${promptSection}
     <div class="info-section">
       <h3>Point Cloud</h3>
       <div class="info-row"><span class="info-label">Original tokens</span><span class="info-value">${problem.n_tokens}</span></div>
@@ -719,9 +867,13 @@ function renderDiagram(problem) {
       .attr("opacity", 0.85)
       .on("mouseenter", (event, d) => {
         if (d.dim === "H1") setHighlight(d.rank);
+        const life = (d.d - d.b).toFixed(2);
+        showTooltip(event.clientX, event.clientY,
+          `${d.dim} | birth: ${d.b.toFixed(2)} | death: ${d.d.toFixed(2)} | life: ${life}`);
       })
       .on("mouseleave", (event, d) => {
         if (d.dim === "H1") clearHighlight();
+        hideTooltip();
       });
   }
 
@@ -740,6 +892,15 @@ function renderDiagram(problem) {
       .attr("fill", "#999").attr("font-size", "10px")
       .text(item.label);
   });
+
+  filtrationState.diagXScale = xScale;
+  filtrationState.diagYScale = yScale;
+  filtrationState.diagDomainMax = domainMax;
+
+  if (filtrationState.active) {
+    createDiagramSweep();
+    updateDiagramSweep(filtrationState.epsilon);
+  }
 }
 
 function setHighlight(rank) {
@@ -752,16 +913,25 @@ function setHighlight(rank) {
   });
   d3.selectAll("#diagram-panel .diagram-dot:not([data-dim='H1'])").classed("dimmed", true);
 
+  const problem = problemCache.get(state.currentIdx);
+
   if (state.viewMode === "2d") {
     d3.selectAll("#cloud-panel .cycle").each(function () {
       const r = +this.getAttribute("data-rank");
-      d3.select(this)
-        .classed("highlighted", r === rank)
-        .classed("dimmed", r !== rank);
+      const el = d3.select(this);
+      if (filtrationState.active && problem) {
+        const cycle = problem.h1_cycles.find(c => c.rank === r);
+        if (cycle && (filtrationState.epsilon < cycle.birth || filtrationState.epsilon >= cycle.death)) return;
+      }
+      el.classed("highlighted", r === rank).classed("dimmed", r !== rank);
     });
   } else if (threeState && !threeState.disposed) {
     const mr = threeState.maxRank;
     for (const [r, line] of threeState.cycleMeshes) {
+      if (filtrationState.active && problem) {
+        const cycle = problem.h1_cycles.find(c => c.rank === r);
+        if (cycle && (filtrationState.epsilon < cycle.birth || filtrationState.epsilon >= cycle.death)) continue;
+      }
       line.material.color.setHex(r === rank ? THREE_CYCLE_HIGHLIGHT : cycleColorHex(r, mr));
       line.material.opacity = r === rank ? 1.0 : 0.15;
     }
@@ -777,6 +947,15 @@ function clearHighlight() {
     d3.select(this).attr("r", d.rank === 0 ? DIAG_DOT_R_HIGHLIGHT : DIAG_DOT_R);
   });
 
+  if (filtrationState.active) {
+    const problem = problemCache.get(state.currentIdx);
+    if (problem) {
+      applyCycleLifecycle(problem, filtrationState.epsilon);
+      updateDiagramSweep(filtrationState.epsilon);
+    }
+    return;
+  }
+
   if (state.viewMode === "2d") {
     d3.selectAll("#cloud-panel .cycle")
       .classed("highlighted", false)
@@ -787,6 +966,491 @@ function clearHighlight() {
       line.material.color.setHex(cycleColorHex(r, mr));
       line.material.opacity = cycleOpacity(r);
     }
+  }
+}
+
+// ── Filtration functions ──
+
+function createFiltrationEdgeLayer2D(problem) {
+  removeFiltrationEdgeLayer();
+  const svg = d3.select("#cloud-panel svg");
+  if (svg.empty()) return;
+  const xScale = filtrationState.cloud2dXScale;
+  const yScale = filtrationState.cloud2dYScale;
+  if (!xScale || !yScale) return;
+
+  const firstCycle = svg.select(".cycle").node();
+  const edgeGroup = firstCycle
+    ? svg.insert("g", () => firstCycle).attr("class", "rips-edges")
+    : svg.append("g").attr("class", "rips-edges");
+  filtrationState.edgeGroup = edgeGroup;
+
+  const pts = problem.points_2d;
+  const edges = filtrationState.sortedEdges;
+  for (let k = 0; k < edges.length; k++) {
+    const e = edges[k];
+    edgeGroup.append("line")
+      .attr("class", "rips-edge")
+      .attr("x1", xScale(pts[e.i][0]))
+      .attr("y1", yScale(pts[e.i][1]))
+      .attr("x2", xScale(pts[e.j][0]))
+      .attr("y2", yScale(pts[e.j][1]))
+      .style("display", "none");
+  }
+  filtrationState.edgeElements2D = edgeGroup.selectAll("line").nodes();
+}
+
+function createFiltrationEdgeLayer3D(problem) {
+  removeFiltrationEdgeLayer();
+  if (!threeState || threeState.disposed) return;
+
+  const edges = filtrationState.sortedEdges;
+  const positions = new Float32Array(edges.length * 6);
+  const norm = threeState.positions;
+  for (let k = 0; k < edges.length; k++) {
+    const e = edges[k];
+    const off = k * 6;
+    positions[off]     = norm[e.i * 3];
+    positions[off + 1] = norm[e.i * 3 + 1];
+    positions[off + 2] = norm[e.i * 3 + 2];
+    positions[off + 3] = norm[e.j * 3];
+    positions[off + 4] = norm[e.j * 3 + 1];
+    positions[off + 5] = norm[e.j * 3 + 2];
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setDrawRange(0, 0);
+
+  const material = new THREE.LineBasicMaterial({
+    color: THREE_EDGE_COLOR, transparent: true, opacity: THREE_EDGE_OPACITY, depthWrite: false,
+  });
+
+  const mesh = new THREE.LineSegments(geometry, material);
+  threeState.scene.add(mesh);
+  filtrationState.edgeMesh = mesh;
+  filtrationState.edgeGeometry = geometry;
+}
+
+function removeFiltrationEdgeLayer() {
+  if (filtrationState.edgeGroup) {
+    filtrationState.edgeGroup.remove();
+    filtrationState.edgeGroup = null;
+    filtrationState.edgeElements2D = null;
+  }
+  if (filtrationState.edgeMesh) {
+    filtrationState.edgeMesh.geometry.dispose();
+    filtrationState.edgeMesh.material.dispose();
+    if (threeState && !threeState.disposed) {
+      threeState.scene.remove(filtrationState.edgeMesh);
+    }
+    filtrationState.edgeMesh = null;
+    filtrationState.edgeGeometry = null;
+  }
+}
+
+function createDiagramSweep() {
+  removeDiagramSweep();
+  const svg = d3.select("#diagram-panel svg");
+  if (svg.empty()) return;
+  const xScale = filtrationState.diagXScale;
+  const yScale = filtrationState.diagYScale;
+  if (!xScale || !yScale) return;
+  const domainMax = filtrationState.diagDomainMax;
+
+  filtrationState.diagAliveRect = svg.append("rect")
+    .attr("class", "diag-alive-zone")
+    .attr("x", xScale(0)).attr("y", yScale(domainMax))
+    .attr("width", 0).attr("height", 0)
+    .attr("fill", FILT_ALIVE_ZONE_COLOR);
+
+  filtrationState.diagSweepV = svg.append("line")
+    .attr("class", "diag-sweep-line")
+    .attr("x1", xScale(0)).attr("y1", yScale(0))
+    .attr("x2", xScale(0)).attr("y2", yScale(domainMax))
+    .attr("stroke", FILT_SWEEP_LINE_COLOR)
+    .attr("stroke-width", FILT_SWEEP_LINE_WIDTH)
+    .attr("stroke-opacity", 0.7)
+    .attr("stroke-dasharray", "4,2");
+
+  filtrationState.diagSweepH = svg.append("line")
+    .attr("class", "diag-sweep-line")
+    .attr("x1", xScale(0)).attr("y1", yScale(0))
+    .attr("x2", xScale(domainMax)).attr("y2", yScale(0))
+    .attr("stroke", FILT_SWEEP_LINE_COLOR)
+    .attr("stroke-width", FILT_SWEEP_LINE_WIDTH)
+    .attr("stroke-opacity", 0.7)
+    .attr("stroke-dasharray", "4,2");
+}
+
+function removeDiagramSweep() {
+  if (filtrationState.diagSweepV) { filtrationState.diagSweepV.remove(); filtrationState.diagSweepV = null; }
+  if (filtrationState.diagSweepH) { filtrationState.diagSweepH.remove(); filtrationState.diagSweepH = null; }
+  if (filtrationState.diagAliveRect) { filtrationState.diagAliveRect.remove(); filtrationState.diagAliveRect = null; }
+}
+
+function updateDiagramSweep(eps) {
+  const xScale = filtrationState.diagXScale;
+  const yScale = filtrationState.diagYScale;
+  if (!xScale || !yScale) return;
+  const domainMax = filtrationState.diagDomainMax;
+  const cEps = Math.min(eps, domainMax);
+
+  if (filtrationState.diagSweepV) {
+    filtrationState.diagSweepV.attr("x1", xScale(cEps)).attr("x2", xScale(cEps));
+  }
+  if (filtrationState.diagSweepH) {
+    filtrationState.diagSweepH.attr("y1", yScale(cEps)).attr("y2", yScale(cEps));
+  }
+  if (filtrationState.diagAliveRect) {
+    const x0 = xScale(0), x1 = xScale(cEps);
+    const yTop = yScale(domainMax), yBot = yScale(cEps);
+    filtrationState.diagAliveRect
+      .attr("x", x0).attr("y", yTop)
+      .attr("width", Math.max(0, x1 - x0))
+      .attr("height", Math.max(0, yBot - yTop));
+  }
+
+  if (filtrationState.active) {
+    d3.selectAll("#diagram-panel .diagram-dot[data-dim='H1']").each(function (d) {
+      d3.select(this).attr("opacity", eps < d.b ? 0.15 : eps < d.d ? 1.0 : 0.25);
+    });
+  }
+}
+
+function applyCycleLifecycle(problem, eps) {
+  const maxRank = d3.max(problem.h1_cycles, c => c.rank) || 0;
+
+  if (state.viewMode === "2d") {
+    d3.selectAll("#cloud-panel .cycle").each(function () {
+      const el = d3.select(this);
+      const rank = +this.getAttribute("data-rank");
+      const cycle = problem.h1_cycles.find(c => c.rank === rank);
+      if (!cycle) return;
+      if (eps < cycle.birth) {
+        el.classed("filt-unborn", true).classed("filt-dead", false);
+      } else if (eps < cycle.death) {
+        el.classed("filt-unborn", false).classed("filt-dead", false)
+          .attr("stroke", cycleColor(rank, maxRank))
+          .attr("stroke-opacity", cycleOpacity(rank));
+      } else {
+        el.classed("filt-unborn", false).classed("filt-dead", true);
+      }
+    });
+  } else if (threeState && !threeState.disposed) {
+    for (const cycle of problem.h1_cycles) {
+      const line = threeState.cycleMeshes.get(cycle.rank);
+      if (!line) continue;
+      if (eps < cycle.birth) {
+        line.visible = false;
+      } else if (eps < cycle.death) {
+        line.visible = true;
+        line.material.color.setHex(cycleColorHex(cycle.rank, maxRank));
+        line.material.opacity = cycleOpacity(cycle.rank);
+      } else {
+        line.visible = true;
+        line.material.color.setHex(0x555566);
+        line.material.opacity = FILT_DEAD_CYCLE_OPACITY;
+      }
+    }
+  }
+
+  const alive = problem.h1_cycles.filter(c => c.birth <= eps && eps < c.death).length;
+  document.getElementById("filt-cycle-count").textContent =
+    `${alive}/${problem.h1_cycles.length} alive`;
+}
+
+function restoreCycleVisibility(problem) {
+  const maxRank = d3.max(problem.h1_cycles, c => c.rank) || 0;
+  if (state.viewMode === "2d") {
+    d3.selectAll("#cloud-panel .cycle")
+      .classed("filt-unborn", false).classed("filt-dead", false)
+      .each(function () {
+        const rank = +this.getAttribute("data-rank");
+        d3.select(this)
+          .attr("stroke", cycleColor(rank, maxRank))
+          .attr("stroke-opacity", cycleOpacity(rank));
+      });
+  } else if (threeState && !threeState.disposed) {
+    for (const [rank, line] of threeState.cycleMeshes) {
+      line.visible = true;
+      line.material.color.setHex(cycleColorHex(rank, maxRank));
+      line.material.opacity = cycleOpacity(rank);
+    }
+  }
+  d3.selectAll("#diagram-panel .diagram-dot[data-dim='H1']").each(function () {
+    d3.select(this).attr("opacity", 0.85);
+  });
+  document.getElementById("filt-cycle-count").textContent = "";
+}
+
+function applyFiltrationState(problem) {
+  const eps = filtrationState.epsilon;
+  const edges = filtrationState.sortedEdges;
+
+  let lo = 0, hi = edges.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (edges[mid].dist <= eps) lo = mid + 1; else hi = mid;
+  }
+  const edgeCutoff = lo;
+
+  if (state.viewMode === "2d") {
+    const elems = filtrationState.edgeElements2D;
+    if (elems) {
+      for (let k = 0; k < elems.length; k++) {
+        elems[k].style.display = k < edgeCutoff ? "" : "none";
+      }
+    }
+  } else if (filtrationState.edgeGeometry) {
+    filtrationState.edgeGeometry.setDrawRange(0, edgeCutoff * 2);
+  }
+
+  applyCycleLifecycle(problem, eps);
+  updateDiagramSweep(eps);
+  updateFiltrationDisplay();
+}
+
+function updateFiltrationDisplay() {
+  document.getElementById("filt-epsilon").textContent =
+    filtrationState.active ? `ε = ${filtrationState.epsilon.toFixed(1)}` : "ε = 0.00";
+  document.getElementById("filt-speed").textContent =
+    FILT_SPEEDS[filtrationState.speedIdx] + "×";
+}
+
+function toggleFiltration() {
+  const problem = problemCache.get(state.currentIdx);
+  if (!problem) return;
+
+  filtrationState.active = !filtrationState.active;
+  const toggleBtn = document.getElementById("filt-toggle");
+  const slider = document.getElementById("filt-slider");
+  const playBtn = document.getElementById("filt-play");
+  const slowerBtn = document.getElementById("filt-slower");
+  const fasterBtn = document.getElementById("filt-faster");
+
+  if (filtrationState.active) {
+    prepareFiltrationEdges(problem);
+    toggleBtn.classList.add("active");
+    slider.disabled = false;
+    playBtn.disabled = false;
+    slowerBtn.disabled = false;
+    fasterBtn.disabled = false;
+    filtrationState.epsilon = 0;
+    filtrationState.playing = false;
+    slider.value = 0;
+
+    if (state.viewMode === "2d") {
+      createFiltrationEdgeLayer2D(problem);
+    } else {
+      createFiltrationEdgeLayer3D(problem);
+    }
+    createDiagramSweep();
+    applyFiltrationState(problem);
+  } else {
+    stopFiltrationPlay();
+    toggleBtn.classList.remove("active");
+    slider.disabled = true;
+    slider.value = 0;
+    playBtn.disabled = true;
+    playBtn.textContent = "▶";
+    slowerBtn.disabled = true;
+    fasterBtn.disabled = true;
+    removeFiltrationEdgeLayer();
+    removeDiagramSweep();
+    restoreCycleVisibility(problem);
+    updateFiltrationDisplay();
+  }
+}
+
+function deactivateFiltration() {
+  if (!filtrationState.active) return;
+  stopFiltrationPlay();
+  filtrationState.active = false;
+  removeFiltrationEdgeLayer();
+  removeDiagramSweep();
+  document.getElementById("filt-toggle").classList.remove("active");
+  document.getElementById("filt-slider").disabled = true;
+  document.getElementById("filt-slider").value = 0;
+  document.getElementById("filt-play").disabled = true;
+  document.getElementById("filt-play").textContent = "▶";
+  document.getElementById("filt-slower").disabled = true;
+  document.getElementById("filt-faster").disabled = true;
+  document.getElementById("filt-cycle-count").textContent = "";
+  updateFiltrationDisplay();
+}
+
+function startFiltrationPlay() {
+  if (filtrationState.playing) return;
+  filtrationState.playing = true;
+  document.getElementById("filt-play").textContent = "⏸";
+  filtrationState.lastFrameTime = performance.now();
+  filtrationState.animFrameId = requestAnimationFrame(filtrationAnimStep);
+}
+
+function stopFiltrationPlay() {
+  filtrationState.playing = false;
+  document.getElementById("filt-play").textContent = "▶";
+  cancelAnimationFrame(filtrationState.animFrameId);
+  filtrationState.animFrameId = 0;
+}
+
+function toggleFiltrationPlay() {
+  if (!filtrationState.active) return;
+  if (filtrationState.playing) {
+    stopFiltrationPlay();
+  } else {
+    if (filtrationState.epsilon >= filtrationState.epsilonMax) filtrationState.epsilon = 0;
+    startFiltrationPlay();
+  }
+}
+
+function filtrationAnimStep(now) {
+  if (!filtrationState.playing) return;
+  const dt = now - filtrationState.lastFrameTime;
+  filtrationState.lastFrameTime = now;
+
+  const speed = FILT_SPEEDS[filtrationState.speedIdx];
+  filtrationState.epsilon += (filtrationState.epsilonMax / FILT_BASE_DURATION_MS) * speed * dt;
+
+  if (filtrationState.epsilon >= filtrationState.epsilonMax) {
+    filtrationState.epsilon = filtrationState.epsilonMax;
+    stopFiltrationPlay();
+  }
+
+  document.getElementById("filt-slider").value =
+    (filtrationState.epsilon / filtrationState.epsilonMax) * 1000;
+
+  const problem = problemCache.get(state.currentIdx);
+  if (problem) applyFiltrationState(problem);
+
+  if (filtrationState.playing) {
+    filtrationState.animFrameId = requestAnimationFrame(filtrationAnimStep);
+  }
+}
+
+function onFiltSliderInput(e) {
+  if (!filtrationState.active) return;
+  filtrationState.epsilon = (parseInt(e.target.value, 10) / 1000) * filtrationState.epsilonMax;
+  const problem = problemCache.get(state.currentIdx);
+  if (problem) applyFiltrationState(problem);
+}
+
+function filtrationSlower() {
+  if (filtrationState.speedIdx > 0) {
+    filtrationState.speedIdx--;
+    updateFiltrationDisplay();
+  }
+}
+
+function filtrationFaster() {
+  if (filtrationState.speedIdx < FILT_SPEEDS.length - 1) {
+    filtrationState.speedIdx++;
+    updateFiltrationDisplay();
+  }
+}
+
+function initFiltration() {
+  document.getElementById("filt-toggle").addEventListener("click", toggleFiltration);
+  document.getElementById("filt-slider").addEventListener("input", onFiltSliderInput);
+  document.getElementById("filt-play").addEventListener("click", toggleFiltrationPlay);
+  document.getElementById("filt-slower").addEventListener("click", filtrationSlower);
+  document.getElementById("filt-faster").addEventListener("click", filtrationFaster);
+}
+
+// ── Trajectory functions ──
+
+function renderTrajectory2D(problem) {
+  removeTrajectory2D();
+  const svg = d3.select("#cloud-panel svg");
+  if (svg.empty()) return;
+  const xScale = filtrationState.cloud2dXScale;
+  const yScale = filtrationState.cloud2dYScale;
+  if (!xScale || !yScale) return;
+
+  const pts = problem.points_2d;
+  const n = pts.length;
+  if (n < 2) return;
+
+  const trajGroup = svg.insert("g", ":nth-child(2)").attr("class", "trajectory-group");
+
+  const linePoints = pts.map(p => `${xScale(p[0])},${yScale(p[1])}`).join(" ");
+  trajGroup.append("polyline")
+    .attr("class", "trajectory")
+    .attr("points", linePoints)
+    .attr("fill", "none")
+    .attr("stroke", TRAJ_COLOR)
+    .attr("stroke-width", TRAJ_WIDTH)
+    .attr("stroke-opacity", TRAJ_OPACITY);
+
+  for (let i = TRAJ_ARROW_INTERVAL; i < n; i += TRAJ_ARROW_INTERVAL) {
+    const x0 = xScale(pts[i - 1][0]), y0 = yScale(pts[i - 1][1]);
+    const x1 = xScale(pts[i][0]), y1 = yScale(pts[i][1]);
+    const dx = x1 - x0, dy = y1 - y0;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1) continue;
+    const ux = dx / len, uy = dy / len;
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    const px = -uy, py = ux;
+    const s = TRAJ_ARROW_SIZE;
+    trajGroup.append("polygon")
+      .attr("class", "trajectory-arrow")
+      .attr("points",
+        `${mx + ux * s},${my + uy * s} ${mx + px * s * 0.5},${my + py * s * 0.5} ${mx - px * s * 0.5},${my - py * s * 0.5}`)
+      .attr("fill", TRAJ_ARROW_COLOR)
+      .attr("opacity", 0.5);
+  }
+}
+
+function removeTrajectory2D() {
+  d3.select("#cloud-panel .trajectory-group").remove();
+}
+
+function renderTrajectory3D(problem) {
+  removeTrajectory3D();
+  if (!threeState || threeState.disposed) return;
+
+  const n = problem.points_3d.length;
+  if (n < 2) return;
+
+  const positions = threeState.positions;
+  const trajPos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    trajPos[i * 3] = positions[i * 3];
+    trajPos[i * 3 + 1] = positions[i * 3 + 1];
+    trajPos[i * 3 + 2] = positions[i * 3 + 2];
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(trajPos, 3));
+  const mat = new THREE.LineBasicMaterial({
+    color: THREE_TRAJ_COLOR, transparent: true, opacity: THREE_TRAJ_OPACITY, depthWrite: false,
+  });
+  const line = new THREE.Line(geo, mat);
+  threeState.scene.add(line);
+  threeState.trajectoryMesh = line;
+}
+
+function removeTrajectory3D() {
+  if (threeState && threeState.trajectoryMesh) {
+    threeState.trajectoryMesh.geometry.dispose();
+    threeState.trajectoryMesh.material.dispose();
+    threeState.scene.remove(threeState.trajectoryMesh);
+    threeState.trajectoryMesh = null;
+  }
+}
+
+function toggleTrajectory() {
+  state.trajectoryVisible = !state.trajectoryVisible;
+  document.getElementById("btn-trail").classList.toggle("active", state.trajectoryVisible);
+  const problem = problemCache.get(state.currentIdx);
+  if (!problem) return;
+  if (state.viewMode === "2d") {
+    if (state.trajectoryVisible) renderTrajectory2D(problem);
+    else removeTrajectory2D();
+  } else {
+    if (state.trajectoryVisible) renderTrajectory3D(problem);
+    else removeTrajectory3D();
   }
 }
 
@@ -827,8 +1491,16 @@ function renderLegend() {
       <svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="${COLOR_H2}"/></svg>
       H2
     </span>
+    <span class="legend-item">
+      <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="${FILT_EDGE_COLOR}" stroke-width="1.5" stroke-opacity="0.5"/></svg>
+      Rips edge
+    </span>
+    <span class="legend-item">
+      <svg width="30" height="12"><polyline points="0,10 10,3 20,8 30,2" fill="none" stroke="${TRAJ_COLOR}" stroke-width="1.5" stroke-opacity="0.6"/></svg>
+      Token trajectory
+    </span>
     <span class="legend-item" style="color:var(--text-secondary);font-style:italic;">
-      V: toggle 2D/3D
+      V: 2D/3D &nbsp; T: trail &nbsp; F: filtration &nbsp; Space: play &nbsp; [/]: speed
     </span>`;
 }
 
@@ -846,6 +1518,7 @@ async function goTo(idx) {
   idx = Math.max(0, Math.min(TOTAL_PROBLEMS - 1, idx));
 
   state.currentIdx = idx;
+  deactivateFiltration();
   const gen = ++navGeneration;
   setLoadingState(true);
   updateNavStatus(idx);
@@ -888,6 +1561,7 @@ function switchViewMode(mode) {
   localStorage.setItem(LS_VIEW_KEY, mode);
   dom.btn2d.classList.toggle("active", mode === "2d");
   dom.btn3d.classList.toggle("active", mode === "3d");
+  if (filtrationState.active) removeFiltrationEdgeLayer();
   const problem = problemCache.get(state.currentIdx);
   if (problem) {
     clearHighlight();
@@ -909,6 +1583,7 @@ function initViewToggle() {
 function bindEvents() {
   dom.btnPrev.addEventListener("click", goPrev);
   dom.btnNext.addEventListener("click", goNext);
+  document.getElementById("btn-trail").addEventListener("click", toggleTrajectory);
 
   dom.idxInput.addEventListener("change", () => {
     const val = parseInt(dom.idxInput.value, 10);
@@ -937,6 +1612,21 @@ function bindEvents() {
     } else if (e.key === "v" || e.key === "V") {
       e.preventDefault();
       switchViewMode(state.viewMode === "2d" ? "3d" : "2d");
+    } else if (e.key === "t" || e.key === "T") {
+      e.preventDefault();
+      toggleTrajectory();
+    } else if (e.key === "f" || e.key === "F") {
+      e.preventDefault();
+      toggleFiltration();
+    } else if (e.key === " ") {
+      e.preventDefault();
+      toggleFiltrationPlay();
+    } else if (e.key === "[") {
+      e.preventDefault();
+      filtrationSlower();
+    } else if (e.key === "]") {
+      e.preventDefault();
+      filtrationFaster();
     }
   });
 }
@@ -946,6 +1636,7 @@ async function main() {
     cacheDom();
     bindEvents();
     initViewToggle();
+    initFiltration();
 
     const ro = new ResizeObserver((entries) => {
       if (!threeState || threeState.disposed) return;
@@ -964,6 +1655,7 @@ async function main() {
     problemCache.set(DEFAULT_IDX, problem);
     renderProblem(problem);
     renderLegend();
+    document.getElementById("filtration-bar").style.display = "";
   } catch (e) {
     showError(e.message);
   }

@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
 </head>
 <body>
+  <div id="tooltip" class="tooltip"></div>
   <div id="error-banner"></div>
   <header id="metadata"></header>
   <nav id="nav-bar">
@@ -21,8 +22,19 @@
       <button id="btn-2d" class="view-btn active" title="2D view (V)">2D</button>
       <button id="btn-3d" class="view-btn" title="3D view (V)">3D</button>
     </div>
+    <button id="btn-trail" class="filt-btn" title="Token trajectory (T)">Trail</button>
     <button id="btn-next" title="Next (Right arrow)">Next &#9654;</button>
   </nav>
+  <div id="filtration-bar" class="filtration-bar" style="display:none;">
+    <button id="filt-toggle" class="filt-btn" title="Toggle filtration (F)">Filtration</button>
+    <input id="filt-slider" type="range" min="0" max="1000" value="0" class="filt-slider" disabled>
+    <span id="filt-epsilon" class="filt-epsilon">&epsilon; = 0.00</span>
+    <button id="filt-play" class="filt-btn" title="Play/Pause (Space)" disabled>&#9654;</button>
+    <button id="filt-slower" class="filt-btn filt-speed-btn" title="Slower ([)" disabled>&minus;</button>
+    <span id="filt-speed" class="filt-speed">1&times;</span>
+    <button id="filt-faster" class="filt-btn filt-speed-btn" title="Faster (])" disabled>+</button>
+    <span id="filt-cycle-count" class="filt-cycle-count"></span>
+  </div>
   <main id="app">
     <div id="cloud-panel"></div>
     <div id="right-panel">
