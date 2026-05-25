@@ -150,10 +150,18 @@ precondition_checks() {
     "NODE_REGISTRY"
 
   # check_07: 4-variant CanvasType including experiments
-  expect_line_match \
-    "check_07: CanvasType includes 'experiments'" \
-    "frontend/src/lib/nodes/registry.ts" \
-    "experiments"
+  # After Step 5, registry.ts is a shim; source of truth is pack-registry.ts
+  if [ -f "frontend/src/lib/pack-registry.ts" ]; then
+    expect_line_match \
+      "check_07: CanvasType includes 'experiments'" \
+      "frontend/src/lib/pack-registry.ts" \
+      "experiments"
+  else
+    expect_line_match \
+      "check_07: CanvasType includes 'experiments'" \
+      "frontend/src/lib/nodes/registry.ts" \
+      "experiments"
+  fi
 
   # check_08: ELK layout files exist (not deferred)
   expect_file_exists "check_08a: elk-layout.ts exists" "frontend/src/lib/layout/elk-layout.ts"
