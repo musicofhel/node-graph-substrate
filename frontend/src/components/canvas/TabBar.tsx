@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../lib/api";
+import { useSessionStore } from "../../features/workspace/useProjectSession";
 
 interface GraphTab {
   id: string;
@@ -48,6 +49,7 @@ export function TabBar({ projectId, activeGraphId, onSelectGraph }: TabBarProps)
       });
       if (resp.ok) {
         const graph = await resp.json();
+        useSessionStore.getState().openCanvas(graph.id);
         await fetchTabs();
         onSelectGraph(graph.id);
       }

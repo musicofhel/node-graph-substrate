@@ -271,6 +271,54 @@ async def _build_snapshot(conn: asyncpg.Connection, graph_id: str) -> dict:
     }
 
 
+async def get_session_state(project_id: str) -> dict[str, Any] | None:
+    pool = get_pool()
+    row = await pool.fetchrow(
+        "SELECT * FROM workspace_session_state WHERE project_id = $1",
+        project_id,
+    )
+    if not row:
+        return None
+    return {
+        "project_id": str(row["project_id"]),
+        "open_canvas_ids": [str(x) for x in (row["open_canvas_ids"] or [])],
+        "active_canvas_id": str(row["active_canvas_id"]) if row["active_canvas_id"] else None,
+        "per_canvas_state": json.loads(row["per_canvas_state"]) if isinstance(row["per_canvas_state"], str) else (row["per_canvas_state"] or {}),
+        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+    }
+
+
+async def upsert_session_state(
+    project_id: str,
+    open_canvas_ids: list[str],
+    active_canvas_id: str | None,
+    per_canvas_state: dict[str, Any],
+) -> dict[str, Any]:
+    pool = get_pool()
+    row = await pool.fetchrow(
+        """INSERT INTO workspace_session_state
+              (project_id, open_canvas_ids, active_canvas_id, per_canvas_state, updated_at)
+           VALUES ($1, $2::uuid[], $3, $4::jsonb, NOW())
+           ON CONFLICT (project_id) DO UPDATE SET
+              open_canvas_ids = $2::uuid[],
+              active_canvas_id = $3,
+              per_canvas_state = $4::jsonb,
+              updated_at = NOW()
+           RETURNING *""",
+        project_id,
+        open_canvas_ids,
+        active_canvas_id,
+        json.dumps(per_canvas_state),
+    )
+    return {
+        "project_id": str(row["project_id"]),
+        "open_canvas_ids": [str(x) for x in (row["open_canvas_ids"] or [])],
+        "active_canvas_id": str(row["active_canvas_id"]) if row["active_canvas_id"] else None,
+        "per_canvas_state": json.loads(row["per_canvas_state"]) if isinstance(row["per_canvas_state"], str) else (row["per_canvas_state"] or {}),
+        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+    }
+
+
 class OptimisticLockError(Exception):
     def __init__(self, current_version: int):
         self.current_version = current_version

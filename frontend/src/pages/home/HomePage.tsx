@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { API_BASE } from "../../lib/api";
+import { useSessionStore } from "../../features/workspace/useProjectSession";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -11,29 +12,24 @@ export default function HomePage() {
     let cancelled = false;
 
     (async () => {
-      let graphId = searchParams.get("graph");
-      if (!graphId) {
-        graphId = localStorage.getItem("substrate:lastGraphId");
-      }
-
-      if (graphId) {
+      const graphParam = searchParams.get("graph");
+      if (graphParam) {
         try {
-          const resp = await fetch(`${API_BASE}/api/graphs/${graphId}`);
+          const resp = await fetch(`${API_BASE}/api/graphs/${graphParam}`);
           if (cancelled) return;
           if (resp.ok) {
             const data = await resp.json();
-            const projectId = data.project_id;
-            navigate(`/p/${projectId}/c/${graphId}`, { replace: true });
+            navigate(`/p/${data.project_id}/c/${graphParam}`, { replace: true });
             return;
           }
         } catch {}
-        localStorage.removeItem("substrate:lastGraphId");
       }
 
       if (cancelled) return;
-      setStatus("Creating default workspace...");
+      setStatus("Loading workspace...");
 
       try {
+        // POST is idempotent — returns existing project if slug matches
         const projResp = await fetch(`${API_BASE}/api/projects`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -45,6 +41,27 @@ export default function HomePage() {
         if (cancelled) return;
         const proj = await projResp.json();
 
+        await useSessionStore.getState().hydrate(proj.id);
+        if (cancelled) return;
+        const session = useSessionStore.getState();
+
+        if (session.activeCanvasId) {
+          navigate(`/p/${proj.id}/c/${session.activeCanvasId}`, { replace: true });
+          return;
+        }
+
+        // No active session — find or create a graph
+        const graphsResp = await fetch(`${API_BASE}/api/projects/${proj.id}/graphs`);
+        if (cancelled) return;
+        if (graphsResp.ok) {
+          const graphs = await graphsResp.json();
+          if (graphs.length > 0) {
+            navigate(`/p/${proj.id}/c/${graphs[0].id}`, { replace: true });
+            return;
+          }
+        }
+
+        // No graphs exist — create default
         const graphResp = await fetch(`${API_BASE}/api/graphs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -56,7 +73,6 @@ export default function HomePage() {
         if (cancelled) return;
         const graph = await graphResp.json();
 
-        localStorage.setItem("substrate:lastGraphId", graph.id);
         navigate(`/p/${proj.id}/c/${graph.id}`, { replace: true });
       } catch (e) {
         if (!cancelled) setStatus("Failed to connect to server. Is it running on port 8080?");

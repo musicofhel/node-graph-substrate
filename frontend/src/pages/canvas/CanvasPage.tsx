@@ -12,6 +12,7 @@ import type { PaperSummary } from "../../components/linkforge/PaperCard";
 import { SubstrateWS } from "../../lib/ws/client";
 import { NODE_REGISTRY, canvasTypeFromName } from "../../lib/pack-registry";
 import { API_BASE } from "../../lib/api";
+import { useSessionStore } from "../../features/workspace/useProjectSession";
 
 if (import.meta.env.DEV) {
   (window as any).__canvasStore = useCanvasStore;
@@ -314,7 +315,7 @@ function CanvasPageInner() {
     columnCounterRef.current = 0;
 
     (async () => {
-      localStorage.setItem("substrate:lastGraphId", canvasId);
+      useSessionStore.getState().setActiveCanvas(canvasId);
 
       let needsDefaults = false;
       try {

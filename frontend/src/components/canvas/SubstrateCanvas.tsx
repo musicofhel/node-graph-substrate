@@ -13,6 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
+import { useSessionStore } from "../../features/workspace/useProjectSession";
 import { CanvasControls } from "./CanvasControls";
 import { PipelineTimeline } from "./PipelineTimeline";
 import { nodeTypes } from "./node-types";
@@ -64,6 +65,20 @@ export function SubstrateCanvas() {
     if (import.meta.env.DEV) {
       (window as any).__rfInstance = instance;
     }
+    const canvasId = useCanvasStore.getState().graphId;
+    if (canvasId) {
+      const saved = useSessionStore.getState().perCanvasState[canvasId]?.viewport;
+      if (saved) {
+        setTimeout(() => instance.setViewport(saved), 0);
+      }
+    }
+  }, []);
+
+  const handleMoveEnd = useCallback((_: unknown, viewport: { x: number; y: number; zoom: number }) => {
+    const canvasId = useCanvasStore.getState().graphId;
+    if (canvasId) {
+      useSessionStore.getState().updateCanvasState(canvasId, { viewport });
+    }
   }, []);
 
   const isValidConnection = useCallback((connection: Edge | Connection) => {
@@ -97,6 +112,7 @@ export function SubstrateCanvas() {
             onPaneClick={handlePaneClick}
             isValidConnection={isValidConnection}
             onInit={handleInit}
+            onMoveEnd={handleMoveEnd}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
