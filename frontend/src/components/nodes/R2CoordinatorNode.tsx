@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { PaperPoolSection, type PoolPaper } from "./PaperPoolSection";
-import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useLinkForgeStore } from "../../packs/link-forge/store";
 
 const LIFECYCLE_STAGES = ["triaged", "script_generated", "experiment_started", "experiment_completed", "promoted"] as const;
 
@@ -37,8 +37,8 @@ export const R2CoordinatorNode = memo(({ id, selected }: { id: string; selected?
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastEventRef = useRef<string>("");
   const [papers, setPapers] = useState<PaperState[]>([]);
-  const starredPapers = useCanvasStore((s) => s.starredPapers);
-  const flushCounter = useCanvasStore((s) => s.flushCounter);
+  const starredPapers = useLinkForgeStore((s) => s.starredPapers);
+  const flushCounter = useLinkForgeStore((s) => s.flushCounter);
 
   useEffect(() => {
     const arxivId = typeof data.arxiv_id === "string" ? data.arxiv_id : "";

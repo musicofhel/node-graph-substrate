@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { PaperPoolSection, type PoolPaper } from "./PaperPoolSection";
-import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useLinkForgeStore } from "../../packs/link-forge/store";
 
 interface CompletedPaper {
   queue_id: string;
@@ -18,8 +18,8 @@ export const R2StatsNode = memo(({ id, selected }: { id: string; selected?: bool
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
   const [papers, setPapers] = useState<CompletedPaper[]>([]);
-  const starredPapers = useCanvasStore((s) => s.starredPapers);
-  const flushCounter = useCanvasStore((s) => s.flushCounter);
+  const starredPapers = useLinkForgeStore((s) => s.starredPapers);
+  const flushCounter = useLinkForgeStore((s) => s.flushCounter);
 
   useEffect(() => {
     const eventKey = String(data.queue_id ?? "") + ":" + String(data.completed_at ?? "");

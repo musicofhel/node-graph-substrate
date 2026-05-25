@@ -1,4 +1,4 @@
-import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useLinkForgeStore } from "../../packs/link-forge/store";
 
 export interface PoolPaper {
   id: string;
@@ -13,8 +13,8 @@ interface Props {
 }
 
 export function PaperPoolSection({ papers, emptyText = "No papers yet" }: Props) {
-  const starredPapers = useCanvasStore((s) => s.starredPapers);
-  const toggleStar = useCanvasStore((s) => s.toggleStar);
+  const starredPapers = useLinkForgeStore((s) => s.starredPapers);
+  const toggleStar = useLinkForgeStore((s) => s.toggleStar);
 
   if (papers.length === 0) {
     return (

@@ -13,6 +13,7 @@ import { temporal } from "zundo";
 import { shallow } from "zustand/shallow";
 import { getLayoutedElements } from "../layout/elk-layout";
 import { API_BASE } from "../api";
+import { packManifests } from "../pack-registry";
 
 export interface CanvasState {
   nodes: Node[];
@@ -27,9 +28,6 @@ export interface CanvasState {
   _serverNodeIds: Set<string>;
   _serverEdgeIds: Set<string>;
 
-  starredPapers: Set<string>;
-  flushCounter: number;
-
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -40,8 +38,6 @@ export interface CanvasState {
   loadGraph: (graphId: string) => Promise<void>;
   saveGraph: () => Promise<void>;
   setGraphMeta: (graphId: string, version: number, projectId?: string, graphName?: string) => void;
-  toggleStar: (paperId: string) => void;
-  flushUnstarred: () => void;
   autoLayout: () => Promise<void>;
 }
 
@@ -58,8 +54,6 @@ export const useCanvasStore = create<CanvasState>()(
       dirty: false,
       _serverNodeIds: new Set<string>(),
       _serverEdgeIds: new Set<string>(),
-      starredPapers: new Set<string>(),
-      flushCounter: 0,
 
       onNodesChange: (changes) => {
         set({
@@ -83,27 +77,6 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setSelectedNodeId: (id) => set({ selectedNodeId: id }),
-
-      toggleStar: (paperId: string) => {
-        const starred = new Set(get().starredPapers);
-        if (starred.has(paperId)) starred.delete(paperId);
-        else starred.add(paperId);
-        set({ starredPapers: starred, dirty: true });
-        const stateNode = get().nodes.find((n) => n.type === "r2_state");
-        if (stateNode) {
-          set({
-            nodes: get().nodes.map((n) =>
-              n.id === stateNode.id
-                ? { ...n, data: { ...n.data, config: { starred_papers: [...starred] } } }
-                : n,
-            ),
-          });
-        }
-      },
-
-      flushUnstarred: () => {
-        set({ flushCounter: get().flushCounter + 1 });
-      },
 
       autoLayout: async () => {
         const graphIdBefore = get().graphId;
@@ -190,11 +163,6 @@ export const useCanvasStore = create<CanvasState>()(
           }),
         );
 
-        const stateNode = nodes.find((n: Node) => n.type === "r2_state");
-        const cfg = stateNode?.data?.config as Record<string, unknown> | undefined;
-        const savedStars = cfg?.starred_papers;
-        const starredPapers = Array.isArray(savedStars) ? new Set<string>(savedStars as string[]) : new Set<string>();
-
         set({
           nodes,
           edges,
@@ -205,9 +173,11 @@ export const useCanvasStore = create<CanvasState>()(
           dirty: false,
           _serverNodeIds: new Set(nodes.map((n: Node) => n.id)),
           _serverEdgeIds: new Set(edges.map((e: Edge) => e.id)),
-          starredPapers,
-          flushCounter: 0,
         });
+
+        for (const pack of packManifests) {
+          pack.onCanvasLoad?.();
+        }
       },
 
       saveGraph: async () => {

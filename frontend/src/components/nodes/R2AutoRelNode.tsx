@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useNodesData } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useLinkForgeStore } from "../../packs/link-forge/store";
 
 interface SweepEntry {
   id: string;
@@ -18,7 +18,7 @@ export const R2AutoRelNode = memo(({ id, selected }: { id: string; selected?: bo
   const data = (nodeData?.data ?? {}) as Record<string, unknown>;
   const lastSeenRef = useRef<string | null>(null);
   const [sweeps, setSweeps] = useState<SweepEntry[]>([]);
-  const flushCounter = useCanvasStore((s) => s.flushCounter);
+  const flushCounter = useLinkForgeStore((s) => s.flushCounter);
 
   useEffect(() => {
     const created = Number(data.total_edges_created ?? 0);

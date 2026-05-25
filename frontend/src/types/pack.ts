@@ -24,4 +24,6 @@ export interface PackManifest {
   nodes: Record<string, NodeDefinition>;
   streams: StreamDef[];
   restEndpoints?: RestEndpointDef[];
+  onCanvasLoad?: () => void;
+  onCanvasSave?: () => void;
 }

@@ -1,8 +1,20 @@
 import type { PackManifest } from "../../types/pack";
+import { useCanvasStore } from "../../lib/store/canvas-store";
+import { useLinkForgeStore } from "./store";
 
 export const manifest: PackManifest = {
   id: "link-forge",
   version: "0.1.0",
+  onCanvasLoad: () => {
+    const nodes = useCanvasStore.getState().nodes;
+    const stateNode = nodes.find((n) => n.type === "r2_state");
+    const cfg = stateNode?.data?.config as Record<string, unknown> | undefined;
+    const savedStars = cfg?.starred_papers;
+    const papers = Array.isArray(savedStars)
+      ? new Set<string>(savedStars as string[])
+      : new Set<string>();
+    useLinkForgeStore.getState().resetStarred(papers);
+  },
   canvasKinds: [
     {
       id: "research",

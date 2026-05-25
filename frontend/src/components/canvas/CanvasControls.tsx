@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
 import { useDriftStore } from "../../lib/store/drift-store";
+import { useLinkForgeStore } from "../../packs/link-forge/store";
 import { canvasTypeFromName } from "../../lib/nodes/registry";
 
 export function CanvasControls() {
@@ -12,8 +13,8 @@ export function CanvasControls() {
   const saveGraph = useCanvasStore((s) => s.saveGraph);
   const loadGraph = useCanvasStore((s) => s.loadGraph);
   const autoLayout = useCanvasStore((s) => s.autoLayout);
-  const flushUnstarred = useCanvasStore((s) => s.flushUnstarred);
-  const starredCount = useCanvasStore((s) => s.starredPapers.size);
+  const flushUnstarred = useLinkForgeStore((s) => s.flushUnstarred);
+  const starredCount = useLinkForgeStore((s) => s.starredPapers.size);
   const eventLogOpen = useUIStore((s) => s.eventLogOpen);
   const toggleEventLog = useUIStore((s) => s.toggleEventLog);
   const baselineMode = useDriftStore((s) => s.baselineMode);
