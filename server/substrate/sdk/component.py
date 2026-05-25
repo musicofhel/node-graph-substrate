@@ -1,30 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
 
-
-class SocketType(str, Enum):
-    PROMPT = "prompt"
-    EXTRACTION = "extraction"
-    FEATURES = "features"
-    CONFIDENCE = "confidence"
-    BRIDGE_HEALTH = "bridge_health"
-    EXPLANATION = "explanation"
-    DIAGRAMS = "diagrams"
-
-
-class NodeKind(str, Enum):
-    COMPUTED = "computed"
-    SUBSCRIBER = "subscriber"
-
-
-@dataclass
-class Socket:
-    id: str
-    type: SocketType
-    label: str = ""
+from substrate.sdk.ports import NodeKind, Socket, SocketType
 
 
 @dataclass
