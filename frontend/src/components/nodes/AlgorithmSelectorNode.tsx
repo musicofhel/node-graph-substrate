@@ -3,7 +3,7 @@ import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useExperimentStore } from "../../lib/store/experiment-store";
-import { type AlgorithmInfo } from "../../lib/hooks/useExperimentData";
+import { type AlgorithmInfo } from "../../packs/experiments/hooks/useExperimentData";
 import { API_BASE } from "../../lib/api";
 
 export const AlgorithmSelectorNode = memo(({ selected }: NodeProps) => {

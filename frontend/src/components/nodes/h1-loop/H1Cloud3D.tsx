@@ -2,7 +2,7 @@ import { Component, memo, useMemo, type ReactNode } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Line } from "@react-three/drei";
 import * as THREE from "three";
-import type { H1Problem } from "../../../lib/hooks/useH1LoopData";
+import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
 import { turboColor, cycleColor, cycleOpacity } from "./turbo-colormap";
 
 class R3FErrorBoundary extends Component<

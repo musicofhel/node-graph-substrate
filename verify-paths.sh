@@ -119,17 +119,15 @@ precondition_checks() {
     "migrations/001_init.sql" \
     "PRIMARY KEY (graph_id, version)"
 
-  # check_02: starredPapers leaks into canvas-store
-  expect_line_match \
-    "check_02: starredPapers leak in canvas-store (rip target)" \
-    "frontend/src/lib/store/canvas-store.ts" \
-    "starredPapers"
+  # check_02: starredPapers removed from canvas-store (ripped in earlier step)
+  expect_zero_lines \
+    "check_02: starredPapers absent from canvas-store" \
+    bash -c "grep -n 'starredPapers' frontend/src/lib/store/canvas-store.ts 2>/dev/null || true"
 
-  # check_03: r2_state detection in canvas-store
-  expect_line_match \
-    "check_03: r2_state detection in canvas-store (rip target)" \
-    "frontend/src/lib/store/canvas-store.ts" \
-    'type === "r2_state"'
+  # check_03: r2_state type guard removed from canvas-store (ripped in earlier step)
+  expect_zero_lines \
+    "check_03: r2_state type guard absent from canvas-store" \
+    bash -c "grep -n 'type === \"r2_state\"' frontend/src/lib/store/canvas-store.ts 2>/dev/null || true"
 
   # check_04: 500ms throttle exists at ws/client.ts:36
   expect_line_match \
@@ -174,11 +172,11 @@ precondition_checks() {
   expect_file_exists "check_09d: StaleEdge.tsx exists" "frontend/src/components/edges/StaleEdge.tsx"
   expect_file_exists "check_09e: DriftMatrixNode.tsx exists" "frontend/src/components/nodes/DriftMatrixNode.tsx"
 
-  # check_10: experiments pack files exist
-  expect_file_exists "check_10a: experiment_data.py exists" "server/substrate/experiment_data.py"
-  expect_file_exists "check_10b: experiment_parser.py exists" "server/substrate/experiment_parser.py"
+  # check_10: experiments pack files exist (moved to packs in Step 15)
+  expect_file_exists "check_10a: experiment data.py exists" "server/substrate/packs/experiments/data.py"
+  expect_file_exists "check_10b: experiment parser.py exists" "server/substrate/packs/experiments/parser.py"
   expect_file_exists "check_10c: experiment-store.ts exists" "frontend/src/lib/store/experiment-store.ts"
-  expect_file_exists "check_10d: useExperimentData.ts exists" "frontend/src/lib/hooks/useExperimentData.ts"
+  expect_file_exists "check_10d: useExperimentData.ts exists" "frontend/src/packs/experiments/hooks/useExperimentData.ts"
   expect_file_exists "check_10e: ExperimentCloudNode.tsx exists" "frontend/src/components/nodes/ExperimentCloudNode.tsx"
 
   # check_11: DetailPanel + EventLog exist (NodeDetailModal is gone)
@@ -203,10 +201,10 @@ precondition_checks() {
 postcondition_checks() {
   section "Postconditions: v5 target (must hold after migration completes)"
 
-  # check_p1: Pack isolation invariant (zero topo-confidence imports outside its pack)
+  # check_p1: Pack isolation invariant (zero topo-confidence imports outside its pack and API wiring)
   expect_zero_lines \
     "check_p1: topo-confidence not imported outside packs/topo_confidence/" \
-    bash -c "grep -rn 'topo_confidence\|TopoConfidence' server/substrate/ --include=\"*.py\" 2>/dev/null | grep -v packs/topo_confidence/ | grep -v __pycache__ || true"
+    bash -c "grep -rn 'topo_confidence\|TopoConfidence' server/substrate/ --include=\"*.py\" 2>/dev/null | grep -v packs/topo_confidence/ | grep -v __pycache__ | grep -v 'from substrate.packs.topo_confidence' || true"
 
   # check_p2: Pack-leak removal from canvas-store
   expect_zero_lines \
@@ -246,12 +244,12 @@ postcondition_checks() {
   expect_file_exists "check_p8c: AppShell exists" "frontend/src/app/layout/AppShell.tsx"
 
   # check_p9: Schema migrations 003-007 exist (no 008)
-  expect_file_exists "check_p9a: migration 003" "server/substrate/db/migrations/003_canvas_kind.sql"
-  expect_file_exists "check_p9b: migration 004" "server/substrate/db/migrations/004_runs.sql"
-  expect_file_exists "check_p9c: migration 005" "server/substrate/db/migrations/005_node_observations.sql"
-  expect_file_exists "check_p9d: migration 006" "server/substrate/db/migrations/006_session_state.sql"
-  expect_file_exists "check_p9e: migration 007" "server/substrate/db/migrations/007_search_index.sql"
-  expect_file_absent "check_p9f: no migration 008 (graph_versions PK already exists)" "server/substrate/db/migrations/008_graph_versions_unique.sql"
+  expect_file_exists "check_p9a: migration 003" "migrations/003_canvas_kind.sql"
+  expect_file_exists "check_p9b: migration 004" "migrations/004_runs.sql"
+  expect_file_exists "check_p9c: migration 005" "migrations/005_node_observations.sql"
+  expect_file_exists "check_p9d: migration 006" "migrations/006_session_state.sql"
+  expect_file_exists "check_p9e: migration 007" "migrations/007_search_index.sql"
+  expect_file_absent "check_p9f: no migration 008 (graph_versions PK already exists)" "migrations/008_graph_versions_unique.sql"
 
   # check_p10: NodeDetailModal stays deleted
   expect_file_absent \

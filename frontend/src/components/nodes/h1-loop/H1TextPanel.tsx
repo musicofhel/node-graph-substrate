@@ -1,5 +1,5 @@
 import { memo, useMemo, useRef, useEffect } from "react";
-import type { H1Problem } from "../../../lib/hooks/useH1LoopData";
+import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
 
 type Props = {
   problem: H1Problem;

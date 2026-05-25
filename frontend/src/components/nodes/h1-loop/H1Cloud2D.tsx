@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useCallback } from "react";
-import type { H1Problem } from "../../../lib/hooks/useH1LoopData";
+import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
 import { turboColor, cycleColor, cycleOpacity } from "./turbo-colormap";
 
 const POINT_R = 2.5;

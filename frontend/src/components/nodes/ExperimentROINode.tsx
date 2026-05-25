@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
-import { useExperimentROI } from "../../lib/hooks/useExperimentData";
+import { useExperimentROI } from "../../packs/experiments/hooks/useExperimentData";
 
 const STATUS_COLORS: Record<string, string> = {
   READY: "bg-amber-600",

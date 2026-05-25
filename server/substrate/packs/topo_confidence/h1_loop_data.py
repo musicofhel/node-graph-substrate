@@ -23,7 +23,7 @@ _MANIFESTS: dict[str, dict] = {}
 def _find_data_dir(layer: str = "28") -> Path:
     suffix = "" if layer == "28" else f"_l{layer}"
     candidates = [
-        Path(__file__).resolve().parent.parent.parent / "docs" / "sketches" / "h1-loop" / f"data{suffix}",
+        Path(__file__).resolve().parent.parent.parent.parent.parent / "docs" / "sketches" / "h1-loop" / f"data{suffix}",
         Path("/app/docs/sketches/h1-loop") / f"data{suffix}",
     ]
     for c in candidates:

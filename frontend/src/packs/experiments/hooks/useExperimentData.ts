@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useExperimentStore } from "../store/experiment-store";
-import { API_BASE } from "../api";
+import { useExperimentStore } from "../../../lib/store/experiment-store";
+import { API_BASE } from "../../../lib/api";
 
 export type ExperimentPoint = {
   idx: number;

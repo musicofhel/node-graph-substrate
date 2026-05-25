@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
-from substrate.experiment_parser import parse_findings, parse_next_experiments
+from substrate.packs.experiments.parser import parse_findings, parse_next_experiments
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ ALGORITHMS = [
 
 def _find_data_dir() -> Path:
     candidates = [
-        Path(__file__).resolve().parent.parent.parent / "docs" / "sketches" / "experiments" / "data",
+        Path(__file__).resolve().parent.parent.parent.parent.parent / "docs" / "sketches" / "experiments" / "data",
         Path("/app/docs/sketches/experiments/data"),
     ]
     for c in candidates:

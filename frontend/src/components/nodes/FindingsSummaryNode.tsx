@@ -2,7 +2,7 @@ import { memo } from "react";
 import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
-import { useFindings } from "../../lib/hooks/useExperimentData";
+import { useFindings } from "../../packs/experiments/hooks/useExperimentData";
 
 const STRENGTH_COLORS: Record<string, string> = {
   STRONG: "bg-emerald-600",
