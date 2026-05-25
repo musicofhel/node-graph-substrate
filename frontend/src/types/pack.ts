@@ -20,6 +20,7 @@ export interface RestEndpointDef {
 export interface PackManifest {
   id: string;
   version: string;
+  acceptsRuntimeRange?: string;
   canvasKinds: CanvasKindDef[];
   nodes: Record<string, NodeDefinition>;
   streams: StreamDef[];

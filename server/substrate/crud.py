@@ -271,6 +271,18 @@ async def _build_snapshot(conn: asyncpg.Connection, graph_id: str) -> dict:
     }
 
 
+async def update_graph_pack_versions(
+    graph_id: str, pack_versions: dict[str, str],
+) -> dict[str, Any] | None:
+    pool = get_pool()
+    row = await pool.fetchrow(
+        "UPDATE graphs SET pack_versions_override = $2::jsonb, updated_at = NOW() WHERE id = $1 RETURNING *",
+        graph_id,
+        json.dumps(pack_versions),
+    )
+    return dict(row) if row else None
+
+
 async def get_session_state(project_id: str) -> dict[str, Any] | None:
     pool = get_pool()
     row = await pool.fetchrow(

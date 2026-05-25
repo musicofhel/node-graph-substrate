@@ -3,6 +3,7 @@ import type { PackManifest } from "../../types/pack";
 export const manifest: PackManifest = {
   id: "topo-confidence",
   version: "0.1.0",
+  acceptsRuntimeRange: ">=0.1.0",
   canvasKinds: [
     {
       id: "pipeline",

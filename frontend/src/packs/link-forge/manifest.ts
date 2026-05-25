@@ -5,6 +5,7 @@ import { useLinkForgeStore } from "./store";
 export const manifest: PackManifest = {
   id: "link-forge",
   version: "0.1.0",
+  acceptsRuntimeRange: ">=0.1.0",
   onCanvasLoad: () => {
     const nodes = useCanvasStore.getState().nodes;
     const stateNode = nodes.find((n) => n.type === "r2_state");

@@ -23,6 +23,9 @@ import { BreathingHeatmapNode } from "../nodes/BreathingHeatmapNode";
 import { AlgorithmSelectorNode } from "../nodes/AlgorithmSelectorNode";
 import { ExperimentROINode } from "../nodes/ExperimentROINode";
 import { FindingsSummaryNode } from "../nodes/FindingsSummaryNode";
+import { CanvasRefNode } from "../../packs/core/nodes/CanvasRefNode";
+import { RunRefNode } from "../../packs/core/nodes/RunRefNode";
+import { NodeRefNode } from "../../packs/core/nodes/NodeRefNode";
 
 function lazyNode(
   load: () => Promise<{ default: ComponentType<NodeProps> }>,
@@ -81,4 +84,7 @@ export const nodeTypes: NodeTypes = {
   algorithm_selector: AlgorithmSelectorNode,
   experiment_roi: ExperimentROINode,
   findings_summary: FindingsSummaryNode,
+  canvas_ref: CanvasRefNode,
+  run_ref: RunRefNode,
+  node_ref: NodeRefNode,
 };

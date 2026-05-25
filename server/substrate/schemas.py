@@ -58,3 +58,7 @@ class ConfigUpdate(BaseModel):
 
 class GraphRename(BaseModel):
     name: str
+
+
+class PackUpgrade(BaseModel):
+    pack_versions: dict[str, str]
