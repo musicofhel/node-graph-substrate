@@ -141,25 +141,17 @@ precondition_checks() {
     "server/substrate/sdk.py" \
     "class SocketType"
 
-  # check_06: NODE_REGISTRY exists with 25 entries (count not enforced, just presence)
+  # check_06: NODE_REGISTRY exists in pack-registry.ts (registry.ts deleted in Step 17)
   expect_line_match \
-    "check_06: NODE_REGISTRY exists in registry.ts" \
-    "frontend/src/lib/nodes/registry.ts" \
+    "check_06: NODE_REGISTRY exists in pack-registry.ts" \
+    "frontend/src/lib/pack-registry.ts" \
     "NODE_REGISTRY"
 
   # check_07: 4-variant CanvasType including experiments
-  # After Step 5, registry.ts is a shim; source of truth is pack-registry.ts
-  if [ -f "frontend/src/lib/pack-registry.ts" ]; then
-    expect_line_match \
-      "check_07: CanvasType includes 'experiments'" \
-      "frontend/src/lib/pack-registry.ts" \
-      "experiments"
-  else
-    expect_line_match \
-      "check_07: CanvasType includes 'experiments'" \
-      "frontend/src/lib/nodes/registry.ts" \
-      "experiments"
-  fi
+  expect_line_match \
+    "check_07: CanvasType includes 'experiments'" \
+    "frontend/src/lib/pack-registry.ts" \
+    "experiments"
 
   # check_08: ELK layout files exist (not deferred)
   expect_file_exists "check_08a: elk-layout.ts exists" "frontend/src/lib/layout/elk-layout.ts"
@@ -270,6 +262,10 @@ postcondition_checks() {
 
   # check_p13: Cypress suite preserved
   expect_file_exists "check_p13: Cypress suite preserved" "frontend/cypress.config.ts"
+
+  # check_p14: Step 17 — registry.ts deleted, handle-colors.ts moved to lib/ports
+  expect_file_absent "check_p14a: registry.ts deleted" "frontend/src/lib/nodes/registry.ts"
+  expect_file_exists "check_p14b: handle-colors.ts in lib/ports" "frontend/src/lib/ports/handle-colors.ts"
 }
 
 # ─── Single-check dispatcher (for ./verify-paths.sh check_03) ───────────────

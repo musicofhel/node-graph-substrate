@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { Handle, Position, NodeResizer } from "@xyflow/react";
 import type { HandleDefinition } from "../../types/nodes";
-import { HANDLE_COLORS } from "../../lib/nodes/handle-colors";
+import { HANDLE_COLORS } from "../../lib/ports/handle-colors";
 import { useDriftStore } from "../../lib/store/drift-store";
 
 const POSITION_MAP = {
