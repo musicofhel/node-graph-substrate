@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { NODE_REGISTRY, CANVAS_NODE_TYPES, canvasTypeFromName } from "../../lib/nodes/registry";
+import { NODE_REGISTRY, CANVAS_NODE_TYPES, canvasTypeFromName } from "../../lib/pack-registry";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import type { NodeCategory } from "../../types/nodes";
 

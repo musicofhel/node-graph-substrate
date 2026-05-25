@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useExperimentROI } from "../../lib/hooks/useExperimentData";
 
 const STATUS_COLORS: Record<string, string> = {

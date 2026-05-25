@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
 import { Sparkline } from "./Sparkline";
 

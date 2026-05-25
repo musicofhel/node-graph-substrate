@@ -3,7 +3,7 @@ import { useNodesData } from "@xyflow/react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore, type DetailTab } from "../../lib/store/ui-store";
 import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useNodeHistory, useNodeHistoryFields } from "../../lib/hooks/useNodeHistory";
 import { useNodeStats } from "../../lib/hooks/useNodeStats";
 import { TimeSeriesChart } from "../charts/TimeSeriesChart";

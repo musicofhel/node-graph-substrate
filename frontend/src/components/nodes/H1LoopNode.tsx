@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useH1LoopData } from "../../lib/hooks/useH1LoopData";
 import { H1Cloud2D } from "./h1-loop/H1Cloud2D";
 import { H1PersistenceDiagram } from "./h1-loop/H1PersistenceDiagram";

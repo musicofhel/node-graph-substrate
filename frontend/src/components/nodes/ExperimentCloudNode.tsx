@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useExperimentData, type AlgorithmProjection } from "../../lib/hooks/useExperimentData";
 import { useExperimentStore } from "../../lib/store/experiment-store";
 

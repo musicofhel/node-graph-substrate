@@ -10,7 +10,7 @@ import { SplitPane } from "../../components/canvas/SplitPane";
 import { PaperPool } from "../../components/linkforge/PaperPool";
 import type { PaperSummary } from "../../components/linkforge/PaperCard";
 import { SubstrateWS } from "../../lib/ws/client";
-import { NODE_REGISTRY, canvasTypeFromName } from "../../lib/nodes/registry";
+import { NODE_REGISTRY, canvasTypeFromName } from "../../lib/pack-registry";
 import { API_BASE } from "../../lib/api";
 
 if (import.meta.env.DEV) {

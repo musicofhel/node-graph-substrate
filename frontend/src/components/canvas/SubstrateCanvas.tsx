@@ -18,7 +18,7 @@ import { PipelineTimeline } from "./PipelineTimeline";
 import { nodeTypes } from "./node-types";
 import { edgeTypes } from "../edges/edge-types";
 import { NodePalette } from "../sidebar/NodePalette";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { EventLog } from "../panels/EventLog";
 import { DetailPanel } from "../panels/DetailPanel";
 

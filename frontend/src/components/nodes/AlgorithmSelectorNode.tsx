@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import { type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useExperimentStore } from "../../lib/store/experiment-store";
 import { type AlgorithmInfo } from "../../lib/hooks/useExperimentData";
 import { API_BASE } from "../../lib/api";

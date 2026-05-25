@@ -3,7 +3,7 @@ import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
 import { useDriftStore } from "../../lib/store/drift-store";
 import { useLinkForgeStore } from "../../packs/link-forge/store";
-import { canvasTypeFromName } from "../../lib/nodes/registry";
+import { canvasTypeFromName } from "../../lib/pack-registry";
 
 export function CanvasControls() {
   const graphId = useCanvasStore((s) => s.graphId);

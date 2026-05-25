@@ -1,7 +1,7 @@
 import { memo, useMemo, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
-import { NODE_REGISTRY } from "../../lib/nodes/registry";
+import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useDriftStore } from "../../lib/store/drift-store";
 import { computePSI, driftSeverity, type DriftSeverity } from "../../lib/drift/psi";
 
