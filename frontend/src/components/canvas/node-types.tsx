@@ -1,7 +1,7 @@
-import { type NodeTypes } from "@xyflow/react";
+import { lazy, Suspense, type ComponentType } from "react";
+import { type NodeTypes, type NodeProps } from "@xyflow/react";
 import { PromptInputNode } from "../nodes/PromptInputNode";
 import { FeatureBarsNode } from "../nodes/FeatureBarsNode";
-import { HiddenStateCloudNode } from "../nodes/HiddenStateCloudNode";
 import { PersistenceDiagramNode } from "../nodes/PersistenceDiagramNode";
 import { ConfidenceGaugeNode } from "../nodes/ConfidenceGaugeNode";
 import { BridgeMonitorNode } from "../nodes/BridgeMonitorNode";
@@ -20,11 +20,39 @@ import { R2AutoRelNode } from "../nodes/R2AutoRelNode";
 import { R2StateNode } from "../nodes/R2StateNode";
 import { DriftMatrixNode } from "../nodes/DriftMatrixNode";
 import { BreathingHeatmapNode } from "../nodes/BreathingHeatmapNode";
-import { H1LoopNode } from "../nodes/H1LoopNode";
-import { ExperimentCloudNode } from "../nodes/ExperimentCloudNode";
 import { AlgorithmSelectorNode } from "../nodes/AlgorithmSelectorNode";
 import { ExperimentROINode } from "../nodes/ExperimentROINode";
 import { FindingsSummaryNode } from "../nodes/FindingsSummaryNode";
+
+function lazyNode(
+  load: () => Promise<{ default: ComponentType<NodeProps> }>,
+): ComponentType<NodeProps> {
+  const Lazy = lazy(load);
+  function LazyNodeWrapper(props: NodeProps) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center text-xs text-neutral-500">
+            Loading 3D view…
+          </div>
+        }
+      >
+        <Lazy {...props} />
+      </Suspense>
+    );
+  }
+  return LazyNodeWrapper;
+}
+
+const HiddenStateCloudNode = lazyNode(() =>
+  import("../nodes/HiddenStateCloudNode").then((m) => ({ default: m.HiddenStateCloudNode })),
+);
+const H1LoopNode = lazyNode(() =>
+  import("../nodes/H1LoopNode").then((m) => ({ default: m.H1LoopNode })),
+);
+const ExperimentCloudNode = lazyNode(() =>
+  import("../nodes/ExperimentCloudNode").then((m) => ({ default: m.ExperimentCloudNode })),
+);
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
