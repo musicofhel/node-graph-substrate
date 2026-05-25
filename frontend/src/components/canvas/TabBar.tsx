@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const API_BASE = `http://${window.location.hostname}:8080`;
+import { API_BASE } from "../../lib/api";
 
 interface GraphTab {
   id: string;
@@ -10,7 +9,7 @@ interface GraphTab {
 
 interface TabBarProps {
   projectId: string | null;
-  activeGraphId: string | null;
+  activeGraphId: string | null | undefined;
   onSelectGraph: (graphId: string) => void;
 }
 

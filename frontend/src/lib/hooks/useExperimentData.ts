@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useExperimentStore } from "../store/experiment-store";
-
-const API_BASE = `http://${window.location.hostname}:8080`;
+import { API_BASE } from "../api";
 
 export type ExperimentPoint = {
   idx: number;

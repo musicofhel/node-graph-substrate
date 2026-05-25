@@ -12,6 +12,7 @@ import { create } from "zustand";
 import { temporal } from "zundo";
 import { shallow } from "zustand/shallow";
 import { getLayoutedElements } from "../layout/elk-layout";
+import { API_BASE } from "../api";
 
 export interface CanvasState {
   nodes: Node[];
@@ -43,8 +44,6 @@ export interface CanvasState {
   flushUnstarred: () => void;
   autoLayout: () => Promise<void>;
 }
-
-const API_BASE = `http://${window.location.hostname}:8080`;
 
 export const useCanvasStore = create<CanvasState>()(
   temporal(

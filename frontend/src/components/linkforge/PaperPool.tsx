@@ -1,8 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { PaperCard, type PaperSummary } from "./PaperCard";
 import { PaperDetail } from "./PaperDetail";
-
-const API_BASE = `http://${window.location.hostname}:8080`;
+import { API_BASE } from "../../lib/api";
 
 type SortKey = "recent" | "forge_score" | "processing_time" | "category";
 

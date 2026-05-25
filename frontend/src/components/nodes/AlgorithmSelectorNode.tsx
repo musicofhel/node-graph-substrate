@@ -4,8 +4,7 @@ import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/nodes/registry";
 import { useExperimentStore } from "../../lib/store/experiment-store";
 import { type AlgorithmInfo } from "../../lib/hooks/useExperimentData";
-
-const API_BASE = `http://${window.location.hostname}:8080`;
+import { API_BASE } from "../../lib/api";
 
 export const AlgorithmSelectorNode = memo(({ selected }: NodeProps) => {
   const def = NODE_REGISTRY.algorithm_selector;
