@@ -27,7 +27,7 @@ docker compose up                # postgres, redis, fastapi
 cd frontend && npm run dev       # vite (native — not in Docker on WSL2)
 
 # Synthetic daemon with real MATH-500 data (pre-computed, no GPU needed):
-python synthetic_daemon.py --math500-cache data/math500_breathing_cache.json
+python scripts/synthetic_daemon.py --math500-cache data/math500_breathing_cache.json
 
 # Pre-compute breathing cache from NPZ hidden states (one-time, ~5 min):
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/precompute_breathing_cache.py
@@ -43,7 +43,7 @@ NGS observes three pipelines via 23 Redis streams: topo-confidence compute scori
 Real data from `~/topo-confidence/pathway8_layerwise/data/math500/` (500 NPZ files, Qwen2.5-1.5B-Instruct).
 
 - **Pre-compute**: `scripts/precompute_breathing_cache.py` — computes 8×28 participation ratio heatmaps (W=32 window) from real hidden states. Outputs `data/math500_breathing_cache.json` (daemon) + `frontend/public/math500_prompts.json` (frontend). Must set `OMP_NUM_THREADS=1` to avoid BLAS thread contention.
-- **Daemon**: `synthetic_daemon.py --math500-cache` loads cache on startup, serves real heatmaps + correctness when `math_idx` is present in control messages, falls back to fake data otherwise.
+- **Daemon**: `scripts/synthetic_daemon.py --math500-cache` loads cache on startup, serves real heatmaps + correctness when `math_idx` is present in control messages, falls back to fake data otherwise.
 - **Frontend**: PromptInputNode fetches `math500_prompts.json` on mount, pre-populates with MATH-500 problems. Navigation bar (◄/►) browses 500 problems. Demo mode auto-cycles every 15s with skip/back controls.
 - **BreathingHeatmapNode**: SVG visualization — 8 positions × 28 layers, color-coded PR values, L19 sparkline, peak/collapse markers, correctness badge, subject/level tag.
 - **ExplainWaterfallNode**: 13 TDA features with human-readable labels, clickable detail panels showing mechanistic interpretations, summary header with correctness + confidence + primary driver sentence. `top_n` and `sort_order` config fields wired up.
@@ -72,8 +72,10 @@ Generated data files are gitignored: `data/math500_breathing_cache.json`, `front
 
 ## Key references
 
-- Full spec: `SPEC.md`
-- Plan: `~/.claude/plans/c-users-aaron-downloads-compass-artifact-concurrent-narwhal.md`
+- v5 spec (canonical): `SPEC-v5.md`
+- v5 migration plan: `MIGRATION-v5.md`
+- v5 file action table: `v5-deltas.md`
+- v2 spec (archived): `docs/history/SPEC-v2.md`
 - `~/pipeline-studio/src/lib/store/pipeline-store.ts` — Zustand + zundo pattern to adapt
 - `~/pipeline-studio/src/components/canvas/PipelineCanvas.tsx` — ReactFlow wrapper to adapt
 
