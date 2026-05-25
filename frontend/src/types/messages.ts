@@ -11,7 +11,13 @@ export interface Resubscribe {
   subscriptions: { node_id: string; stream: string }[];
 }
 
-export type ClientMessage = ComputeRequest | Resubscribe;
+export interface SubscribeWithResume {
+  type: "subscribe_with_resume";
+  subscriptions: { node_id: string; stream: string }[];
+  last_ids: Record<string, string>;
+}
+
+export type ClientMessage = ComputeRequest | Resubscribe | SubscribeWithResume;
 
 export interface GraphLoaded {
   type: "graph_loaded";
@@ -61,10 +67,16 @@ export interface ReplayGap {
   dropped: number;
 }
 
+export interface Resumed {
+  type: "resumed";
+  missed_count: number;
+}
+
 export type ServerMessage =
   | GraphLoaded
   | NodeStateUpdated
   | StreamEvent
   | ComputationResult
   | ErrorMsg
-  | ReplayGap;
+  | ReplayGap
+  | Resumed;

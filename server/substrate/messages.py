@@ -26,8 +26,19 @@ class Resubscribe(BaseModel):
     subscriptions: list[dict[str, str]]
 
 
+class SubscribeWithResume(BaseModel):
+    type: Literal["subscribe_with_resume"] = "subscribe_with_resume"
+    subscriptions: list[dict[str, str]]
+    last_ids: dict[str, str] = Field(default_factory=dict)
+
+
+class Resumed(BaseModel):
+    type: Literal["resumed"] = "resumed"
+    missed_count: int
+
+
 ClientMessage = Annotated[
-    Union[ComputeRequest, ConfigUpdateMsg, Resubscribe],
+    Union[ComputeRequest, ConfigUpdateMsg, Resubscribe, SubscribeWithResume],
     Field(discriminator="type"),
 ]
 

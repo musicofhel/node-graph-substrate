@@ -31,6 +31,7 @@ export class SubstrateWS {
   private rafId: number | null = null;
   private batchFn: BatchUpdateFn | null = null;
   private activeSubscriptions: { stream: string; node_id: string }[] = [];
+  private lastIdByStream = new Map<string, string>();
   private lastFlushTs = 0;
   private throttleMs = 500;
   private throttleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,10 +73,23 @@ export class SubstrateWS {
       }
 
       if (this.activeSubscriptions.length > 0) {
-        this.send({
-          type: "resubscribe",
-          subscriptions: this.activeSubscriptions,
-        });
+        const lastIds: Record<string, string> = {};
+        for (const sub of this.activeSubscriptions) {
+          const cursor = this.lastIdByStream.get(sub.stream);
+          if (cursor) lastIds[sub.stream] = cursor;
+        }
+        if (Object.keys(lastIds).length > 0) {
+          this.send({
+            type: "subscribe_with_resume",
+            subscriptions: this.activeSubscriptions,
+            last_ids: lastIds,
+          });
+        } else {
+          this.send({
+            type: "resubscribe",
+            subscriptions: this.activeSubscriptions,
+          });
+        }
       }
     };
 
@@ -90,6 +104,16 @@ export class SubstrateWS {
           nodeId: msg.node_id as string | undefined,
           raw: msg,
         });
+
+        if (msg.type === "stream_event" && typeof msg.cursor === "string" && typeof msg.stream === "string") {
+          this.lastIdByStream.set(msg.stream, msg.cursor);
+        }
+
+        if (msg.type === "resumed") {
+          console.log(`[WS] resumed: replayed ${msg.missed_count} missed events`);
+          this.handlers.forEach((h) => h(msg));
+          return;
+        }
 
         // Drift store — MUST be before the linkforge/research bypass (early return below)
         const driftNodeId = msg.node_id as string | undefined;
