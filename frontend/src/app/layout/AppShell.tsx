@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
+import { CommandPalette } from "../../features/search/CommandPalette";
 
 export default function AppShell() {
   return (
@@ -12,6 +13,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 }

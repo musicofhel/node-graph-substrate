@@ -56,8 +56,20 @@ async def lifespan(app: FastAPI):
     init_h1_data()
     init_experiment_data()
 
+    async def _refresh_search_index():
+        pool = get_pool()
+        while True:
+            await asyncio.sleep(30)
+            try:
+                await pool.execute("REFRESH MATERIALIZED VIEW search_index")
+            except Exception:
+                pass
+
+    refresh_task = asyncio.create_task(_refresh_search_index())
+
     yield
 
+    refresh_task.cancel()
     if stream_hub:
         await stream_hub.shutdown()
     await close_pool()

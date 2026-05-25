@@ -24,7 +24,11 @@ export function TopBar() {
       </div>
       <button
         className="rounded px-3 py-1 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-        onClick={() => {}}
+        onClick={() =>
+          window.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }),
+          )
+        }
         title="Search (Ctrl+K)"
       >
         Search
