@@ -1,7 +1,10 @@
 import { useParams } from "react-router";
+import { StatusDot } from "../../components/ui/StatusDot";
+import { useUIStore } from "../../lib/store/ui-store";
 
 export function TopBar() {
   const { projectId, canvasId } = useParams();
+  const wsStatus = useUIStore((s) => s.wsStatus);
 
   return (
     <div className="flex h-10 shrink-0 items-center border-b border-neutral-800 bg-neutral-950 px-3">
@@ -33,7 +36,7 @@ export function TopBar() {
       >
         Search
       </button>
-      <div className="ml-3 h-2 w-2 rounded-full bg-green-500" title="Connected" />
+      <StatusDot status={wsStatus} />
     </div>
   );
 }

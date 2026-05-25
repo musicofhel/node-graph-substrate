@@ -8,6 +8,8 @@ dependencies = [
     "pydantic>=2.10",
     "redis>=5.2",
     "asyncpg>=0.30",
+    "structlog>=24.1",
+    "prometheus-client>=0.21",
 ]
 
 [build-system]

@@ -217,6 +217,7 @@ function CanvasPageInner() {
       wsRef.current = ws;
       ws.enableRAFCoalescing(batchUpdateNodeData);
       ws.onMessage(handleMessageRef.current);
+      ws.onStatusChange((s) => useUIStore.getState().setWsStatus(s));
 
       const subs = buildSubscriptions();
       ws.setSubscriptions(subs);
@@ -430,6 +431,7 @@ function CanvasPageInner() {
       window.removeEventListener("substrate:compute_request", handleComputeRequest);
       wsRef.current?.disconnect();
       wsRef.current = null;
+      useUIStore.getState().setWsStatus("disconnected");
     };
   }, [canvasId, urlProjectId, setGraphMeta, addNode, batchUpdateNodeData, connectGraph]);
 

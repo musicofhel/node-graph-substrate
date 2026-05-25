@@ -1,6 +1,8 @@
 import { useEventLogStore } from "../store/event-log-store";
 import { useDriftStore } from "../store/drift-store";
 
+export type WsStatus = "connected" | "reconnecting" | "disconnected";
+type StatusHandler = (status: WsStatus) => void;
 type MessageHandler = (msg: Record<string, unknown>) => void;
 type BatchUpdateFn = (updates: [string, Record<string, unknown>][]) => void;
 
@@ -22,6 +24,8 @@ export class SubstrateWS {
   private ws: WebSocket | null = null;
   private url: string;
   private handlers: Set<MessageHandler> = new Set();
+  private statusListeners: Set<StatusHandler> = new Set();
+  private _status: WsStatus = "disconnected";
   private reconnectDelay = 1000;
   private maxDelay = 10000;
   private shouldReconnect = true;
@@ -60,6 +64,7 @@ export class SubstrateWS {
     this.ws.onopen = () => {
       console.log("[WS] connected to", this.url);
       this.reconnectDelay = 1000;
+      this.notifyStatus("connected");
 
       if (this.pending.size > 0) {
         if (this.rafId !== null) cancelAnimationFrame(this.rafId);
@@ -162,6 +167,7 @@ export class SubstrateWS {
 
     this.ws.onclose = () => {
       if (!this.shouldReconnect) return;
+      this.notifyStatus("reconnecting");
       console.log(`[WS] reconnecting in ${this.reconnectDelay}ms`);
       setTimeout(() => this.attemptConnect(), this.reconnectDelay);
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxDelay);
@@ -196,6 +202,20 @@ export class SubstrateWS {
     }
   }
 
+  get status(): WsStatus {
+    return this._status;
+  }
+
+  private notifyStatus(s: WsStatus): void {
+    this._status = s;
+    this.statusListeners.forEach((h) => h(s));
+  }
+
+  onStatusChange(handler: StatusHandler): () => void {
+    this.statusListeners.add(handler);
+    return () => this.statusListeners.delete(handler);
+  }
+
   onMessage(handler: MessageHandler): () => void {
     this.handlers.add(handler);
     return () => this.handlers.delete(handler);
@@ -215,6 +235,7 @@ export class SubstrateWS {
 
   disconnect(): void {
     this.shouldReconnect = false;
+    this.notifyStatus("disconnected");
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;

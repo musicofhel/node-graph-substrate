@@ -14,6 +14,8 @@ function loadSplitRatio(): number {
   return DEFAULT_SPLIT;
 }
 
+import type { WsStatus } from "../ws/client";
+
 export type DetailTab = "overview" | "timeseries" | "config" | "drift";
 
 interface UIState {
@@ -28,6 +30,9 @@ interface UIState {
 
   canvasSplitRatio: number;
   setCanvasSplitRatio: (ratio: number) => void;
+
+  wsStatus: WsStatus;
+  setWsStatus: (status: WsStatus) => void;
 }
 
 export const useUIStore = create<UIState>()((set) => ({
@@ -46,4 +51,7 @@ export const useUIStore = create<UIState>()((set) => ({
     localStorage.setItem(SPLIT_KEY, String(clamped));
     set({ canvasSplitRatio: clamped });
   },
+
+  wsStatus: "disconnected",
+  setWsStatus: (status) => set({ wsStatus: status }),
 }));

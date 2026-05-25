@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -15,7 +14,7 @@ from substrate.api import api_router
 from substrate.experiment_data import init_experiment_data
 from substrate.h1_loop_data import init_h1_data
 import substrate.components  # noqa: F401 — registers components
-from substrate.db import close_pool, create_pool, run_migrations
+from substrate.db import close_pool, create_pool, get_pool, run_migrations
 from substrate.messages import (
     ClientMessage,
     ComputeRequest,
@@ -29,8 +28,10 @@ from substrate.stream_tiers import STREAM_TIERS
 from substrate.streamhub import StreamHub
 from substrate.ws import ConnectionManager
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from substrate.observability.logging import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger(__name__)
 
 manager = ConnectionManager()
 redis_client: aioredis.Redis | None = None
@@ -79,6 +80,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
+
+from substrate.observability.metrics import setup_metrics
+
+setup_metrics(app)
 
 app.add_middleware(
     CORSMiddleware,
