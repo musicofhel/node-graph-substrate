@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: ./docker/postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-substrate}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-substrate}
