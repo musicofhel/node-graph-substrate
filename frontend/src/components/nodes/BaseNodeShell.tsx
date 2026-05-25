@@ -29,6 +29,7 @@ const CATEGORY_BORDER: Record<string, string> = {
   extraction: "border-blue-700",
   topology: "border-cyan-700",
   scoring: "border-emerald-700",
+  experiment: "border-violet-700",
 };
 
 export const BaseNodeShell = memo(

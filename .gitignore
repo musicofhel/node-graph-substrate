@@ -12,3 +12,5 @@ test-results/
 data/math500_breathing_cache.json
 frontend/public/math500_prompts.json
 docs/sketches/h1-loop/data/
+docs/sketches/experiments/data/
+docs/sketches/experiments/manifest.json

@@ -21,6 +21,10 @@ import { R2StateNode } from "../nodes/R2StateNode";
 import { DriftMatrixNode } from "../nodes/DriftMatrixNode";
 import { BreathingHeatmapNode } from "../nodes/BreathingHeatmapNode";
 import { H1LoopNode } from "../nodes/H1LoopNode";
+import { ExperimentCloudNode } from "../nodes/ExperimentCloudNode";
+import { AlgorithmSelectorNode } from "../nodes/AlgorithmSelectorNode";
+import { ExperimentROINode } from "../nodes/ExperimentROINode";
+import { FindingsSummaryNode } from "../nodes/FindingsSummaryNode";
 
 export const nodeTypes: NodeTypes = {
   prompt_input: PromptInputNode,
@@ -45,4 +49,8 @@ export const nodeTypes: NodeTypes = {
   drift_matrix: DriftMatrixNode,
   breathing_heatmap: BreathingHeatmapNode,
   h1_loop: H1LoopNode,
+  experiment_cloud: ExperimentCloudNode,
+  algorithm_selector: AlgorithmSelectorNode,
+  experiment_roi: ExperimentROINode,
+  findings_summary: FindingsSummaryNode,
 };

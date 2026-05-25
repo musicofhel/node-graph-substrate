@@ -42,6 +42,9 @@ services:
     volumes:
       - ./server/substrate:/app/substrate
       - ./migrations:/app/migrations
+      - ./docs/sketches/h1-loop:/app/docs/sketches/h1-loop:ro
+      - ./docs/sketches/experiments:/app/docs/sketches/experiments:ro
+      - ${HOME}/topo-confidence:/root/topo-confidence:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s

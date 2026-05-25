@@ -14,6 +14,7 @@ from pydantic import TypeAdapter
 
 from substrate import crud
 from substrate import linkforge_history
+from substrate.experiment_data import router as experiment_router, init_experiment_data
 from substrate.h1_loop_data import router as h1_loop_router, init_h1_data
 import substrate.components  # noqa: F401 — registers components
 from substrate.db import close_pool, create_pool, run_migrations
@@ -58,6 +59,7 @@ async def lifespan(app: FastAPI):
     await create_pool()
     await run_migrations()
     init_h1_data()
+    init_experiment_data()
 
     yield
 
@@ -70,6 +72,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(h1_loop_router)
+app.include_router(experiment_router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -12,3 +12,7 @@ import substrate.components.research_coordinator  # noqa: F401
 import substrate.components.research_bridge  # noqa: F401
 import substrate.components.drift_matrix  # noqa: F401
 import substrate.components.breathing_heatmap  # noqa: F401
+import substrate.components.experiment_cloud  # noqa: F401
+import substrate.components.algorithm_selector  # noqa: F401
+import substrate.components.experiment_roi  # noqa: F401
+import substrate.components.findings_summary  # noqa: F401

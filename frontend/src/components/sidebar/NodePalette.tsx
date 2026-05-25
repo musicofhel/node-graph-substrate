@@ -8,6 +8,7 @@ const CATEGORY_ORDER: NodeCategory[] = [
   "extraction",
   "topology",
   "scoring",
+  "experiment",
 ];
 
 const CATEGORY_COLORS: Record<NodeCategory, string> = {
@@ -15,6 +16,7 @@ const CATEGORY_COLORS: Record<NodeCategory, string> = {
   extraction: "bg-blue-900/40 border-blue-700",
   topology: "bg-cyan-900/40 border-cyan-700",
   scoring: "bg-emerald-900/40 border-emerald-700",
+  experiment: "bg-violet-900/40 border-violet-700",
 };
 
 const CATEGORY_LABELS: Record<NodeCategory, string> = {
@@ -22,6 +24,7 @@ const CATEGORY_LABELS: Record<NodeCategory, string> = {
   extraction: "Extraction",
   topology: "Topology",
   scoring: "Scoring",
+  experiment: "Experiment",
 };
 
 export function NodePalette() {

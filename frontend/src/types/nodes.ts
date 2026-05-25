@@ -7,7 +7,7 @@ export type HandleType =
   | "explanation"
   | "diagrams";
 
-export type NodeCategory = "input" | "extraction" | "topology" | "scoring";
+export type NodeCategory = "input" | "extraction" | "topology" | "scoring" | "experiment";
 
 export interface HandleDefinition {
   id: string;

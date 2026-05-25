@@ -255,9 +255,45 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     ],
     subscribesTo: [],
   },
+  experiment_cloud: {
+    typeId: "experiment_cloud",
+    label: "Experiment Cloud",
+    category: "experiment",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
+  algorithm_selector: {
+    typeId: "algorithm_selector",
+    label: "Algorithm Selector",
+    category: "experiment",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
+  experiment_roi: {
+    typeId: "experiment_roi",
+    label: "Experiment ROI",
+    category: "experiment",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
+  findings_summary: {
+    typeId: "findings_summary",
+    label: "Findings Summary",
+    category: "experiment",
+    inputs: [],
+    outputs: [],
+    configFields: [],
+    subscribesTo: [],
+  },
 };
 
-export type CanvasType = "pipeline" | "research" | "research2";
+export type CanvasType = "pipeline" | "research" | "research2" | "experiments";
 
 export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   pipeline: new Set([
@@ -271,9 +307,13 @@ export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = {
   research2: new Set([
     "r2_bridge", "r2_coordinator", "r2_stats", "r2_autorel",
   ]),
+  experiments: new Set([
+    "experiment_cloud", "algorithm_selector", "experiment_roi", "findings_summary",
+  ]),
 };
 
 export function canvasTypeFromName(name: string | null): CanvasType {
+  if (name && /experiment/i.test(name)) return "experiments";
   if (name && /research\s*v?2/i.test(name)) return "research2";
   if (name && name.toLowerCase().includes("research")) return "research";
   return "pipeline";

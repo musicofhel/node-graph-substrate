@@ -231,7 +231,13 @@ export default function App() {
           { id: "lf-autorel-1", type: "lf_autorel", position: { x: 400, y: 50 }, data: {} },
           { id: "lf-stats-1", type: "lf_stats", position: { x: 400, y: 300 }, data: {} },
         ];
-        const seeds = cType === "research2" ? R2_SEED : cType === "research" ? RESEARCH_SEED : null;
+        const EXPERIMENTS_SEED = [
+          { id: "algo-sel-1", type: "algorithm_selector", position: { x: 50, y: 50 }, data: {} },
+          { id: "exp-cloud-1", type: "experiment_cloud", position: { x: 350, y: 50 }, data: {} },
+          { id: "findings-1", type: "findings_summary", position: { x: 50, y: 500 }, data: {} },
+          { id: "exp-roi-1", type: "experiment_roi", position: { x: 400, y: 500 }, data: {} },
+        ];
+        const seeds = cType === "experiments" ? EXPERIMENTS_SEED : cType === "research2" ? R2_SEED : cType === "research" ? RESEARCH_SEED : null;
         if (seeds) {
           for (const n of seeds) addNode(n);
           try { await useCanvasStore.getState().saveGraph(); } catch {}
@@ -472,6 +478,12 @@ export default function App() {
                   { op: "upsert_node", data: { id: "r2-stats-1", type_id: "r2_stats", position_x: 50, position_y: 500 } },
                   { op: "upsert_node", data: { id: "r2-autorel-1", type_id: "r2_autorel", position_x: 550, position_y: 500 } },
                   { op: "upsert_node", data: { id: "r2-state-1", type_id: "r2_state", position_x: -1000, position_y: -1000 } },
+                ],
+                experiments: [
+                  { op: "upsert_node", data: { id: "algo-sel-1", type_id: "algorithm_selector", position_x: 50, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "exp-cloud-1", type_id: "experiment_cloud", position_x: 350, position_y: 50 } },
+                  { op: "upsert_node", data: { id: "findings-1", type_id: "findings_summary", position_x: 50, position_y: 500 } },
+                  { op: "upsert_node", data: { id: "exp-roi-1", type_id: "experiment_roi", position_x: 400, position_y: 500 } },
                 ],
               };
 
