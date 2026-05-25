@@ -21,9 +21,11 @@ from substrate.messages import (
     ComputeRequest,
     ConfigUpdateMsg,
     Resubscribe,
+    SubscribeWithResume,
 )
 from substrate.registry import registry
 from substrate.sdk import Component, NodeKind
+from substrate.stream_tiers import STREAM_TIERS
 from substrate.streamhub import StreamHub
 from substrate.ws import ConnectionManager
 
@@ -44,7 +46,7 @@ async def lifespan(app: FastAPI):
     await redis_client.ping()
     logger.info("Redis connected")
 
-    stream_hub = StreamHub(redis_client, manager)
+    stream_hub = StreamHub(redis_client, manager, stream_tiers=STREAM_TIERS)
 
     app.state.redis_client = redis_client
     app.state.stream_hub = stream_hub
@@ -215,6 +217,31 @@ async def ws_endpoint(ws: WebSocket, canvas_id: str):
                 if stream_hub:
                     for sub in msg.subscriptions:
                         stream_hub.subscribe(sub["stream"], ws, sub["node_id"])
+            elif isinstance(msg, SubscribeWithResume):
+                if stream_hub:
+                    total_missed = 0
+                    for sub in msg.subscriptions:
+                        stream_name = sub["stream"]
+                        node_id = sub["node_id"]
+                        cursor = msg.last_ids.get(stream_name)
+                        if cursor:
+                            missed, gap = await stream_hub.replay_from_cursor(
+                                stream_name, cursor, ws, {node_id}
+                            )
+                            total_missed += missed
+                            if gap:
+                                await manager.send(ws, {
+                                    "type": "replay_gap",
+                                    "node_id": node_id,
+                                    "stream": stream_name,
+                                    "requested_from": cursor,
+                                    "earliest_available": "",
+                                })
+                        stream_hub.subscribe(stream_name, ws, node_id)
+                    await manager.send(ws, {
+                        "type": "resumed",
+                        "missed_count": total_missed,
+                    })
 
     except WebSocketDisconnect:
         pass
