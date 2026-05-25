@@ -5,17 +5,15 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-import asyncpg
 import redis.asyncio as aioredis
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import TypeAdapter
 
 from substrate import crud
-from substrate import linkforge_history
-from substrate.experiment_data import router as experiment_router, init_experiment_data
-from substrate.h1_loop_data import router as h1_loop_router, init_h1_data
+from substrate.api import api_router
+from substrate.experiment_data import init_experiment_data
+from substrate.h1_loop_data import init_h1_data
 import substrate.components  # noqa: F401 — registers components
 from substrate.db import close_pool, create_pool, run_migrations
 from substrate.messages import (
@@ -25,20 +23,12 @@ from substrate.messages import (
     Resubscribe,
 )
 from substrate.registry import registry
-from substrate.schemas import ConfigUpdate, GraphCreate, GraphOps, GraphRename, ProjectCreate
 from substrate.sdk import Component, NodeKind
 from substrate.streamhub import StreamHub
 from substrate.ws import ConnectionManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def _serialize_row(row: dict) -> dict:
-    return {
-        k: str(v) if not isinstance(v, (int, float, bool, type(None))) else v
-        for k, v in row.items()
-    }
 
 manager = ConnectionManager()
 redis_client: aioredis.Redis | None = None
@@ -56,6 +46,9 @@ async def lifespan(app: FastAPI):
 
     stream_hub = StreamHub(redis_client, manager)
 
+    app.state.redis_client = redis_client
+    app.state.stream_hub = stream_hub
+
     await create_pool()
     await run_migrations()
     init_h1_data()
@@ -71,8 +64,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(h1_loop_router)
-app.include_router(experiment_router)
+app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,133 +77,6 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-
-
-# --- Project routes ---
-
-
-@app.post("/api/projects")
-async def create_project(body: ProjectCreate):
-    try:
-        project = await crud.create_project(body.slug, body.display_name)
-        return _serialize_row(project)
-    except asyncpg.UniqueViolationError:
-        existing = await crud.get_project_by_slug(body.slug)
-        if existing:
-            return _serialize_row(existing)
-        raise HTTPException(409, "Project slug already exists")
-
-
-# --- Graph routes ---
-
-
-@app.get("/api/projects/{project_id}/graphs")
-async def list_graphs(project_id: str):
-    graphs = await crud.list_graphs(project_id)
-    return [_serialize_row(g) for g in graphs]
-
-
-@app.post("/api/graphs")
-async def create_graph(body: GraphCreate):
-    try:
-        graph = await crud.create_graph(body.project_id, body.name)
-        return _serialize_row(graph)
-    except asyncpg.UniqueViolationError:
-        existing = await crud.get_graph_by_project_and_name(body.project_id, body.name)
-        if existing:
-            return existing
-        raise HTTPException(409, "Graph already exists")
-    except asyncpg.ForeignKeyViolationError:
-        raise HTTPException(404, "Project not found")
-
-
-@app.get("/api/graphs/{graph_id}")
-async def get_graph(graph_id: str):
-    graph = await crud.get_graph(graph_id)
-    if not graph:
-        raise HTTPException(404, "Graph not found")
-    return graph
-
-
-@app.patch("/api/graphs/{graph_id}")
-async def rename_graph(graph_id: str, body: GraphRename):
-    result = await crud.rename_graph(graph_id, body.name)
-    if not result:
-        raise HTTPException(404, "Graph not found")
-    return result
-
-
-@app.patch("/api/graphs/{graph_id}/ops")
-async def apply_graph_ops(graph_id: str, body: GraphOps):
-    try:
-        result = await crud.apply_ops(graph_id, body)
-        return result
-    except crud.OptimisticLockError as e:
-        current_graph = await crud.get_graph(graph_id)
-        raise HTTPException(409, detail={
-            "error": "version_conflict",
-            "current_version": e.current_version,
-            "current_state": current_graph,
-        })
-    except ValueError as e:
-        raise HTTPException(404, str(e))
-
-
-# --- Node config ---
-
-
-@app.patch("/api/nodes/{node_id}/config")
-async def update_config(node_id: str, body: ConfigUpdate):
-    await crud.update_node_config(node_id, body.config)
-    return {"ok": True}
-
-
-# --- Component manifests ---
-
-
-@app.get("/api/manifests")
-async def get_manifests():
-    return registry.manifests()
-
-
-# --- Link-Forge history ---
-
-
-@app.get("/api/linkforge/history")
-async def linkforge_paper_history(
-    limit: int = 50,
-    offset: int = 0,
-    category: str = "",
-    research_only: bool = False,
-):
-    if not redis_client:
-        raise HTTPException(503, "Redis not available")
-    return await linkforge_history.get_paper_history(
-        redis_client, limit, offset, category, research_only
-    )
-
-
-@app.get("/api/linkforge/paper/{queue_id}")
-async def linkforge_paper_detail(queue_id: str):
-    if not redis_client:
-        raise HTTPException(503, "Redis not available")
-    paper = await linkforge_history.get_paper_detail(redis_client, queue_id)
-    if not paper:
-        raise HTTPException(404, "Paper not found")
-    return paper
-
-
-@app.get("/api/linkforge/paper/{queue_id}/research")
-async def linkforge_paper_research(queue_id: str):
-    if not redis_client:
-        raise HTTPException(503, "Redis not available")
-    paper = await linkforge_history.get_paper_detail(redis_client, queue_id)
-    if not paper:
-        raise HTTPException(404, "Paper not found")
-    arxiv_id = paper.get("arxiv_id", "")
-    if not arxiv_id:
-        return None
-    return await linkforge_history.get_research_lifecycle(redis_client, arxiv_id)
 
 
 # --- WebSocket ---
