@@ -24,13 +24,6 @@ export const manifest: PackManifest = {
         "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",
       ],
     },
-    {
-      id: "research2",
-      label: "Research v2",
-      nodeTypeIds: [
-        "r2_bridge", "r2_coordinator", "r2_stats", "r2_autorel",
-      ],
-    },
   ],
   nodes: {
     lf_stage: {

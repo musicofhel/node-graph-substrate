@@ -348,13 +348,6 @@ function CanvasPageInner() {
 
       if (needsDefaults) {
         const cType = canvasTypeFromName(state.graphName);
-        const R2_SEED = [
-          { id: "r2-bridge-1", type: "r2_bridge", position: { x: 50, y: 50 }, data: {} },
-          { id: "r2-coord-1", type: "r2_coordinator", position: { x: 550, y: 50 }, data: {} },
-          { id: "r2-stats-1", type: "r2_stats", position: { x: 50, y: 500 }, data: {} },
-          { id: "r2-autorel-1", type: "r2_autorel", position: { x: 550, y: 500 }, data: {} },
-          { id: "r2-state-1", type: "r2_state", position: { x: -1000, y: -1000 }, data: { config: { starred_papers: [] } } },
-        ];
         const RESEARCH_SEED = [
           { id: "research-bridge-1", type: "research_bridge", position: { x: 50, y: 50 }, data: {} },
           { id: "research-coord-1", type: "research_coordinator", position: { x: 50, y: 300 }, data: {} },
@@ -401,7 +394,7 @@ function CanvasPageInner() {
             console.warn("Failed to persist default canvas:", e);
           }
         } else {
-          const seeds = cType === "experiments" ? EXPERIMENTS_SEED : cType === "research2" ? R2_SEED : cType === "research-bridge" ? RESEARCH_SEED : null;
+          const seeds = cType === "experiments" ? EXPERIMENTS_SEED : cType === "research-bridge" ? RESEARCH_SEED : null;
           if (seeds) {
             for (const n of seeds) addNode(n);
             try { await useCanvasStore.getState().saveGraph(); } catch {}
@@ -474,13 +467,6 @@ function CanvasPageInner() {
             { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 300 } },
             { op: "upsert_node", data: { id: "lf-autorel-1", type_id: "lf_autorel", position_x: 400, position_y: 50 } },
             { op: "upsert_node", data: { id: "lf-stats-1", type_id: "lf_stats", position_x: 400, position_y: 300 } },
-          ],
-          research2: [
-            { op: "upsert_node", data: { id: "r2-bridge-1", type_id: "r2_bridge", position_x: 50, position_y: 50 } },
-            { op: "upsert_node", data: { id: "r2-coord-1", type_id: "r2_coordinator", position_x: 550, position_y: 50 } },
-            { op: "upsert_node", data: { id: "r2-stats-1", type_id: "r2_stats", position_x: 50, position_y: 500 } },
-            { op: "upsert_node", data: { id: "r2-autorel-1", type_id: "r2_autorel", position_x: 550, position_y: 500 } },
-            { op: "upsert_node", data: { id: "r2-state-1", type_id: "r2_state", position_x: -1000, position_y: -1000 } },
           ],
           experiments: [
             { op: "upsert_node", data: { id: "algo-sel-1", type_id: "algorithm_selector", position_x: 50, position_y: 50 } },

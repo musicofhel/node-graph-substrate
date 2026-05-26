@@ -33,7 +33,7 @@ const CATEGORY_LABELS: Record<NodeCategory, string> = {
 export function NodePalette() {
   const addNode = useCanvasStore((s) => s.addNode);
   const graphName = useCanvasStore((s) => s.graphName);
-  const allowedTypes = CANVAS_NODE_TYPES[canvasTypeFromName(graphName)];
+  const allowedTypes = CANVAS_NODE_TYPES[canvasTypeFromName(graphName)] ?? new Set<string>();
 
   const handleAdd = useCallback(
     (typeId: string) => {
