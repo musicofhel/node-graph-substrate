@@ -1,5 +1,7 @@
-import { Component, memo, useMemo, type ReactNode } from "react";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
+// 3D polish patterns (bounding-box auto-fit, active-node pulse) inspired by
+// PeakScripter/Neural-Visualizer (GPLv3). Reimplemented from scratch — no GPL code copied.
+import { Component, memo, useMemo, useRef, type ReactNode } from "react";
+import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Line } from "@react-three/drei";
 import * as THREE from "three";
 import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
@@ -94,13 +96,21 @@ function BridgeSphere({
   points: number[][];
   replayProgress?: number | null;
 }) {
+  const meshRef = useRef<THREE.Mesh>(null);
   const bridgeIdx = problem.bridge_subsampled_index;
+
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const t = state.clock.elapsedTime;
+    meshRef.current.scale.setScalar(1 + Math.sin(t * 4) * 0.18);
+  });
+
   if (replayProgress != null && bridgeIdx > replayProgress) return null;
   if (bridgeIdx < 0 || bridgeIdx >= points.length) return null;
 
   const pos = points[bridgeIdx];
   return (
-    <mesh position={[pos[0], pos[1], pos[2]]}>
+    <mesh ref={meshRef} position={[pos[0], pos[1], pos[2]]}>
       <sphereGeometry args={[0.08, 12, 12]} />
       <meshBasicMaterial color="#ffd700" />
     </mesh>
@@ -232,35 +242,52 @@ function Scene({
   replayProgress,
   filtrationEpsilon,
 }: Props) {
+  const transformedPoints = useMemo(() => {
+    if (points.length === 0) return points;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const [x, y, z] of points) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-6);
+    const scale = 6 / span;
+    return points.map(([x, y, z]) => [(x - cx) * scale, (y - cy) * scale, (z - cz) * scale]);
+  }, [points]);
+
   return (
     <>
       <ambientLight intensity={0.6} />
       {filtrationEpsilon != null && (
         <RipsEdges3D
           problem={problem}
-          points={points}
+          points={transformedPoints}
           filtrationEpsilon={filtrationEpsilon}
         />
       )}
       <CycleLines3D
         problem={problem}
-        points={points}
+        points={transformedPoints}
         highlightedCycle={highlightedCycle}
         filtrationEpsilon={filtrationEpsilon}
       />
       <PointCloud3D
         problem={problem}
-        points={points}
+        points={transformedPoints}
         replayProgress={replayProgress}
       />
       <BridgeSphere
         problem={problem}
-        points={points}
+        points={transformedPoints}
         replayProgress={replayProgress}
       />
       {highlightedPointIdx != null && (
         <HighlightSphere
-          points={points}
+          points={transformedPoints}
           highlightedPointIdx={highlightedPointIdx}
         />
       )}
@@ -282,8 +309,8 @@ export const H1Cloud3D = memo(
     return (
       <R3FErrorBoundary>
         <Canvas
-          frameloop="demand"
-          camera={{ position: [3, 3, 3], fov: 50 }}
+          frameloop="always"
+          camera={{ position: [8, 8, 8], fov: 50 }}
           style={{ background: "#0f0f23", borderRadius: 4 }}
         >
           <Scene

@@ -1,6 +1,8 @@
-import { Component, memo, useMemo, type ReactNode } from "react";
+// 3D polish patterns (bounding-box auto-fit, active-node pulse) inspired by
+// PeakScripter/Neural-Visualizer (GPLv3). Reimplemented from scratch — no GPL code copied.
+import { Component, memo, useMemo, useRef, type ReactNode } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
@@ -32,6 +34,8 @@ const CLUSTER_COLORS = [
 ];
 const BRIDGE_COLOR = new THREE.Color("#fbbf24"); // gold
 
+const TARGET_EXTENT = 6;
+
 type CloudData = {
   umap_3d?: number[][];
   clusters?: number[];
@@ -40,18 +44,41 @@ type CloudData = {
 };
 
 function PointCloud({ data }: { data: CloudData }) {
-  const { positions, colors } = useMemo(() => {
+  const { positions, colors, bridgePos } = useMemo(() => {
     const pts = data.umap_3d ?? [];
     const cls = data.clusters ?? [];
     const bridgeIdx = data.bridge_idx ?? 0;
 
+    if (pts.length === 0) {
+      return { positions: new Float32Array(0), colors: new Float32Array(0), bridgePos: null };
+    }
+
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const [x, y, z] of pts) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-6);
+    const scale = TARGET_EXTENT / span;
+
     const pos = new Float32Array(pts.length * 3);
     const col = new Float32Array(pts.length * 3);
+    let bp: [number, number, number] | null = null;
 
     for (let i = 0; i < pts.length; i++) {
-      pos[i * 3] = pts[i][0];
-      pos[i * 3 + 1] = pts[i][1];
-      pos[i * 3 + 2] = pts[i][2];
+      const nx = (pts[i][0] - cx) * scale;
+      const ny = (pts[i][1] - cy) * scale;
+      const nz = (pts[i][2] - cz) * scale;
+      pos[i * 3] = nx;
+      pos[i * 3 + 1] = ny;
+      pos[i * 3 + 2] = nz;
+
+      if (i === bridgeIdx) bp = [nx, ny, nz];
 
       const c = i === bridgeIdx ? BRIDGE_COLOR : CLUSTER_COLORS[cls[i] ?? 0];
       col[i * 3] = c.r;
@@ -59,25 +86,37 @@ function PointCloud({ data }: { data: CloudData }) {
       col[i * 3 + 2] = c.b;
     }
 
-    return { positions: pos, colors: col };
+    return { positions: pos, colors: col, bridgePos: bp };
   }, [data.umap_3d, data.clusters, data.bridge_idx]);
 
   if (positions.length === 0) return null;
 
   return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          args={[colors, 3]}
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.15} vertexColors sizeAttenuation />
-    </points>
+    <>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial size={0.15} vertexColors sizeAttenuation />
+      </points>
+      {bridgePos && <BridgePulse position={bridgePos} />}
+    </>
+  );
+}
+
+function BridgePulse({ position }: { position: [number, number, number] }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const t = state.clock.elapsedTime;
+    meshRef.current.scale.setScalar(1 + Math.sin(t * 4) * 0.18);
+  });
+  return (
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[0.18, 16, 16]} />
+      <meshBasicMaterial color="#fbbf24" transparent opacity={0.45} />
+    </mesh>
   );
 }
 
@@ -93,8 +132,8 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
         {hasData ? (
           <R3FErrorBoundary>
             <Canvas
-              frameloop="demand"
-              camera={{ position: [5, 5, 5], fov: 50 }}
+              frameloop="always"
+              camera={{ position: [8, 8, 8], fov: 50 }}
               style={{ background: "#0a0a0a", borderRadius: 4 }}
             >
               <ambientLight intensity={0.6} />
