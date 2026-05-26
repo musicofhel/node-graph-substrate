@@ -1,6 +1,8 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactFlow, useOnViewportChange } from "@xyflow/react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
+
+const WINDOW_WIDTH = 280 * 3;
 
 export function PipelineTimeline() {
   const nodes = useCanvasStore((s) => s.nodes);
@@ -13,6 +15,18 @@ export function PipelineTimeline() {
   const maxGroupX = groupNodes.reduce((max, n) => Math.max(max, n.position.x), 0);
   const maxGroupXRef = useRef(maxGroupX);
   maxGroupXRef.current = maxGroupX;
+  const prevMaxRef = useRef(maxGroupX);
+
+  useEffect(() => {
+    if (maxGroupX > prevMaxRef.current) {
+      if (scrollX >= prevMaxRef.current - WINDOW_WIDTH) {
+        setScrollX(maxGroupX);
+        const vp = getViewport();
+        setViewport({ x: -maxGroupX * vp.zoom, y: vp.y, zoom: vp.zoom });
+      }
+      prevMaxRef.current = maxGroupX;
+    }
+  }, [maxGroupX, scrollX, getViewport, setViewport]);
 
   useOnViewportChange({
     onChange: useCallback((vp: { x: number; zoom: number }) => {
@@ -36,12 +50,19 @@ export function PipelineTimeline() {
     [getViewport, setViewport],
   );
 
+  const snapToLatest = useCallback(() => {
+    const mx = maxGroupXRef.current;
+    setScrollX(mx);
+    const vp = getViewport();
+    setViewport({ x: -mx * vp.zoom, y: vp.y, zoom: vp.zoom });
+  }, [getViewport, setViewport]);
+
   if (groupCount < 2) return null;
 
   return (
     <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full border border-neutral-700/50 bg-neutral-900/90 px-4 py-2 shadow-lg backdrop-blur-sm">
-      <span className="whitespace-nowrap text-[10px] font-medium text-emerald-400">
-        New
+      <span className="whitespace-nowrap text-[10px] font-medium text-neutral-500">
+        {groupCount} papers
       </span>
       <input
         type="range"
@@ -54,9 +75,12 @@ export function PipelineTimeline() {
           [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-500
           [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500"
       />
-      <span className="whitespace-nowrap text-[10px] font-medium text-neutral-500">
-        {groupCount} papers
-      </span>
+      <button
+        onClick={snapToLatest}
+        className="whitespace-nowrap text-[10px] font-medium text-emerald-400 hover:text-emerald-300"
+      >
+        now &rarr;
+      </button>
     </div>
   );
 }
