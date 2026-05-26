@@ -64,7 +64,7 @@ export function CanvasControls() {
     }
   }, [autoLayout]);
 
-  const layoutEnabled = canvasType !== "research-bridge";
+  const layoutEnabled = canvasType !== "research-bridge" && canvasType !== "ingestion";
 
   return (
     <div className="absolute top-4 right-4 z-50 flex items-center gap-2">

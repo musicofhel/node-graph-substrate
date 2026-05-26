@@ -24,8 +24,22 @@ export const manifest: PackManifest = {
         "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",
       ],
     },
+    {
+      id: "ingestion",
+      label: "Ingestion",
+      nodeTypeIds: ["lf_stage", "lf_pipeline_group"],
+    },
   ],
   nodes: {
+    lf_pipeline_group: {
+      typeId: "lf_pipeline_group",
+      label: "Paper Group",
+      category: "input",
+      inputs: [],
+      outputs: [],
+      configFields: [],
+      subscribesTo: [],
+    },
     lf_stage: {
       typeId: "lf_stage",
       label: "Pipeline Stage",

@@ -87,6 +87,8 @@ function CanvasPageInner() {
   const graphId = useCanvasStore((s) => s.graphId);
   const graphName = useCanvasStore((s) => s.graphName);
   const currentCanvasType = canvasTypeFromName(graphName);
+  const nodeCount = useCanvasStore((s) => s.nodes.length);
+  const wsStatus = useUIStore((s) => s.wsStatus);
   const canvasSplitRatio = useUIStore((s) => s.canvasSplitRatio);
   const setCanvasSplitRatio = useUIStore((s) => s.setCanvasSplitRatio);
   const wsRef = useRef<SubstrateWS | null>(null);
@@ -172,15 +174,10 @@ function CanvasPageInner() {
       useCanvasStore.setState((s) => {
         let nodes = s.nodes;
         if (isNewPaper) {
-          nodes = nodes.map((n) =>
-            n.type === "lf_pipeline_group"
-              ? { ...n, position: { ...n.position, x: n.position.x + GROUP_SPACING } }
-              : n
-          );
           nodes = [...nodes, {
             id: groupId,
             type: "lf_pipeline_group",
-            position: { x: 0, y: 0 },
+            position: { x: (tracker!.columnIndex - 1) * GROUP_SPACING, y: 0 },
             data: { title: `Paper #${queueId}`, queueId },
             style: { width: GROUP_WIDTH, height: GROUP_HEIGHT },
           } as unknown as typeof s.nodes[0]];
@@ -239,7 +236,7 @@ function CanvasPageInner() {
 
         if (stream.startsWith("linkforge:") && !stream.startsWith("linkforge:autorel:")) {
           const cType = canvasTypeFromName(useCanvasStore.getState().graphName);
-          if (cType !== "research2") handleLinkforgeEvent(stream, payload);
+          if (cType === "ingestion") handleLinkforgeEvent(stream, payload);
           if (stream === "linkforge:completed") {
             setPoolAvailable(true);
             const qid = String(payload.queue_id ?? "");
@@ -461,7 +458,23 @@ function CanvasPageInner() {
           }
         }
 
+        const hasIngestion = allGraphs.some((g: { name: string }) => canvasTypeFromName(g.name) === "ingestion");
+        if (!hasIngestion) {
+          try {
+            const resp = await fetch(`${API_BASE}/api/graphs`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ project_id: pid, name: "Ingestion" }),
+            });
+            if (resp.ok && !cancelled) {
+              const graph = await resp.json();
+              allGraphs.push(graph);
+            }
+          } catch {}
+        }
+
         const SEED_MAP: Record<string, { op: string; data: { id: string; type_id: string; position_x: number; position_y: number } }[]> = {
+          ingestion: [],
           "research-bridge": [
             { op: "upsert_node", data: { id: "research-bridge-1", type_id: "research_bridge", position_x: 50, position_y: 50 } },
             { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 300 } },
@@ -522,7 +535,15 @@ function CanvasPageInner() {
   return (
     <div className="flex h-full w-full flex-col">
       <TabBar projectId={projectId ?? urlProjectId ?? null} activeGraphId={canvasId ?? graphId} onSelectGraph={handleNavigateToCanvas} />
-      {poolExpanded && currentCanvasType === "research-bridge" ? (
+      {currentCanvasType === "ingestion" && nodeCount === 0 ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <div className="text-center">
+            <div className={`mx-auto mb-3 h-2 w-2 rounded-full ${wsStatus === "connected" ? "bg-emerald-500" : wsStatus === "reconnecting" ? "bg-amber-500 animate-pulse" : "bg-neutral-600"}`} />
+            <p className="text-sm text-neutral-500">Waiting for papers.</p>
+            <p className="mt-1 text-xs text-neutral-600">Ingestion daemon is idle.</p>
+          </div>
+        </div>
+      ) : poolExpanded && currentCanvasType === "research-bridge" ? (
         <SplitPane
           ratio={canvasSplitRatio}
           onRatioChange={setCanvasSplitRatio}

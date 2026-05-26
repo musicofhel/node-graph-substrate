@@ -5,7 +5,7 @@ import { manifest as topoConfidenceManifest } from "../packs/topo-confidence/man
 import { manifest as experimentsManifest } from "../packs/experiments/manifest";
 import { manifest as linkForgeManifest } from "../packs/link-forge/manifest";
 
-export type CanvasType = "scoring" | "research-bridge" | "research2" | "experiments";
+export type CanvasType = "scoring" | "ingestion" | "research-bridge" | "research2" | "experiments";
 
 const ALL_PACKS: PackManifest[] = [
   coreManifest,
@@ -41,6 +41,7 @@ export const CANVAS_NODE_TYPES: Record<CanvasType, Set<string>> = buildCanvasNod
 export function canvasTypeFromName(name: string | null): CanvasType {
   if (name && /experiment/i.test(name)) return "experiments";
   if (name && /research\s*v?2/i.test(name)) return "research2";
+  if (name && /ingest/i.test(name)) return "ingestion";
   if (name && /research/i.test(name)) return "research-bridge";
   if (name && /scor/i.test(name)) return "scoring";
   return "scoring";
