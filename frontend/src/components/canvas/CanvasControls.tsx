@@ -64,8 +64,7 @@ export function CanvasControls() {
     }
   }, [autoLayout]);
 
-  // Layout breaks shift-right group positioning on research canvas
-  const layoutEnabled = canvasType !== "research";
+  const layoutEnabled = canvasType !== "research-bridge";
 
   return (
     <div className="absolute top-4 right-4 z-50 flex items-center gap-2">

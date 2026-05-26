@@ -368,7 +368,7 @@ function CanvasPageInner() {
           { id: "exp-roi-1", type: "experiment_roi", position: { x: 400, y: 500 }, data: {} },
         ];
 
-        if (cType === "pipeline") {
+        if (cType === "scoring") {
           setGraphMeta(canvasId, state.graphVersion || 1, urlProjectId ?? undefined);
           const defaultNodes = [
             { id: "prompt-1", type: "prompt_input", position: { x: 50, y: 150 }, data: { config: { prompt: "" } } },
@@ -401,7 +401,7 @@ function CanvasPageInner() {
             console.warn("Failed to persist default canvas:", e);
           }
         } else {
-          const seeds = cType === "experiments" ? EXPERIMENTS_SEED : cType === "research2" ? R2_SEED : cType === "research" ? RESEARCH_SEED : null;
+          const seeds = cType === "experiments" ? EXPERIMENTS_SEED : cType === "research2" ? R2_SEED : cType === "research-bridge" ? RESEARCH_SEED : null;
           if (seeds) {
             for (const n of seeds) addNode(n);
             try { await useCanvasStore.getState().saveGraph(); } catch {}
@@ -449,8 +449,10 @@ function CanvasPageInner() {
         if (!graphsResp.ok || cancelled) return;
         const allGraphs = await graphsResp.json();
         const RENAME_MAP: Record<string, string> = {
-          "Main Canvas": "Pipeline",
-          "Canvas 2": "Research",
+          "Main Canvas": "Scoring",
+          "Pipeline": "Scoring",
+          "Canvas 2": "Research Bridge",
+          "Research": "Research Bridge",
         };
         for (const g of allGraphs) {
           const newName = RENAME_MAP[g.name];
@@ -467,7 +469,7 @@ function CanvasPageInner() {
         }
 
         const SEED_MAP: Record<string, { op: string; data: { id: string; type_id: string; position_x: number; position_y: number } }[]> = {
-          research: [
+          "research-bridge": [
             { op: "upsert_node", data: { id: "research-bridge-1", type_id: "research_bridge", position_x: 50, position_y: 50 } },
             { op: "upsert_node", data: { id: "research-coord-1", type_id: "research_coordinator", position_x: 50, position_y: 300 } },
             { op: "upsert_node", data: { id: "lf-autorel-1", type_id: "lf_autorel", position_x: 400, position_y: 50 } },
@@ -534,7 +536,7 @@ function CanvasPageInner() {
   return (
     <div className="flex h-full w-full flex-col">
       <TabBar projectId={projectId ?? urlProjectId ?? null} activeGraphId={canvasId ?? graphId} onSelectGraph={handleNavigateToCanvas} />
-      {poolExpanded && currentCanvasType === "research" ? (
+      {poolExpanded && currentCanvasType === "research-bridge" ? (
         <SplitPane
           ratio={canvasSplitRatio}
           onRatioChange={setCanvasSplitRatio}
@@ -546,7 +548,7 @@ function CanvasPageInner() {
           <SubstrateCanvas />
         </div>
       )}
-      {poolAvailable && currentCanvasType === "research" && (
+      {poolAvailable && currentCanvasType === "research-bridge" && (
         <button
           onClick={() => setPoolExpanded((v) => !v)}
           className="absolute bottom-2 right-2 z-50 rounded bg-neutral-800 px-3 py-1 text-xs text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 border border-neutral-700"

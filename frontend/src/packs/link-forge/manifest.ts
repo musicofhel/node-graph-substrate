@@ -18,8 +18,8 @@ export const manifest: PackManifest = {
   },
   canvasKinds: [
     {
-      id: "research",
-      label: "Research",
+      id: "research-bridge",
+      label: "Research Bridge",
       nodeTypeIds: [
         "research_bridge", "research_coordinator", "lf_autorel", "lf_stats",
       ],

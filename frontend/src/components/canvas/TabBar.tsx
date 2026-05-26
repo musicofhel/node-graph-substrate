@@ -38,7 +38,7 @@ export function TabBar({ projectId, activeGraphId, onSelectGraph }: TabBarProps)
 
   const handleCreate = async () => {
     if (!projectId) return;
-    const CANVAS_NAMES = ["Pipeline", "Research", "Research v2", "Experiments"];
+    const CANVAS_NAMES = ["Scoring", "Research Bridge", "Ingestion", "Experiments"];
     const existingNames = new Set(tabs.map((t) => t.name));
     const name = CANVAS_NAMES.find((n) => !existingNames.has(n)) ?? `Canvas ${tabs.length + 1}`;
     try {

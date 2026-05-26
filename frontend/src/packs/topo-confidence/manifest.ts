@@ -6,8 +6,8 @@ export const manifest: PackManifest = {
   acceptsRuntimeRange: ">=0.1.0",
   canvasKinds: [
     {
-      id: "pipeline",
-      label: "Pipeline",
+      id: "scoring",
+      label: "Scoring",
       nodeTypeIds: [
         "prompt_input", "feature_bars", "hidden_state_cloud", "persistence_diagram",
         "confidence_gauge", "bridge_monitor", "explain_waterfall", "drift_matrix",
