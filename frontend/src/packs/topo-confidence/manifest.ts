@@ -23,7 +23,7 @@ export const manifest: PackManifest = {
       category: "input",
       inputs: [],
       outputs: [
-        { id: "features_out", type: "features", position: "bottom", label: "Features" },
+        { id: "features_out", type: "features", position: "right", label: "Features" },
       ],
       configFields: [
         { key: "prompt", label: "Prompt", type: "text", default: "" },

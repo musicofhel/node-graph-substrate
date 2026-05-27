@@ -400,7 +400,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
       {/* Content area */}
       <div
         className="nodrag nowheel flex gap-1"
-        style={{ minWidth: compareLayer ? 640 : 400, minHeight: 350 }}
+        style={{ minWidth: compareLayer ? 640 : 400, minHeight: 280 }}
       >
         {!problem ? (
           <div className="flex flex-1 items-center justify-center text-xs text-neutral-500">

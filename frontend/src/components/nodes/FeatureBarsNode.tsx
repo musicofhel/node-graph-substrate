@@ -74,7 +74,7 @@ export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
       inputs={def.inputs}
       healthStatus={drift?.worst}
     >
-      <div className="flex w-full min-w-[280px] flex-col gap-0.5">
+      <div className="flex w-full min-w-[240px] flex-col gap-0.5">
         {FEATURE_NAMES.map((name) => {
           const val = features[name] ?? 0;
           const pct = Math.abs(val) / maxAbs;

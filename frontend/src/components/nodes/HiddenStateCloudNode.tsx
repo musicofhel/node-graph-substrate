@@ -141,7 +141,7 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="nodrag nowheel w-full min-w-[260px]" style={{ height: 250 }}>
+      <div className="nodrag nowheel w-full min-w-[240px]" style={{ height: 220 }}>
         {hasData ? (
           <R3FErrorBoundary>
             <Canvas

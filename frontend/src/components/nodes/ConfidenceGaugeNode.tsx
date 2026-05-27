@@ -16,11 +16,11 @@ function gaugeColor(v: number): string {
   return "#ef4444";
 }
 
-const ARC_R = 46;
-const CX = 60;
-const CY = 52;
-const SVG_W = 120;
-const SVG_H = 66;
+const ARC_R = 70;
+const CX = 90;
+const CY = 80;
+const SVG_W = 180;
+const SVG_H = 100;
 const ARC_LEN = Math.PI * ARC_R;
 
 function describeArc(pct: number): string {
@@ -51,10 +51,10 @@ export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div className="flex flex-col items-center" style={{ width: SVG_W }}>
+      <div className="flex w-full flex-col items-center">
         {confidence !== undefined ? (
           <>
-            <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`}>
+            <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet">
               <path
                 d={FULL_ARC}
                 fill="none"
@@ -85,8 +85,15 @@ export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
                 {(confidence * 100).toFixed(0)}%
               </text>
             </svg>
-            <Sparkline values={confidenceValues} width={120} height={24} color="#10b981" />
-            <span className="text-[10px] text-neutral-500">{mode}</span>
+            <Sparkline values={confidenceValues} width={240} height={36} color="#10b981" />
+            <span className="mt-1 text-[10px] text-neutral-500">{mode}</span>
+            {confidenceValues.length > 1 && (
+              <div className="mt-1.5 flex w-full justify-between text-[9px] font-mono text-neutral-500">
+                <span>min {(Math.min(...confidenceValues) * 100).toFixed(0)}%</span>
+                <span>avg {((confidenceValues.reduce((a, b) => a + b, 0) / confidenceValues.length) * 100).toFixed(0)}%</span>
+                <span>max {(Math.max(...confidenceValues) * 100).toFixed(0)}%</span>
+              </div>
+            )}
           </>
         ) : (
           <div className="py-4 text-xs text-neutral-500">Waiting...</div>

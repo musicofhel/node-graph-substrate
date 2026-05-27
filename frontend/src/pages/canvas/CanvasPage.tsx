@@ -362,16 +362,23 @@ function CanvasPageInner() {
         if (cType === "scoring") {
           setGraphMeta(canvasId, state.graphVersion || 1, urlProjectId ?? undefined);
           const defaultNodes = [
-            { id: "prompt-1", type: "prompt_input", position: { x: 50, y: 150 }, data: { config: { prompt: "" } } },
-            { id: "cloud-1", type: "hidden_state_cloud", position: { x: 350, y: 20 }, data: {} },
-            { id: "features-1", type: "feature_bars", position: { x: 350, y: 350 }, data: {} },
-            { id: "diagram-1", type: "persistence_diagram", position: { x: 700, y: 20 }, data: {} },
-            { id: "gauge-1", type: "confidence_gauge", position: { x: 700, y: 350 }, data: {} },
-            { id: "monitor-1", type: "bridge_monitor", position: { x: 1050, y: 20 }, data: {} },
-            { id: "explain-1", type: "explain_waterfall", position: { x: 1050, y: 300 }, data: {} },
-            { id: "breathing-1", type: "breathing_heatmap", position: { x: 1400, y: 20 }, data: {} },
-            { id: "drift-1", type: "drift_matrix", position: { x: 1400, y: 300 }, data: {} },
-            { id: "h1loop-1", type: "h1_loop", position: { x: 1750, y: 20 }, data: {} },
+            // Row group backgrounds (rendered first = behind content nodes)
+            { id: "row-input", type: "row_label", position: { x: -20, y: -20 }, data: { label: "Input & Summary", color: "blue" }, style: { width: 1360, height: 360 }, selectable: false, draggable: false, connectable: false },
+            { id: "row-topo", type: "row_label", position: { x: -20, y: 360 }, data: { label: "Topology & Health", color: "cyan" }, style: { width: 1360, height: 340 }, selectable: false, draggable: false, connectable: false },
+            { id: "row-complex", type: "row_label", position: { x: -20, y: 700 }, data: { label: "Complex Visualizations", color: "purple" }, style: { width: 1360, height: 440 }, selectable: false, draggable: false, connectable: false },
+            // Row 0 — Input & Summary
+            { id: "prompt-1", type: "prompt_input", position: { x: 0, y: 0 }, data: { config: { prompt: "" } }, style: { width: 300 } },
+            { id: "gauge-1", type: "confidence_gauge", position: { x: 320, y: 0 }, data: {}, style: { width: 300 } },
+            { id: "features-1", type: "feature_bars", position: { x: 640, y: 0 }, data: {}, style: { width: 300 } },
+            { id: "explain-1", type: "explain_waterfall", position: { x: 980, y: 0 }, data: {}, style: { width: 340 } },
+            // Row 1 — Topology & Health
+            { id: "cloud-1", type: "hidden_state_cloud", position: { x: 0, y: 380 }, data: {}, style: { width: 300 } },
+            { id: "diagram-1", type: "persistence_diagram", position: { x: 320, y: 380 }, data: {}, style: { width: 300 } },
+            { id: "monitor-1", type: "bridge_monitor", position: { x: 640, y: 380 }, data: {}, style: { width: 300 } },
+            { id: "drift-1", type: "drift_matrix", position: { x: 980, y: 380 }, data: {}, style: { width: 300 } },
+            // Row 2 — Complex Visualizations
+            { id: "breathing-1", type: "breathing_heatmap", position: { x: 0, y: 720 }, data: {}, style: { width: 560 } },
+            { id: "h1loop-1", type: "h1_loop", position: { x: 580, y: 720 }, data: {}, style: { width: 760 } },
           ];
           for (const n of defaultNodes) addNode(n);
 

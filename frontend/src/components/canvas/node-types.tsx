@@ -23,6 +23,7 @@ import { BreathingHeatmapNode } from "../nodes/BreathingHeatmapNode";
 import { AlgorithmSelectorNode } from "../nodes/AlgorithmSelectorNode";
 import { ExperimentROINode } from "../nodes/ExperimentROINode";
 import { FindingsSummaryNode } from "../nodes/FindingsSummaryNode";
+import { RowLabelNode } from "../nodes/RowLabelNode";
 import { CanvasRefNode } from "../../packs/core/nodes/CanvasRefNode";
 import { RunRefNode } from "../../packs/core/nodes/RunRefNode";
 import { NodeRefNode } from "../../packs/core/nodes/NodeRefNode";
@@ -87,4 +88,5 @@ export const nodeTypes: NodeTypes = {
   canvas_ref: CanvasRefNode,
   run_ref: RunRefNode,
   node_ref: NodeRefNode,
+  row_label: RowLabelNode,
 };

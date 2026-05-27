@@ -48,7 +48,7 @@ export const PersistenceDiagramNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="w-full min-w-[200px]" style={{ aspectRatio: "1" }}>
+      <div className="w-full" style={{ aspectRatio: "1" }}>
         {hasData ? (
           <svg width="100%" height="100%" viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} preserveAspectRatio="xMidYMid meet">
             {/* Axes */}

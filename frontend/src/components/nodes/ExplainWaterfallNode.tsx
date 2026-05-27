@@ -171,7 +171,7 @@ export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="nodrag flex w-full min-w-[320px] flex-col gap-1">
+      <div className="nodrag flex w-full min-w-[280px] flex-col gap-1">
         {/* Summary header */}
         <div className="mb-1 rounded bg-neutral-800/80 px-2 py-1.5">
           <div className="flex items-center gap-2">
@@ -214,6 +214,7 @@ export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
         </div>
 
         {/* Waterfall bars */}
+        <div className="nowheel max-h-[220px] overflow-y-auto">
         {entries.map(([name, feat]) => {
           const pct = Math.abs(feat.contribution) / maxAbs;
           const isPositive = feat.contribution >= 0;
@@ -294,6 +295,7 @@ export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
             </div>
           );
         })}
+        </div>
       </div>
     </BaseNodeShell>
   );

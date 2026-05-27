@@ -23,7 +23,7 @@ export const BridgeMonitorNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div className="w-full min-w-[240px]">
+      <div className="w-full min-w-[220px]">
         {hasData ? (
           <>
             <div className="mb-2 flex items-center gap-2">
@@ -43,41 +43,43 @@ export const BridgeMonitorNode = memo(({ id, selected }: NodeProps) => {
                 </span>
               )}
             </div>
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-neutral-500">
-                  <th className="pb-1 text-left font-normal">Layer</th>
-                  <th className="pb-1 text-left font-normal">Bridge</th>
-                  <th className="pb-1 text-right font-normal">Pos-0 Sil</th>
-                  <th className="pb-1 text-right font-normal">Mean Sil</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(data.bridge_at_pos0 ?? {})
-                  .sort(([a], [b]) => Number(a) - Number(b))
-                  .map(([layer, isBridge]) => (
-                    <tr key={layer} className="text-neutral-300">
-                      <td className="py-0.5">L{layer}</td>
-                      <td className="py-0.5">
-                        <span
-                          className={`inline-block h-2 w-2 rounded-full ${
-                            isBridge ? "bg-amber-400" : "bg-neutral-600"
-                          }`}
-                        />
-                        <span className="ml-1">
-                          {isBridge ? "bridge" : "core"}
-                        </span>
-                      </td>
-                      <td className="py-0.5 text-right font-mono">
-                        {(data.pos0_silhouette_by_layer?.[layer] ?? data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
-                      </td>
-                      <td className="py-0.5 text-right font-mono">
-                        {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+            <div className="nodrag nowheel max-h-[200px] overflow-y-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-neutral-500">
+                    <th className="pb-1 text-left font-normal">Layer</th>
+                    <th className="pb-1 text-left font-normal">Bridge</th>
+                    <th className="pb-1 text-right font-normal">Pos-0 Sil</th>
+                    <th className="pb-1 text-right font-normal">Mean Sil</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(data.bridge_at_pos0 ?? {})
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([layer, isBridge]) => (
+                      <tr key={layer} className="text-neutral-300">
+                        <td className="py-0.5">L{layer}</td>
+                        <td className="py-0.5">
+                          <span
+                            className={`inline-block h-2 w-2 rounded-full ${
+                              isBridge ? "bg-amber-400" : "bg-neutral-600"
+                            }`}
+                          />
+                          <span className="ml-1">
+                            {isBridge ? "bridge" : "core"}
+                          </span>
+                        </td>
+                        <td className="py-0.5 text-right font-mono">
+                          {(data.pos0_silhouette_by_layer?.[layer] ?? data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        </td>
+                        <td className="py-0.5 text-right font-mono">
+                          {(data.silhouette_by_layer?.[layer] ?? 0).toFixed(3)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
             {data.anomaly_reason && (
               <div className="mt-1 text-[10px] text-red-400">
                 {data.anomaly_reason}
