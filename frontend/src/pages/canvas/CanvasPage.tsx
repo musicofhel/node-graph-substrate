@@ -13,6 +13,7 @@ import { SubstrateWS } from "../../lib/ws/client";
 import { NODE_REGISTRY, canvasTypeFromName } from "../../lib/pack-registry";
 import { API_BASE } from "../../lib/api";
 import { useSessionStore } from "../../features/workspace/useProjectSession";
+import { computeEdgeStyleForStage } from "../../packs/link-forge/edge-styles";
 
 if (import.meta.env.DEV) {
   (window as any).__canvasStore = useCanvasStore;
@@ -128,7 +129,7 @@ function CanvasPageInner() {
       const nodeId = `lf-${queueId}-${stage}`;
       const stageIdx = STAGE_ORDER.indexOf(stage);
       const pos = stageGridPos(stageIdx);
-      const edgeStyle = { stroke: "#525252", strokeWidth: 1 };
+      const edgeStyle = computeEdgeStyleForStage(stage, payload);
       const newEdges: Edge[] = [];
 
       if (stageIdx > 0) {
@@ -141,7 +142,7 @@ function CanvasPageInner() {
             target: nodeId,
             sourceHandle: "source-bottom",
             targetHandle: "target-top",
-            type: "smoothstep",
+            type: "default",
             style: edgeStyle,
           });
         }
@@ -156,7 +157,7 @@ function CanvasPageInner() {
             target: nextNodeId,
             sourceHandle: "source-bottom",
             targetHandle: "target-top",
-            type: "smoothstep",
+            type: "default",
             style: edgeStyle,
           });
         }
