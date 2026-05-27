@@ -6,6 +6,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
+import { LodLabel } from "../../lib/three/LodLabel";
 import * as THREE from "three";
 
 class R3FErrorBoundary extends Component<
@@ -101,6 +102,11 @@ function PointCloud({ data }: { data: CloudData }) {
         <pointsMaterial size={0.15} vertexColors sizeAttenuation />
       </points>
       {bridgePos && <BridgePulse position={bridgePos} />}
+      {bridgePos && (
+        <LodLabel position={bridgePos} minTier="mid">
+          Bridge{data.bridge_silhouette != null ? ` (sil: ${data.bridge_silhouette.toFixed(3)})` : ""}
+        </LodLabel>
+      )}
     </>
   );
 }

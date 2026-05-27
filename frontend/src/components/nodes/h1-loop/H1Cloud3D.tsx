@@ -6,6 +6,7 @@ import { OrbitControls, Line } from "@react-three/drei";
 import * as THREE from "three";
 import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
 import { turboColor, cycleColor, cycleOpacity } from "./turbo-colormap";
+import { LodLabel } from "../../../lib/three/LodLabel";
 
 class R3FErrorBoundary extends Component<
   { children: ReactNode },
@@ -259,6 +260,24 @@ function Scene({
     return points.map(([x, y, z]) => [(x - cx) * scale, (y - cy) * scale, (z - cz) * scale]);
   }, [points]);
 
+  const cycleCentroids = useMemo(() => {
+    if (transformedPoints.length === 0) return [];
+    return problem.h1_cycles.map((cycle) => {
+      const ids = cycle.representative_subsampled_indices;
+      let sx = 0, sy = 0, sz = 0;
+      for (const i of ids) {
+        sx += transformedPoints[i][0];
+        sy += transformedPoints[i][1];
+        sz += transformedPoints[i][2];
+      }
+      const n = ids.length || 1;
+      return [sx / n, sy / n, sz / n] as [number, number, number];
+    });
+  }, [transformedPoints, problem.h1_cycles]);
+
+  const bridgeIdx = problem.bridge_subsampled_index;
+  const bridgeVisible = bridgeIdx >= 0 && bridgeIdx < transformedPoints.length;
+
   return (
     <>
       <ambientLight intensity={0.6} />
@@ -291,6 +310,19 @@ function Scene({
           highlightedPointIdx={highlightedPointIdx}
         />
       )}
+      {bridgeVisible && (
+        <LodLabel
+          position={transformedPoints[bridgeIdx] as [number, number, number]}
+          minTier="mid"
+        >
+          Bridge
+        </LodLabel>
+      )}
+      {cycleCentroids.map((pos, i) => (
+        <LodLabel key={problem.h1_cycles[i].rank} position={pos} minTier="close">
+          H1 rank {problem.h1_cycles[i].rank}
+        </LodLabel>
+      ))}
       <OrbitControls enablePan enableZoom enableRotate />
     </>
   );
