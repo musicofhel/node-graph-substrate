@@ -1,10 +1,24 @@
 import { useParams } from "react-router";
 import { StatusDot } from "../../components/ui/StatusDot";
-import { useUIStore } from "../../lib/store/ui-store";
+import { useUIStore, type AppTheme } from "../../lib/store/ui-store";
+
+const THEME_CYCLE: AppTheme[] = ["dark", "light", "screenshot"];
+const THEME_ICONS: Record<AppTheme, string> = {
+  dark: "\u{263E}",
+  light: "\u{2600}",
+  screenshot: "\u{2B1A}",
+};
 
 export function TopBar() {
   const { projectId, canvasId } = useParams();
   const wsStatus = useUIStore((s) => s.wsStatus);
+  const theme = useUIStore((s) => s.theme);
+  const setTheme = useUIStore((s) => s.setTheme);
+
+  const cycleTheme = () => {
+    const idx = THEME_CYCLE.indexOf(theme);
+    setTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
+  };
 
   return (
     <div className="flex h-10 shrink-0 items-center border-b border-neutral-800 bg-neutral-950 px-3">
@@ -25,6 +39,13 @@ export function TopBar() {
           </>
         )}
       </div>
+      <button
+        onClick={cycleTheme}
+        className="rounded px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+        title={`Theme: ${theme}`}
+      >
+        {THEME_ICONS[theme]}
+      </button>
       <button
         className="rounded px-3 py-1 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
         onClick={() =>

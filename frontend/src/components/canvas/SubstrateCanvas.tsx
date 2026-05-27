@@ -42,6 +42,7 @@ export function SubstrateCanvas() {
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const eventLogOpen = useUIStore((s) => s.eventLogOpen);
+  const theme = useUIStore((s) => s.theme);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export function SubstrateCanvas() {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            colorMode="dark"
+            colorMode={theme === "light" ? "light" : "dark"}
             fitView
             snapToGrid
             snapGrid={[20, 20]}

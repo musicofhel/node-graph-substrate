@@ -3,8 +3,10 @@ import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "../../features/search/CommandPalette";
 import { ToastContainer } from "../../components/ui/Toast";
+import { useThemeEffect } from "../../lib/hooks/useThemeEffect";
 
 export default function AppShell() {
+  useThemeEffect();
   return (
     <div className="flex h-screen w-screen bg-neutral-950 text-neutral-200">
       <Sidebar />
