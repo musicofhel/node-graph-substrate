@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useReactFlow } from "@xyflow/react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore } from "../../lib/store/ui-store";
 import { useDriftStore } from "../../lib/store/drift-store";
@@ -26,6 +27,7 @@ export function CanvasControls() {
   const [layouting, setLayouting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { fitView } = useReactFlow();
   const canvasType = canvasTypeFromName(graphName);
 
   const handleSave = useCallback(async () => {
@@ -57,12 +59,13 @@ export function CanvasControls() {
     setError(null);
     try {
       await autoLayout();
+      fitView({ duration: 800, padding: 0.2 });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Layout failed");
     } finally {
       setLayouting(false);
     }
-  }, [autoLayout]);
+  }, [autoLayout, fitView]);
 
   const layoutEnabled = canvasType !== "research-bridge" && canvasType !== "ingestion";
 

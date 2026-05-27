@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { H1Problem } from "../../../packs/topo-confidence/hooks/useH1LoopData";
 import { turboColor, cycleColor, cycleOpacity } from "./turbo-colormap";
 import { LodLabel } from "../../../lib/three/LodLabel";
+import { CameraTween, type CameraTweenRequest } from "../../../lib/three/useCameraTween";
 
 class R3FErrorBoundary extends Component<
   { children: ReactNode },
@@ -234,6 +235,13 @@ function RipsEdges3D({
   );
 }
 
+type SceneProps = Props & {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  controlsRef: React.RefObject<any>;
+  tweenReq: React.RefObject<CameraTweenRequest | null>;
+  bridgePosRef: React.RefObject<[number, number, number] | null>;
+};
+
 function Scene({
   problem,
   points,
@@ -242,7 +250,10 @@ function Scene({
   highlightedPointIdx,
   replayProgress,
   filtrationEpsilon,
-}: Props) {
+  controlsRef,
+  tweenReq,
+  bridgePosRef,
+}: SceneProps) {
   const transformedPoints = useMemo(() => {
     if (points.length === 0) return points;
     let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -277,6 +288,12 @@ function Scene({
 
   const bridgeIdx = problem.bridge_subsampled_index;
   const bridgeVisible = bridgeIdx >= 0 && bridgeIdx < transformedPoints.length;
+
+  if (bridgeVisible) {
+    bridgePosRef.current = transformedPoints[bridgeIdx] as [number, number, number];
+  } else {
+    bridgePosRef.current = null;
+  }
 
   return (
     <>
@@ -323,7 +340,8 @@ function Scene({
           H1 rank {problem.h1_cycles[i].rank}
         </LodLabel>
       ))}
-      <OrbitControls enablePan enableZoom enableRotate />
+      <OrbitControls ref={controlsRef} enablePan enableZoom enableRotate />
+      <CameraTween controlsRef={controlsRef} requestRef={tweenReq} />
     </>
   );
 }
@@ -338,24 +356,43 @@ export const H1Cloud3D = memo(
     replayProgress,
     filtrationEpsilon,
   }: Props) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const controlsRef = useRef<any>(null);
+    const tweenReq = useRef<CameraTweenRequest | null>(null);
+    const bridgePosRef = useRef<[number, number, number] | null>(null);
+
     return (
-      <R3FErrorBoundary>
-        <Canvas
-          frameloop="always"
-          camera={{ position: [8, 8, 8], fov: 50 }}
-          style={{ background: "#0f0f23", borderRadius: 4 }}
+      <div className="relative h-full w-full">
+        <R3FErrorBoundary>
+          <Canvas
+            frameloop="always"
+            camera={{ position: [8, 8, 8], fov: 50 }}
+            style={{ background: "#0f0f23", borderRadius: 4 }}
+          >
+            <Scene
+              problem={problem}
+              points={points}
+              highlightedCycle={highlightedCycle}
+              onCycleHover={onCycleHover}
+              highlightedPointIdx={highlightedPointIdx}
+              replayProgress={replayProgress}
+              filtrationEpsilon={filtrationEpsilon}
+              controlsRef={controlsRef}
+              tweenReq={tweenReq}
+              bridgePosRef={bridgePosRef}
+            />
+          </Canvas>
+        </R3FErrorBoundary>
+        <button
+          onClick={() => {
+            const bp = bridgePosRef.current;
+            if (bp) tweenReq.current = { target: bp, duration: 500, id: Date.now() };
+          }}
+          className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-blue-400 hover:text-blue-300 backdrop-blur-sm"
         >
-          <Scene
-            problem={problem}
-            points={points}
-            highlightedCycle={highlightedCycle}
-            onCycleHover={onCycleHover}
-            highlightedPointIdx={highlightedPointIdx}
-            replayProgress={replayProgress}
-            filtrationEpsilon={filtrationEpsilon}
-          />
-        </Canvas>
-      </R3FErrorBoundary>
+          Focus
+        </button>
+      </div>
     );
   },
 );

@@ -22,7 +22,7 @@ export function PipelineTimeline() {
       if (scrollX >= prevMaxRef.current - WINDOW_WIDTH) {
         setScrollX(maxGroupX);
         const vp = getViewport();
-        setViewport({ x: -maxGroupX * vp.zoom, y: vp.y, zoom: vp.zoom });
+        setViewport({ x: -maxGroupX * vp.zoom, y: vp.y, zoom: vp.zoom }, { duration: 600 });
       }
       prevMaxRef.current = maxGroupX;
     }
@@ -54,7 +54,7 @@ export function PipelineTimeline() {
     const mx = maxGroupXRef.current;
     setScrollX(mx);
     const vp = getViewport();
-    setViewport({ x: -mx * vp.zoom, y: vp.y, zoom: vp.zoom });
+    setViewport({ x: -mx * vp.zoom, y: vp.y, zoom: vp.zoom }, { duration: 600 });
   }, [getViewport, setViewport]);
 
   if (groupCount < 2) return null;

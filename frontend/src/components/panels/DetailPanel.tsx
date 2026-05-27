@@ -1,5 +1,5 @@
-import { memo, useMemo, useState } from "react";
-import { useNodesData } from "@xyflow/react";
+import { memo, useCallback, useMemo, useState } from "react";
+import { useNodesData, useReactFlow } from "@xyflow/react";
 import { useCanvasStore } from "../../lib/store/canvas-store";
 import { useUIStore, type DetailTab } from "../../lib/store/ui-store";
 import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
@@ -35,6 +35,11 @@ export const DetailPanel = memo(({ nodeId }: Props) => {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const activeTab = useUIStore((s) => s.detailPanelTab);
   const setTab = useUIStore((s) => s.setDetailTab);
+  const { fitView } = useReactFlow();
+
+  const handleFocus = useCallback(() => {
+    fitView({ nodes: [{ id: nodeId }], duration: 500, padding: 0.5 });
+  }, [nodeId, fitView]);
 
   const nodeType = node?.type ?? "";
   const def = NODE_REGISTRY[nodeType];
@@ -60,8 +65,18 @@ export const DetailPanel = memo(({ nodeId }: Props) => {
           {def.category}
         </span>
         <button
-          onClick={() => setSelectedNodeId(null)}
+          onClick={handleFocus}
           className="ml-auto rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
+          title="Focus on node"
+        >
+          <svg width={14} height={14} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.5}>
+            <circle cx={7} cy={7} r={3} />
+            <path d="M7 1v2M7 11v2M1 7h2M11 7h2" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setSelectedNodeId(null)}
+          className="rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
         >
           <svg width={14} height={14} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M2 2l10 10M12 2L2 12" />

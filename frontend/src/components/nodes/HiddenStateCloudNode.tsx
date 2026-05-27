@@ -7,6 +7,7 @@ import { OrbitControls } from "@react-three/drei";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { LodLabel } from "../../lib/three/LodLabel";
+import { CameraTween, type CameraTweenRequest } from "../../lib/three/useCameraTween";
 import * as THREE from "three";
 
 class R3FErrorBoundary extends Component<
@@ -44,7 +45,7 @@ type CloudData = {
   bridge_silhouette?: number;
 };
 
-function PointCloud({ data }: { data: CloudData }) {
+function PointCloud({ data, bridgePosRef }: { data: CloudData; bridgePosRef?: React.RefObject<[number, number, number] | null> }) {
   const { positions, colors, bridgePos } = useMemo(() => {
     const pts = data.umap_3d ?? [];
     const cls = data.clusters ?? [];
@@ -90,6 +91,8 @@ function PointCloud({ data }: { data: CloudData }) {
     return { positions: pos, colors: col, bridgePos: bp };
   }, [data.umap_3d, data.clusters, data.bridge_idx]);
 
+  if (bridgePosRef) bridgePosRef.current = bridgePos;
+
   if (positions.length === 0) return null;
 
   return (
@@ -131,6 +134,10 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.hidden_state_cloud;
   const hasData = !!data.umap_3d;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const controlsRef = useRef<any>(null);
+  const tweenReq = useRef<CameraTweenRequest | null>(null);
+  const bridgePosRef = useRef<[number, number, number] | null>(null);
 
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
@@ -143,8 +150,9 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
               style={{ background: "#0a0a0a", borderRadius: 4 }}
             >
               <ambientLight intensity={0.6} />
-              <PointCloud data={data} />
-              <OrbitControls enablePan enableZoom enableRotate />
+              <PointCloud data={data} bridgePosRef={bridgePosRef} />
+              <OrbitControls ref={controlsRef} enablePan enableZoom enableRotate />
+              <CameraTween controlsRef={controlsRef} requestRef={tweenReq} />
             </Canvas>
           </R3FErrorBoundary>
         ) : (
@@ -153,9 +161,20 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
           </div>
         )}
       </div>
-      {data.bridge_silhouette !== undefined && (
-        <div className="mt-1 text-[10px] text-neutral-400">
-          Bridge sil: {data.bridge_silhouette.toFixed(3)}
+      {hasData && (
+        <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-400">
+          {data.bridge_silhouette !== undefined ? (
+            <span>Bridge sil: {data.bridge_silhouette.toFixed(3)}</span>
+          ) : <span />}
+          <button
+            onClick={() => {
+              const bp = bridgePosRef.current;
+              if (bp) tweenReq.current = { target: bp, duration: 500, id: Date.now() };
+            }}
+            className="text-blue-400 hover:text-blue-300"
+          >
+            Focus
+          </button>
         </div>
       )}
     </BaseNodeShell>
