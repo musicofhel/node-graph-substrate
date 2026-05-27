@@ -8,6 +8,10 @@ const HIGHLIGHT_R = 7;
 const MARGIN = 20;
 const COLOR_POINT = "#a0a0c0";
 const COLOR_BRIDGE = "#ffd700";
+const TRAJ_COLOR = "#7070a0";
+const TRAJ_ARROW_COLOR = "#9090b0";
+const TRAJ_ARROW_INTERVAL = 10;
+const TRAJ_ARROW_SIZE = 4;
 
 type Props = {
   problem: H1Problem;
@@ -20,6 +24,7 @@ type Props = {
   onPointHover?: (subsampledIdx: number | null) => void;
   replayProgress?: number | null;
   filtrationEpsilon?: number | null;
+  trailVisible?: boolean;
 };
 
 type Tooltip = { x: number; y: number; text: string };
@@ -35,6 +40,7 @@ export const H1Cloud2D = memo(({
   onPointHover,
   replayProgress,
   filtrationEpsilon,
+  trailVisible,
 }: Props) => {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
 
@@ -125,6 +131,27 @@ export const H1Cloud2D = memo(({
     return pts.map((p) => `${p.cx},${p.cy}`).join(" ");
   }, [replayProgress, projected]);
 
+  const trailData = useMemo(() => {
+    if (!trailVisible || projected.length < 2) return null;
+    const linePoints = projected.map((p) => `${p.cx},${p.cy}`).join(" ");
+    const arrows: string[] = [];
+    for (let i = TRAJ_ARROW_INTERVAL; i < projected.length; i += TRAJ_ARROW_INTERVAL) {
+      const x0 = projected[i - 1].cx, y0 = projected[i - 1].cy;
+      const x1 = projected[i].cx, y1 = projected[i].cy;
+      const dx = x1 - x0, dy = y1 - y0;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len < 1) continue;
+      const ux = dx / len, uy = dy / len;
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+      const px = -uy, py = ux;
+      const s = TRAJ_ARROW_SIZE;
+      arrows.push(
+        `${mx + ux * s},${my + uy * s} ${mx + px * s * 0.5},${my + py * s * 0.5} ${mx - px * s * 0.5},${my - py * s * 0.5}`,
+      );
+    }
+    return { linePoints, arrows };
+  }, [trailVisible, projected]);
+
   const handlePointEnter = useCallback(
     (e: React.MouseEvent, i: number) => {
       const p = projected[i];
@@ -167,6 +194,22 @@ export const H1Cloud2D = memo(({
         {/* Rips edges (filtration) */}
         {edgePath && (
           <path d={edgePath} stroke="#4a4a6a" strokeWidth={0.8} opacity={0.25} fill="none" />
+        )}
+
+        {/* Full token trajectory trail */}
+        {trailData && (
+          <g pointerEvents="none">
+            <polyline
+              points={trailData.linePoints}
+              fill="none"
+              stroke={TRAJ_COLOR}
+              strokeWidth={1}
+              opacity={0.35}
+            />
+            {trailData.arrows.map((pts, i) => (
+              <polygon key={i} points={pts} fill={TRAJ_ARROW_COLOR} opacity={0.5} />
+            ))}
+          </g>
         )}
 
         {/* Replay trajectory line */}

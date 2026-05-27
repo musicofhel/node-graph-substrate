@@ -260,3 +260,74 @@ export const H1PersistenceDiagram = memo(({
   );
 });
 H1PersistenceDiagram.displayName = "H1PersistenceDiagram";
+
+type CycleTableProps = {
+  problem: H1Problem;
+  highlightedCycle: number | null;
+  onCycleHover: (rank: number | null) => void;
+};
+
+export const H1CycleTable = memo(({ problem, highlightedCycle, onCycleHover }: CycleTableProps) => {
+  const maxRank = Math.max(0, ...problem.h1_cycles.map((c) => c.rank));
+  const cycles = problem.h1_cycles;
+
+  if (cycles.length === 0) {
+    return (
+      <div className="text-[10px] text-neutral-600 italic p-1">
+        No H1 cycles detected
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-y-auto max-h-[120px] text-[9px] font-mono">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="text-neutral-500 uppercase tracking-wider text-[8px] sticky top-0 bg-neutral-900">
+            <th className="text-left py-0.5 px-1">Rank</th>
+            <th className="text-right py-0.5 px-1">Life</th>
+            <th className="text-right py-0.5 px-1">Birth</th>
+            <th className="text-right py-0.5 px-1">Verts</th>
+            <th className="text-left py-0.5 px-1">Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cycles.map((c) => {
+            const isHighlighted = highlightedCycle === c.rank;
+            return (
+              <tr
+                key={c.rank}
+                className={`cursor-pointer transition-colors ${
+                  isHighlighted ? "bg-neutral-700/50" : "hover:bg-neutral-800"
+                }`}
+                onMouseEnter={() => onCycleHover(c.rank)}
+                onMouseLeave={() => onCycleHover(null)}
+              >
+                <td className="py-0.5 px-1 flex items-center gap-1">
+                  <span
+                    className="inline-block w-2 h-2 rounded-sm shrink-0"
+                    style={{ background: cycleColor(c.rank, maxRank) }}
+                  />
+                  {c.rank}
+                </td>
+                <td className="py-0.5 px-1 text-right text-neutral-300">
+                  {c.lifetime.toFixed(2)}
+                </td>
+                <td className="py-0.5 px-1 text-right text-neutral-400">
+                  {c.birth.toFixed(2)}
+                </td>
+                <td className="py-0.5 px-1 text-right text-neutral-400">
+                  {c.representative_subsampled_indices.length - 1}
+                </td>
+                <td className="py-0.5 px-1 text-neutral-500">
+                  {c.extraction_method === "shortest_cycle_at_birth" ? "shortest" : "fallback"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+});
+H1CycleTable.displayName = "H1CycleTable";

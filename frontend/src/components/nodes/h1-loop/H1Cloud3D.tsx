@@ -40,6 +40,7 @@ type Props = {
   highlightedPointIdx?: number | null;
   replayProgress?: number | null;
   filtrationEpsilon?: number | null;
+  trailVisible?: boolean;
 };
 
 function PointCloud3D({
@@ -235,6 +236,22 @@ function RipsEdges3D({
   );
 }
 
+function TrajectoryLine3D({ points }: { points: number[][] }) {
+  const linePoints = useMemo(
+    () => points.map((p) => [p[0], p[1], p[2]] as [number, number, number]),
+    [points],
+  );
+  return (
+    <Line
+      points={linePoints}
+      color="#7070a0"
+      lineWidth={1}
+      transparent
+      opacity={0.35}
+    />
+  );
+}
+
 type SceneProps = Props & {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   controlsRef: React.RefObject<any>;
@@ -250,6 +267,7 @@ function Scene({
   highlightedPointIdx,
   replayProgress,
   filtrationEpsilon,
+  trailVisible,
   controlsRef,
   tweenReq,
   bridgePosRef,
@@ -316,6 +334,7 @@ function Scene({
         points={transformedPoints}
         replayProgress={replayProgress}
       />
+      {trailVisible && <TrajectoryLine3D points={transformedPoints} />}
       <BridgeSphere
         problem={problem}
         points={transformedPoints}
@@ -355,6 +374,7 @@ export const H1Cloud3D = memo(
     highlightedPointIdx,
     replayProgress,
     filtrationEpsilon,
+    trailVisible,
   }: Props) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const controlsRef = useRef<any>(null);
@@ -377,6 +397,7 @@ export const H1Cloud3D = memo(
               highlightedPointIdx={highlightedPointIdx}
               replayProgress={replayProgress}
               filtrationEpsilon={filtrationEpsilon}
+              trailVisible={trailVisible}
               controlsRef={controlsRef}
               tweenReq={tweenReq}
               bridgePosRef={bridgePosRef}

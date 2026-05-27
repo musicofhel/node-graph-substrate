@@ -4,18 +4,20 @@ import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useH1LoopData } from "../../packs/topo-confidence/hooks/useH1LoopData";
 import { H1Cloud2D } from "./h1-loop/H1Cloud2D";
-import { H1PersistenceDiagram } from "./h1-loop/H1PersistenceDiagram";
+import { H1PersistenceDiagram, H1CycleTable } from "./h1-loop/H1PersistenceDiagram";
 import { H1Cloud3D } from "./h1-loop/H1Cloud3D";
 import { H1FiltrationControls } from "./h1-loop/H1FiltrationControls";
 import { H1ReplayControls } from "./h1-loop/H1ReplayControls";
 import { H1TextPanel } from "./h1-loop/H1TextPanel";
+import { turboColor } from "./h1-loop/turbo-colormap";
 
 const SPEEDS = [0.25, 0.5, 1, 2, 4];
+const DEMO_INTERVAL = 15_000;
 
 export const H1LoopNode = memo(({ selected }: NodeProps) => {
   const def = NODE_REGISTRY.h1_loop;
   const {
-    problem, problemIdx, loading, error, navigate,
+    problem, problemIdx, loading, error, navigate, goTo,
     activePoints2d, activePoints3d, totalProblems, loadFiltrationData,
     reduction, setReduction, hasUmap,
     layer, setLayer, availableLayers,
@@ -26,6 +28,50 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
     "diagram",
   );
   const [highlightedCycle, setHighlightedCycle] = useState<number | null>(null);
+
+  const [demo, setDemo] = useState(false);
+  const [countdown, setCountdown] = useState(DEMO_INTERVAL / 1000);
+  const [follow, setFollow] = useState(false);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const goToRef = useRef(goTo);
+  goToRef.current = goTo;
+
+  useEffect(() => {
+    if (!follow) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const idx = detail?.inputs?.config?.math_idx;
+      if (idx != null) goToRef.current(idx);
+    };
+    window.addEventListener("substrate:compute_request", handler);
+    return () => window.removeEventListener("substrate:compute_request", handler);
+  }, [follow]);
+
+  useEffect(() => {
+    if (follow) setDemo(false);
+  }, [follow]);
+
+  useEffect(() => {
+    if (!demo || !totalProblems || follow) return;
+    setCountdown(DEMO_INTERVAL / 1000);
+    const tick = setInterval(() => setCountdown((c) => c - 1), 1000);
+    const cycle = setInterval(() => {
+      navigateRef.current(1);
+      setCountdown(DEMO_INTERVAL / 1000);
+    }, DEMO_INTERVAL);
+    return () => { clearInterval(tick); clearInterval(cycle); };
+  }, [demo, totalProblems, follow]);
+
+  const demoSkip = useCallback(() => {
+    navigateRef.current(1);
+    setCountdown(DEMO_INTERVAL / 1000);
+  }, []);
+
+  const demoBack = useCallback(() => {
+    navigateRef.current(-1);
+    setCountdown(DEMO_INTERVAL / 1000);
+  }, []);
 
   const [filtrationActive, setFiltrationActive] = useState(false);
   const [filtrationEpsilon, setFiltrationEpsilon] = useState(0);
@@ -40,6 +86,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
 
   const [highlightedPointIdx, setHighlightedPointIdx] = useState<number | null>(null);
   const [highlightedTokenIdx, setHighlightedTokenIdx] = useState<number | null>(null);
+  const [trailVisible, setTrailVisible] = useState(false);
 
   useEffect(() => {
     setFiltrationActive(false);
@@ -50,6 +97,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
     setHighlightedCycle(null);
     setHighlightedPointIdx(null);
     setHighlightedTokenIdx(null);
+    setTrailVisible(false);
   }, [problemIdx, layer]);
 
   const epsilonMax = useMemo(() => {
@@ -202,33 +250,15 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
   return (
     <BaseNodeShell selected={selected} label={def.label} category={def.category}>
       {/* Navigation bar */}
-      <div className="nodrag flex items-center gap-1 mb-1.5 text-[10px] text-neutral-400">
+      <div className="nodrag flex items-center gap-1 mb-1 text-[10px] text-neutral-400">
         <button
           onClick={() => navigate(-1)}
           className="px-1 rounded hover:bg-neutral-700"
         >
           ◄
         </button>
-        <span className="flex-1 text-center truncate">
-          {problem ? (
-            <>
-              <span
-                className={
-                  problem.correctness.default
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                }
-              >
-                {problem.correctness.default ? "✓" : "✗"}
-              </span>{" "}
-              {problemIdx + 1}/{totalProblems} — {problem.subject} L
-              {problem.level}
-            </>
-          ) : loading ? (
-            "Loading..."
-          ) : (
-            "No data"
-          )}
+        <span className="flex-1 text-center font-mono">
+          {loading ? "..." : `${problemIdx + 1}/${totalProblems}`}
         </span>
         <button
           onClick={() => navigate(1)}
@@ -237,6 +267,88 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
           ►
         </button>
       </div>
+
+      {/* Metadata badges */}
+      {problem && (
+        <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+          <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[9px] font-mono text-neutral-300">
+            #{String(problemIdx).padStart(3, "0")}
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-indigo-900/60 text-[9px] text-indigo-300">
+            {problem.subject}
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-purple-900/40 text-[9px] text-purple-300">
+            L{problem.level}
+          </span>
+          <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+            problem.correctness.default
+              ? "bg-emerald-900/60 text-emerald-300"
+              : "bg-red-900/60 text-red-300"
+          }`}>
+            {problem.correctness.default ? "CORRECT" : "INCORRECT"}
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[9px] font-mono text-neutral-500">
+            {problem.n_tokens} tok
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[9px] font-mono text-neutral-500">
+            logp {problem.mean_logprob.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* Demo cycling + Follow */}
+      {totalProblems > 0 && (
+        <div className="nodrag mb-1.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] font-semibold tracking-widest text-neutral-500 uppercase">Demo</span>
+            {demo && !follow && (
+              <span className="text-[9px] tabular-nums text-neutral-500">{countdown}s</span>
+            )}
+            {follow && (
+              <span className="text-[9px] text-cyan-400">Following prompt</span>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <button
+              className="rounded px-2 py-1.5 text-xs text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
+              onClick={demoBack}
+              disabled={!demo || follow}
+            >
+              ◄◄
+            </button>
+            <button
+              className={`flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+                demo
+                  ? "bg-emerald-700 text-white hover:bg-emerald-600"
+                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+              }`}
+              onClick={() => { setDemo((d) => !d); setFollow(false); }}
+              disabled={follow}
+            >
+              {demo ? "Stop Demo" : "Start Demo"}
+            </button>
+            <button
+              className="rounded px-2 py-1.5 text-xs text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
+              onClick={demoSkip}
+              disabled={!demo || follow}
+            >
+              ►►
+            </button>
+            <button
+              className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
+                follow
+                  ? "bg-cyan-700 text-white hover:bg-cyan-600"
+                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+              }`}
+              onClick={() => setFollow((f) => !f)}
+              title="Sync with Prompt Input node"
+            >
+              {follow ? "Unfollow" : "Follow"}
+            </button>
+          </div>
+          <div className="mt-1.5 border-b border-neutral-700" />
+        </div>
+      )}
 
       {/* Mode selector + layer controls */}
       <div className="nodrag flex items-center gap-0.5 mb-1 text-[9px]">
@@ -345,22 +457,34 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
                 >
                   UMAP
                 </button>
-                <div className="ml-auto">
-                  <H1FiltrationControls
-                    active={filtrationActive}
-                    epsilon={filtrationEpsilon}
-                    epsilonMax={epsilonMax}
-                    playing={filtrationPlaying}
-                    speed={filtrationSpeed}
-                    loading={filtrationLoading}
-                    onToggle={handleFiltrationToggle}
-                    onEpsilonChange={setFiltrationEpsilon}
-                    onPlayPause={() => setFiltrationPlaying((p) => !p)}
-                    onSpeedChange={handleFiltrationSpeedChange}
-                    onReset={handleFiltrationReset}
-                    cycleCount={aliveCycleCount}
-                  />
-                </div>
+                <span className="w-px h-3 bg-neutral-700 mx-0.5" />
+                <button
+                  onClick={() => setTrailVisible((v) => !v)}
+                  className={`px-2 py-0.5 rounded ${
+                    trailVisible
+                      ? "bg-neutral-700 text-neutral-200"
+                      : "text-neutral-500 hover:text-neutral-300"
+                  }`}
+                >
+                  Trail
+                </button>
+              </div>
+              {/* Filtration bar — dedicated row */}
+              <div className="nodrag mb-0.5">
+                <H1FiltrationControls
+                  active={filtrationActive}
+                  epsilon={filtrationEpsilon}
+                  epsilonMax={epsilonMax}
+                  playing={filtrationPlaying}
+                  speed={filtrationSpeed}
+                  loading={filtrationLoading}
+                  onToggle={handleFiltrationToggle}
+                  onEpsilonChange={setFiltrationEpsilon}
+                  onPlayPause={() => setFiltrationPlaying((p) => !p)}
+                  onSpeedChange={handleFiltrationSpeedChange}
+                  onReset={handleFiltrationReset}
+                  cycleCount={aliveCycleCount}
+                />
               </div>
               <div className="flex-1 min-h-0 flex gap-1">
                 {/* Primary cloud */}
@@ -381,6 +505,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
                         onPointHover={handlePointHover}
                         filtrationEpsilon={activeFiltrationEpsilon}
                         replayProgress={activeReplayProgress}
+                        trailVisible={trailVisible}
                       />
                     ) : viewMode === "3d" && activePoints3d ? (
                       <H1Cloud3D
@@ -391,6 +516,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
                         highlightedPointIdx={activeHighlightedPointIdx}
                         filtrationEpsilon={activeFiltrationEpsilon}
                         replayProgress={activeReplayProgress}
+                        trailVisible={trailVisible}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[10px] text-neutral-600">
@@ -415,6 +541,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
                           highlightedPointIdx={null}
                           filtrationEpsilon={null}
                           replayProgress={null}
+                          trailVisible={trailVisible}
                         />
                       ) : viewMode === "3d" && comparePoints3d ? (
                         <H1Cloud3D
@@ -425,6 +552,7 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
                           highlightedPointIdx={null}
                           filtrationEpsilon={null}
                           replayProgress={null}
+                          trailVisible={trailVisible}
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-[10px] text-neutral-600">
@@ -444,14 +572,23 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
             {/* Right: context panel (~40% width) */}
             <div className="flex-[2] min-w-0 border-l border-neutral-800 pl-1">
               {activeTab === "diagram" && (
-                <H1PersistenceDiagram
-                  problem={problem}
-                  width={160}
-                  height={320}
-                  highlightedCycle={highlightedCycle}
-                  onCycleHover={setHighlightedCycle}
-                  filtrationEpsilon={activeFiltrationEpsilon}
-                />
+                <div className="flex flex-col h-full gap-1 overflow-hidden">
+                  <div className="shrink-0">
+                    <H1PersistenceDiagram
+                      problem={problem}
+                      width={160}
+                      height={180}
+                      highlightedCycle={highlightedCycle}
+                      onCycleHover={setHighlightedCycle}
+                      filtrationEpsilon={activeFiltrationEpsilon}
+                    />
+                  </div>
+                  <H1CycleTable
+                    problem={problem}
+                    highlightedCycle={highlightedCycle}
+                    onCycleHover={setHighlightedCycle}
+                  />
+                </div>
               )}
               {activeTab === "replay" && (
                 <div className="flex flex-col h-full gap-1">
@@ -502,13 +639,60 @@ export const H1LoopNode = memo(({ selected }: NodeProps) => {
         )}
       </div>
 
+      {/* Legend */}
+      {problem && (
+        <div className="flex items-center gap-2 mt-1 text-[8px] text-neutral-500 flex-wrap">
+          <span className="flex items-center gap-0.5">
+            <svg width="48" height="8" className="shrink-0">
+              {Array.from({ length: 12 }, (_, i) => (
+                <rect
+                  key={i}
+                  x={i * 4}
+                  y={0}
+                  width={4.5}
+                  height={8}
+                  fill={turboColor(0.92 - (i / 11) * 0.84)}
+                  rx={0.5}
+                />
+              ))}
+            </svg>
+            H1
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#999" strokeWidth="1.5" strokeDasharray="4,2" /></svg>
+            fallback
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="#ffd700" /></svg>
+            bridge
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="#58a6ff" /></svg>H0
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="#22d3ee" /></svg>H1
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="#a78bfa" /></svg>H2
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#4a4a6a" strokeWidth="1.5" opacity="0.5" /></svg>
+            rips
+          </span>
+          <span className="flex items-center gap-0.5">
+            <svg width="16" height="8"><polyline points="0,6 5,2 11,5 16,1" fill="none" stroke="#7070a0" strokeWidth="1" opacity="0.6" /></svg>
+            trail
+          </span>
+        </div>
+      )}
+
       {/* Stats footer */}
       {problem && (
-        <div className="mt-1 text-[9px] text-neutral-500 font-mono">
-          <span>L{layer}: {problem.n_tokens} tok · {problem.h1_cycles.length} cycles · logp {problem.mean_logprob.toFixed(2)}</span>
+        <div className="mt-0.5 text-[9px] text-neutral-500 font-mono">
+          <span>L{layer}: {problem.h1_cycles.length} cycles</span>
           {compareProblem && (
             <span className="ml-2 pl-2 border-l border-neutral-700">
-              L{compareLayer}: {compareProblem.n_tokens} tok · {compareProblem.h1_cycles.length} cycles · logp {compareProblem.mean_logprob.toFixed(2)}
+              L{compareLayer}: {compareProblem.h1_cycles.length} cycles · {compareProblem.n_tokens} tok · logp {compareProblem.mean_logprob.toFixed(2)}
             </span>
           )}
         </div>

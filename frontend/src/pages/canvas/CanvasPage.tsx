@@ -371,6 +371,7 @@ function CanvasPageInner() {
             { id: "explain-1", type: "explain_waterfall", position: { x: 1050, y: 300 }, data: {} },
             { id: "breathing-1", type: "breathing_heatmap", position: { x: 1400, y: 20 }, data: {} },
             { id: "drift-1", type: "drift_matrix", position: { x: 1400, y: 300 }, data: {} },
+            { id: "h1loop-1", type: "h1_loop", position: { x: 1750, y: 20 }, data: {} },
           ];
           for (const n of defaultNodes) addNode(n);
 
@@ -383,6 +384,7 @@ function CanvasPageInner() {
             { source: "prompt-1", target: "monitor-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "explain-1", sourceHandle: "features_out", targetHandle: "features_in" },
             { source: "prompt-1", target: "breathing-1", sourceHandle: "features_out", targetHandle: "features_in" },
+            { source: "prompt-1", target: "h1loop-1", sourceHandle: "features_out", targetHandle: "features_in" },
           ];
           for (const e of edges) {
             onConnect({ ...e, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle });
