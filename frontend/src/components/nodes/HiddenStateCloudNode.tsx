@@ -147,7 +147,7 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
             <Canvas
               frameloop="always"
               camera={{ position: [8, 8, 8], fov: 50 }}
-              style={{ background: "var(--ngs-canvas-bg)", borderRadius: 4 }}
+              style={{ width: "100%", height: "100%", display: "block", background: "var(--ngs-canvas-bg)", borderRadius: 4 }}
             >
               <ambientLight intensity={0.6} />
               <PointCloud data={data} bridgePosRef={bridgePosRef} />

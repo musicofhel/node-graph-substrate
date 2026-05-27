@@ -1,6 +1,6 @@
-import { memo, Component, useMemo, type ReactNode } from "react";
+import { memo, Component, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { type NodeProps } from "@xyflow/react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { BaseNodeShell } from "./BaseNodeShell";
@@ -22,18 +22,36 @@ class R3FErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 const CORRECT_COLOR = new THREE.Color("#22c55e");
 const INCORRECT_COLOR = new THREE.Color("#ef4444");
 const HIGHLIGHT_COLOR = new THREE.Color("#facc15");
+const TARGET_EXTENT = 6;
 
 function PointCloud({ projection, highlightIdx }: { projection: AlgorithmProjection; highlightIdx: number }) {
+  const geomRef = useRef<THREE.BufferGeometry>(null);
+
   const { positions, colors } = useMemo(() => {
     const count = projection.n_points;
+    const pts = projection.points_3d;
+
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = pts[i];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-6);
+    const scale = TARGET_EXTENT / span;
+
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
 
     for (let i = 0; i < count; i++) {
-      const p3 = projection.points_3d[i];
-      pos[i * 3] = p3[0];
-      pos[i * 3 + 1] = p3[1];
-      pos[i * 3 + 2] = p3[2];
+      pos[i * 3] = (pts[i][0] - cx) * scale;
+      pos[i * 3 + 1] = (pts[i][1] - cy) * scale;
+      pos[i * 3 + 2] = (pts[i][2] - cz) * scale;
 
       const c = i === highlightIdx ? HIGHLIGHT_COLOR : projection.correctness[i] ? CORRECT_COLOR : INCORRECT_COLOR;
       col[i * 3] = c.r;
@@ -43,35 +61,76 @@ function PointCloud({ projection, highlightIdx }: { projection: AlgorithmProject
     return { positions: pos, colors: col };
   }, [projection, highlightIdx]);
 
+  useEffect(() => {
+    const geom = geomRef.current;
+    if (!geom) return;
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geom.computeBoundingSphere();
+  }, [positions, colors]);
+
   return (
     <points>
-      <bufferGeometry>
+      <bufferGeometry ref={geomRef}>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={4} vertexColors sizeAttenuation={false} />
+      <pointsMaterial size={0.15} vertexColors sizeAttenuation />
     </points>
   );
 }
 
-function HighlightSphere({ projection, idx }: { projection: AlgorithmProjection; idx: number }) {
-  if (idx < 0 || idx >= projection.n_points) return null;
-  const p = projection.points_3d[idx];
+function HighlightSphere({ position }: { position: [number, number, number] | null }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    meshRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 4) * 0.18);
+  });
+  if (!position) return null;
   return (
-    <mesh position={[p[0], p[1], p[2]]}>
-      <sphereGeometry args={[0.12, 12, 12]} />
-      <meshBasicMaterial color="#facc15" transparent opacity={0.9} />
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[0.18, 16, 16]} />
+      <meshBasicMaterial color="#facc15" transparent opacity={0.45} />
     </mesh>
   );
 }
 
 function CloudPanel({ projection, highlightIdx }: { projection: AlgorithmProjection; highlightIdx: number }) {
+  const highlightPos = useMemo<[number, number, number] | null>(() => {
+    if (highlightIdx < 0 || highlightIdx >= projection.n_points) return null;
+    const pts = projection.points_3d;
+    const count = projection.n_points;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = pts[i];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-6);
+    const scale = TARGET_EXTENT / span;
+    return [
+      (pts[highlightIdx][0] - cx) * scale,
+      (pts[highlightIdx][1] - cy) * scale,
+      (pts[highlightIdx][2] - cz) * scale,
+    ];
+  }, [projection, highlightIdx]);
+
   return (
     <R3FErrorBoundary>
-      <Canvas frameloop="demand" camera={{ position: [0, 0, 5], fov: 50 }} style={{ height: "100%" }}>
-        <ambientLight intensity={0.5} />
+      <Canvas
+        key={`${projection.algorithm}-${projection.layer}`}
+        frameloop="always"
+        camera={{ position: [8, 8, 8], fov: 50 }}
+        style={{ width: "100%", height: "100%", display: "block", background: "var(--ngs-canvas-bg)" }}
+      >
+        <ambientLight intensity={0.6} />
         <PointCloud projection={projection} highlightIdx={highlightIdx} />
-        <HighlightSphere projection={projection} idx={highlightIdx} />
+        <HighlightSphere position={highlightPos} />
         <OrbitControls enableDamping={false} />
       </Canvas>
     </R3FErrorBoundary>
@@ -112,6 +171,9 @@ function ScatterPanel({ projection, highlightIdx }: { projection: AlgorithmProje
   );
 }
 
+const LABEL_H = 16;
+const METRIC_H = 16;
+
 function AlgoPanel({
   projection,
   label,
@@ -136,19 +198,25 @@ function AlgoPanel({
   }
 
   const is2d = viewMode === "2d" || projection.viz_type === "scatter";
+  const hasMetric = !!(metricName && metricValue);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="text-[8px] text-neutral-500 mb-0.5 font-mono truncate">{label}</div>
-      <div className="flex-1 min-h-0">
+    <div className="relative h-full w-full">
+      <div className="absolute inset-x-0 top-0 text-[8px] text-neutral-500 font-mono truncate" style={{ height: LABEL_H }}>
+        {label}
+      </div>
+      <div
+        className="absolute inset-x-0"
+        style={{ top: LABEL_H, bottom: hasMetric ? METRIC_H : 0 }}
+      >
         {is2d ? (
           <ScatterPanel projection={projection} highlightIdx={highlightIdx} />
         ) : (
           <CloudPanel projection={projection} highlightIdx={highlightIdx} />
         )}
       </div>
-      {metricName && metricValue && (
-        <div className="text-[8px] text-neutral-500 mt-0.5 font-mono text-center">
+      {hasMetric && (
+        <div className="absolute inset-x-0 bottom-0 text-[8px] text-neutral-500 font-mono text-center" style={{ height: METRIC_H }}>
           {metricName}: {metricValue}
         </div>
       )}
@@ -208,12 +276,12 @@ export const ExperimentCloudNode = memo(({ selected }: NodeProps) => {
         >3D</button>
       </div>
 
-      <div className="nodrag nowheel flex gap-1" style={{ minWidth: 640, minHeight: 280 }}>
+      <div className="nodrag nowheel relative" style={{ width: 900, height: 450 }}>
         {error ? (
-          <div className="flex flex-1 items-center justify-center text-xs text-neutral-500">{error}</div>
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-neutral-500">{error}</div>
         ) : (
           <>
-            <div className="flex-1 min-w-0">
+            <div className="absolute top-0 bottom-0 left-0" style={{ width: 446 }}>
               <AlgoPanel
                 projection={projA}
                 label={algorithmA}
@@ -223,7 +291,7 @@ export const ExperimentCloudNode = memo(({ selected }: NodeProps) => {
                 metricValue={metricValA}
               />
             </div>
-            <div className="flex-1 min-w-0 border-l border-neutral-800 pl-1">
+            <div className="absolute top-0 bottom-0 right-0 border-l border-neutral-800 pl-1" style={{ width: 446 }}>
               <AlgoPanel
                 projection={projB}
                 label={algorithmB}

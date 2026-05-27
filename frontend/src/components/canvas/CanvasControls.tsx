@@ -69,8 +69,13 @@ export function CanvasControls() {
 
   const layoutEnabled = canvasType !== "research-bridge" && canvasType !== "ingestion";
 
+  if (canvasType === "ingestion") return null;
+
   return (
-    <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+    <div
+      className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-lg border border-neutral-700/50 px-3 py-2 shadow-lg backdrop-blur-sm"
+      style={{ background: "color-mix(in oklch, var(--ngs-surface-raised) 95%, transparent)" }}
+    >
       {error && (
         <span className="rounded bg-red-900/80 px-2 py-1 text-xs text-red-200">
           {error}
