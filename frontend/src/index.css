@@ -1,5 +1,54 @@
 @import "tailwindcss";
 
+:root {
+  --ngs-canvas-bg: oklch(14.5% 0 0);
+  --ngs-canvas-deep: oklch(10% 0.01 270);
+  --ngs-surface-raised: oklch(18% 0 0);
+  --ngs-grid-line: #333;
+  --ngs-edge-stroke: #525252;
+  --ngs-minimap-bg: oklch(20.5% 0 0);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --color-neutral-50: oklch(17% 0 0);
+  --color-neutral-100: oklch(22% 0 0);
+  --color-neutral-200: oklch(30% 0 0);
+  --color-neutral-300: oklch(40% 0 0);
+  --color-neutral-400: oklch(50% 0 0);
+  --color-neutral-500: oklch(56% 0 0);
+  --color-neutral-600: oklch(65% 0 0);
+  --color-neutral-700: oklch(82% 0 0);
+  --color-neutral-800: oklch(90% 0 0);
+  --color-neutral-900: oklch(95% 0 0);
+  --color-neutral-950: oklch(99% 0 0);
+  --color-white: oklch(17% 0 0);
+  --ngs-canvas-bg: oklch(95% 0 0);
+  --ngs-canvas-deep: oklch(97% 0 0);
+  --ngs-surface-raised: oklch(92% 0 0);
+  --ngs-grid-line: #ccc;
+  --ngs-edge-stroke: #a3a3a3;
+  --ngs-minimap-bg: oklch(92% 0 0);
+  color-scheme: light;
+}
+
+[data-theme="screenshot"] {
+  --color-neutral-50: oklch(99% 0 0);
+  --color-neutral-200: oklch(95% 0 0);
+  --color-neutral-400: oklch(75% 0 0);
+  --color-neutral-500: oklch(60% 0 0);
+  --color-neutral-800: oklch(22% 0 0);
+  --color-neutral-900: oklch(12% 0 0);
+  --color-neutral-950: oklch(5% 0 0);
+  --ngs-canvas-bg: oklch(5% 0 0);
+  --ngs-canvas-deep: oklch(3% 0.01 270);
+  --ngs-surface-raised: oklch(14% 0 0);
+  --ngs-grid-line: #444;
+  --ngs-edge-stroke: #666;
+  --ngs-minimap-bg: oklch(12% 0 0);
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -11,6 +60,6 @@ body,
     system-ui,
     -apple-system,
     sans-serif;
-  background: #0a0a0a;
-  color: #e5e5e5;
+  background: var(--color-neutral-950);
+  color: var(--color-neutral-200);
 }

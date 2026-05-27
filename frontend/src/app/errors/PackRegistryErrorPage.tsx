@@ -9,7 +9,7 @@ export default function PackRegistryErrorPage({
   errors: PackError[];
 }) {
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center gap-6 bg-[#0a0a0a] text-neutral-300">
+    <div className="flex h-screen w-screen flex-col items-center justify-center gap-6 bg-neutral-950 text-neutral-300">
       <h1 className="text-lg font-medium">Pack Registry Error</h1>
       <p className="max-w-md text-center text-sm text-neutral-500">
         One or more packs failed to load. Review the errors below.

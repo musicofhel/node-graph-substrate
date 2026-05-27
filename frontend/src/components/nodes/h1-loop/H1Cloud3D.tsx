@@ -367,7 +367,7 @@ export const H1Cloud3D = memo(
           <Canvas
             frameloop="always"
             camera={{ position: [8, 8, 8], fov: 50 }}
-            style={{ background: "#0f0f23", borderRadius: 4 }}
+            style={{ background: "var(--ngs-canvas-deep)", borderRadius: 4 }}
           >
             <Scene
               problem={problem}

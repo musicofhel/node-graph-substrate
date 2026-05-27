@@ -162,7 +162,7 @@ export const H1Cloud2D = memo(({
   return (
     <>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
-        <rect width={width} height={height} fill="#0f0f23" rx={4} />
+        <rect width={width} height={height} fill="var(--ngs-canvas-deep)" rx={4} />
 
         {/* Rips edges (filtration) */}
         {edgePath && (

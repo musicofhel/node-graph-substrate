@@ -137,7 +137,7 @@ export const TimeSeriesChart = memo(({ data, color = "#3b82f6", height = 160, th
         <>
           <line x1={hover.x} y1={PADDING.top} x2={hover.x} y2={PADDING.top + plotH} stroke="#666" strokeWidth={0.5} strokeDasharray="2,2" />
           <circle cx={hover.x} cy={hover.y} r={3.5} fill={color} stroke="#fff" strokeWidth={1} />
-          <rect x={hover.x - 28} y={hover.y - 18} width={56} height={14} rx={2} fill="#1a1a1a" stroke="#444" strokeWidth={0.5} />
+          <rect x={hover.x - 28} y={hover.y - 18} width={56} height={14} rx={2} fill="var(--ngs-surface-raised)" stroke="#444" strokeWidth={0.5} />
           <text x={hover.x} y={hover.y - 8} fill="#eee" fontSize={9} textAnchor="middle">
             {hover.value.toFixed(3)}
           </text>

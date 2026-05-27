@@ -49,7 +49,7 @@ function ErrorPanel({ message, stack }: { message: string; stack?: string }) {
   );
 
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a] text-neutral-300">
+    <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-neutral-950 text-neutral-300">
       <h1 className="text-lg font-medium">Something went wrong</h1>
       <p className="max-w-md text-center text-sm text-neutral-500">
         {message}

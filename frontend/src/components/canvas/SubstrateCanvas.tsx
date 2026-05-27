@@ -24,10 +24,10 @@ import { EventLog } from "../panels/EventLog";
 import { DetailPanel } from "../panels/DetailPanel";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
-  style: { strokeWidth: 2, stroke: "#525252" },
+  style: { strokeWidth: 2, stroke: "var(--ngs-edge-stroke)" },
   markerEnd: {
     type: MarkerType.ArrowClosed,
-    color: "#525252",
+    color: "var(--ngs-edge-stroke)",
     width: 16,
     height: 16,
   },
@@ -122,12 +122,12 @@ export function SubstrateCanvas() {
             snapGrid={[20, 20]}
             deleteKeyCode={["Backspace", "Delete"]}
           >
-            <Background color="#333" gap={20} />
+            <Background color="var(--ngs-grid-line)" gap={20} />
             <Controls />
             <MiniMap
               nodeColor="#10b981"
               maskColor="rgba(0,0,0,0.7)"
-              bgColor="#171717"
+              bgColor="var(--ngs-minimap-bg)"
               position="bottom-left"
             />
             <PipelineTimeline />
