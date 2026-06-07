@@ -4,16 +4,24 @@ import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
 import { Sparkline } from "./Sparkline";
+import { useZoomTier } from "../../lib/hooks/useZoomTier";
 
 type GaugeData = {
   confidence?: number;
   mode?: string;
 };
 
-function gaugeColor(v: number): string {
-  if (v >= 0.7) return "#10b981";
-  if (v >= 0.4) return "#f59e0b";
-  return "#ef4444";
+const VIRIDIS_STEPS = [
+  "var(--ngs-viridis-0)",
+  "var(--ngs-viridis-1)",
+  "var(--ngs-viridis-2)",
+  "var(--ngs-viridis-3)",
+  "var(--ngs-viridis-4)",
+];
+
+function viridisColor(v: number): string {
+  const bin = Math.min(4, Math.floor(v * 5));
+  return VIRIDIS_STEPS[bin];
 }
 
 const ARC_R = 70;
@@ -45,23 +53,38 @@ export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
   const history = useDriftStore((s) => s.histories.get(id));
   const confidenceValues = history?.map((h) => h.values.confidence).filter((v): v is number => v !== undefined) ?? [];
   const drift = useNodeDrift(id);
+  const tier = useZoomTier();
 
   const dashOffset = confidence !== undefined ? ARC_LEN * (1 - confidence) : ARC_LEN;
-  const color = confidence !== undefined ? gaugeColor(confidence) : "#666";
+  const color = confidence !== undefined ? viridisColor(confidence) : "#666";
+  const pctText = confidence !== undefined ? `${(confidence * 100).toFixed(0)}%` : null;
+  const ariaLabel = `Confidence gauge: ${pctText ?? "no data"}`;
 
-  return (
-    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst}>
-      <div className="flex w-full flex-col items-center">
-        {confidence !== undefined ? (
-          <>
+  if (tier === "T0") {
+    return (
+      <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst} minWidth={240} minHeight={200} ariaLabel={ariaLabel}>
+        <div className="flex h-full w-full items-center justify-center rounded" style={{ background: color, minHeight: 80 }} />
+      </BaseNodeShell>
+    );
+  }
+
+  if (tier === "T1") {
+    return (
+      <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst} minWidth={240} minHeight={200} ariaLabel={ariaLabel}>
+        <div className="flex h-full w-full items-center justify-center rounded" style={{ background: color, minHeight: 80 }}>
+          {pctText && <span className="ngs-text-title text-white">{pctText}</span>}
+        </div>
+      </BaseNodeShell>
+    );
+  }
+
+  if (tier === "T2") {
+    return (
+      <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst} minWidth={240} minHeight={200} ariaLabel={ariaLabel}>
+        <div className="flex w-full flex-col items-center">
+          {confidence !== undefined ? (
             <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet">
-              <path
-                d={FULL_ARC}
-                fill="none"
-                stroke="#333"
-                strokeWidth={8}
-                strokeLinecap="round"
-              />
+              <path d={FULL_ARC} fill="none" stroke="#333" strokeWidth={8} strokeLinecap="round" />
               <path
                 d={FULL_ARC}
                 fill="none"
@@ -77,18 +100,58 @@ export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
                 y={CY - 2}
                 textAnchor="middle"
                 fill={color}
-                fontSize={20}
+                fontSize={16}
                 fontWeight="bold"
-                fontFamily="monospace"
+                className="ngs-tabular"
                 style={{ transition: "fill 0.7s ease-out" }}
               >
-                {(confidence * 100).toFixed(0)}%
+                {pctText}
               </text>
             </svg>
-            <Sparkline values={confidenceValues} width={240} height={36} color="#10b981" />
-            <span className="mt-1 text-[10px] text-neutral-500">{mode}</span>
+          ) : (
+            <div className="ngs-text-body py-4 text-neutral-500">Waiting...</div>
+          )}
+        </div>
+      </BaseNodeShell>
+    );
+  }
+
+  return (
+    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs} healthStatus={drift?.worst} minWidth={240} minHeight={200} ariaLabel={ariaLabel}>
+      <div className="flex w-full flex-col items-center">
+        {confidence !== undefined ? (
+          <>
+            <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet">
+              <path d={FULL_ARC} fill="none" stroke="#333" strokeWidth={8} strokeLinecap="round" />
+              <path
+                d={FULL_ARC}
+                fill="none"
+                stroke={color}
+                strokeWidth={8}
+                strokeLinecap="round"
+                strokeDasharray={ARC_LEN}
+                strokeDashoffset={dashOffset}
+                style={{ transition: "stroke-dashoffset 0.7s ease-out, stroke 0.7s ease-out" }}
+              />
+              <text
+                x={CX}
+                y={CY - 2}
+                textAnchor="middle"
+                fill={color}
+                fontSize={16}
+                fontWeight="bold"
+                className="ngs-tabular"
+                style={{ transition: "fill 0.7s ease-out" }}
+              >
+                {pctText}
+              </text>
+            </svg>
+            <div aria-label="Confidence sparkline">
+              <Sparkline values={confidenceValues} width={240} height={36} color="var(--ngs-sign-pos)" />
+            </div>
+            <span className="ngs-text-meta mt-1 text-neutral-500">{mode}</span>
             {confidenceValues.length > 1 && (
-              <div className="mt-1.5 flex w-full justify-between text-[9px] font-mono text-neutral-500">
+              <div className="ngs-text-micro ngs-tabular mt-1.5 flex w-full justify-between text-neutral-500">
                 <span>min {(Math.min(...confidenceValues) * 100).toFixed(0)}%</span>
                 <span>avg {((confidenceValues.reduce((a, b) => a + b, 0) / confidenceValues.length) * 100).toFixed(0)}%</span>
                 <span>max {(Math.max(...confidenceValues) * 100).toFixed(0)}%</span>
@@ -96,7 +159,7 @@ export const ConfidenceGaugeNode = memo(({ id, selected }: NodeProps) => {
             )}
           </>
         ) : (
-          <div className="py-4 text-xs text-neutral-500">Waiting...</div>
+          <div className="ngs-text-body py-4 text-neutral-500">Waiting...</div>
         )}
       </div>
     </BaseNodeShell>

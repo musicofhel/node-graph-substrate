@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
+import { useZoomTier } from "../../lib/hooks/useZoomTier";
 
 type PromptData = {
   config?: { prompt?: string };
@@ -54,6 +55,7 @@ export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
   }, [synced, math500, nodeData?.data?.config?.prompt]);
 
   const def = NODE_REGISTRY.prompt_input;
+  const tier = useZoomTier();
 
   const navigateProblem = useCallback((delta: number) => {
     if (!math500) return;
@@ -124,36 +126,82 @@ export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
 
   const status = nodeData?.data?.status ?? "idle";
   const current = math500?.[mathIdx];
+  const ariaLabel = `Prompt input: ${math500 ? `problem ${mathIdx + 1} of ${math500.length}, ${current?.subject ?? ""}` : "custom prompt"}, ${status}`;
 
-  return (
+  const shell = (children: React.ReactNode) => (
     <BaseNodeShell
       selected={selected}
       label={def.label}
       category={def.category}
       outputs={def.outputs}
       status={status}
+      minWidth={280}
+      minHeight={200}
+      ariaLabel={ariaLabel}
     >
+      {children}
+    </BaseNodeShell>
+  );
+
+  if (tier === "T0") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }} />
+    );
+  }
+
+  if (tier === "T1") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }}>
+        <span className="ngs-text-title text-white">Prompt Input</span>
+      </div>
+    );
+  }
+
+  if (tier === "T2") {
+    return shell(
+      <div className="w-full">
+        <textarea
+          className="nodrag nowheel w-full resize-none rounded border border-neutral-700 bg-neutral-800 px-2 py-1 ngs-text-body text-neutral-200 placeholder:text-neutral-500 focus:border-amber-600 focus:outline-none"
+          rows={3}
+          placeholder="Enter prompt..."
+          value={localPrompt}
+          onChange={(e) => setLocalPrompt(e.target.value)}
+        />
+        <button
+          className="mt-2 w-full rounded bg-amber-700 px-3 py-1 ngs-text-body font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+          onClick={handleAnalyze}
+          disabled={!localPrompt.trim() || status === "computing"}
+        >
+          {status === "computing" ? "Analyzing..." : "Analyze"}
+        </button>
+      </div>
+    );
+  }
+
+  return shell(
+    <div className="w-full">
       {math500 && (
         <div className="nodrag mb-2">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] font-semibold tracking-widest text-neutral-500 uppercase">Demo</span>
+            <span className="ngs-text-micro font-semibold tracking-widest text-neutral-500 uppercase">Demo</span>
             {demo && (
-              <span className="text-[9px] tabular-nums text-neutral-500">{countdown}s</span>
+              <span className="ngs-text-micro ngs-tabular text-neutral-500">{countdown}s</span>
             )}
           </div>
           <div className="flex gap-1">
             <button
-              className="rounded px-2 py-1.5 text-xs text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
+              className="rounded px-2 py-1.5 ngs-text-body text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
               onClick={demoPrev}
               disabled={!demo}
               title="Previous problem"
+              aria-label="Previous problem"
             >
               ◄◄
             </button>
             <button
-              className={`flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex-1 rounded px-3 py-1.5 ngs-text-body font-medium transition-colors ${
                 demo
-                  ? "bg-emerald-700 text-white hover:bg-emerald-600"
+                  ? "bg-amber-700 text-white hover:bg-amber-600"
                   : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
               onClick={() => setDemo((d) => !d)}
@@ -161,10 +209,11 @@ export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
               {demo ? "Stop Demo" : "Start Demo"}
             </button>
             <button
-              className="rounded px-2 py-1.5 text-xs text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
+              className="rounded px-2 py-1.5 ngs-text-body text-neutral-400 hover:bg-neutral-600 disabled:opacity-30"
               onClick={demoNext}
               disabled={!demo}
               title="Skip to next problem"
+              aria-label="Skip to next problem"
             >
               ►►
             </button>
@@ -174,15 +223,16 @@ export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
       )}
 
       {math500 && current && (
-        <div className="nodrag flex items-center gap-1 mb-1.5 text-[10px] text-neutral-400">
+        <div className="nodrag flex items-center gap-1 mb-1.5 ngs-text-meta text-neutral-400">
           <button
             className="px-1 rounded hover:bg-neutral-700 text-neutral-500"
             onClick={() => navigateProblem(-1)}
+            aria-label="Previous problem"
           >
             ◄
           </button>
           <span className="flex-1 text-center truncate">
-            <span className={current.correct ? "text-emerald-400" : "text-red-400"}>
+            <span style={{ color: current.correct ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)" }}>
               {current.correct ? "✓" : "✗"}
             </span>
             {" "}
@@ -191,26 +241,27 @@ export const PromptInputNode = memo(({ id, selected }: NodeProps) => {
           <button
             className="px-1 rounded hover:bg-neutral-700 text-neutral-500"
             onClick={() => navigateProblem(1)}
+            aria-label="Next problem"
           >
             ►
           </button>
         </div>
       )}
       <textarea
-        className="nodrag nowheel w-full resize-none rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-amber-600 focus:outline-none"
+        className="nodrag nowheel w-full resize-none rounded border border-neutral-700 bg-neutral-800 px-2 py-1 ngs-text-body text-neutral-200 placeholder:text-neutral-500 focus:border-amber-600 focus:outline-none"
         rows={3}
         placeholder="Enter prompt..."
         value={localPrompt}
         onChange={(e) => setLocalPrompt(e.target.value)}
       />
       <button
-        className="mt-2 w-full rounded bg-amber-700 px-3 py-1 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+        className="mt-2 w-full rounded bg-amber-700 px-3 py-1 ngs-text-body font-medium text-white hover:bg-amber-600 disabled:opacity-50"
         onClick={handleAnalyze}
         disabled={!localPrompt.trim() || status === "computing"}
       >
         {status === "computing" ? "Analyzing..." : "Analyze"}
       </button>
-    </BaseNodeShell>
+    </div>
   );
 });
 PromptInputNode.displayName = "PromptInputNode";

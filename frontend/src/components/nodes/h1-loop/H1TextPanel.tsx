@@ -24,7 +24,7 @@ export const H1TextPanel = memo(
 
     if (!problem.token_texts) {
       return (
-        <div className="flex h-full items-center justify-center text-[10px] text-neutral-500 italic p-2">
+        <div className="flex h-full items-center justify-center ngs-text-meta text-neutral-500 italic p-2">
           Token text requires schema v1.1.0 — re-run precompute
         </div>
       );
@@ -34,16 +34,16 @@ export const H1TextPanel = memo(
       <div className="flex flex-col h-full gap-1 overflow-hidden">
         {problem.math_prompt && (
           <div className="shrink-0">
-            <div className="text-[8px] text-neutral-500 uppercase tracking-wider mb-0.5">
+            <div className="ngs-text-micro text-neutral-500 uppercase tracking-wider mb-0.5">
               Problem
             </div>
-            <div className="text-[10px] text-neutral-400 leading-relaxed border-b border-neutral-800 pb-1 mb-1 max-h-16 overflow-y-auto">
+            <div className="ngs-text-meta text-neutral-400 leading-relaxed border-b border-neutral-800 pb-1 mb-1 max-h-16 overflow-y-auto">
               {problem.math_prompt}
             </div>
           </div>
         )}
 
-        <div className="text-[8px] text-neutral-500 uppercase tracking-wider shrink-0">
+        <div className="ngs-text-micro text-neutral-500 uppercase tracking-wider shrink-0">
           Response{" "}
           <span className="normal-case text-neutral-600">
             ({problem.token_texts.length} tokens, {subsampledSet.size}{" "}
@@ -51,7 +51,7 @@ export const H1TextPanel = memo(
           </span>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto text-[10px] leading-relaxed">
+        <div className="flex-1 min-h-0 overflow-y-auto ngs-text-meta leading-relaxed">
           {problem.token_texts.map((tok, i) => {
             const isSampled = subsampledSet.has(i);
             const isHighlighted = highlightedTokenIdx === i;

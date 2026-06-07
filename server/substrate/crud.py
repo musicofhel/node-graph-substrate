@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import asyncpg
@@ -40,15 +41,35 @@ async def list_graphs(project_id: str) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-async def create_graph(project_id: str, name: str) -> dict[str, Any]:
+def _slugify(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "graph"
+
+
+async def create_graph(
+    project_id: str,
+    name: str,
+    kind: str = "pipeline",
+    pack_id: str = "topo-confidence",
+) -> dict[str, Any]:
     pool = get_pool()
+    base_slug = _slugify(name)
     async with pool.acquire() as conn:
         async with conn.transaction():
-            row = await conn.fetchrow(
-                "INSERT INTO graphs (project_id, name) VALUES ($1, $2) RETURNING *",
-                project_id,
-                name,
-            )
+            slug = base_slug
+            for attempt in range(1, 100):
+                try:
+                    row = await conn.fetchrow(
+                        "INSERT INTO graphs (project_id, name, kind, pack_id, slug) "
+                        "VALUES ($1, $2, $3, $4, $5) RETURNING *",
+                        project_id, name, kind, pack_id, slug,
+                    )
+                    break
+                except asyncpg.UniqueViolationError as e:
+                    if "uq_graphs_project_slug" not in str(e):
+                        raise
+                    slug = f"{base_slug}-{attempt + 1}"
+            else:
+                raise RuntimeError(f"Could not generate unique slug for '{name}'")
             graph = dict(row)
             await conn.execute(
                 "INSERT INTO graph_versions (graph_id, version, snapshot) VALUES ($1, 1, $2)",

@@ -120,6 +120,7 @@ export function SubstrateCanvas() {
             colorMode={theme === "light" ? "light" : "dark"}
             fitView
             fitViewOptions={{ padding: 0.05, maxZoom: 1 }}
+            minZoom={0.1}
             snapToGrid
             snapGrid={[20, 20]}
             deleteKeyCode={["Backspace", "Delete"]}

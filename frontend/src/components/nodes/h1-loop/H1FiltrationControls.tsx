@@ -43,7 +43,7 @@ export const H1FiltrationControls = memo(
       return (
         <button
           onClick={onToggle}
-          className="nodrag text-[9px] px-2 py-0.5 rounded text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700"
+          className="nodrag ngs-text-micro px-2 py-0.5 rounded text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700"
         >
           Filtration
         </button>
@@ -51,7 +51,7 @@ export const H1FiltrationControls = memo(
     }
 
     return (
-      <div className="nodrag flex flex-col gap-0.5 text-[9px] text-neutral-400">
+      <div className="nodrag flex flex-col gap-0.5 ngs-text-micro text-neutral-400">
         <div className="flex items-center gap-1">
           <button
             onClick={onToggle}
@@ -81,14 +81,14 @@ export const H1FiltrationControls = memo(
               >
                 −
               </button>
-              <span className="font-mono w-6 text-center">{speed}x</span>
+              <span className="ngs-tabular w-6 text-center">{speed}x</span>
               <button
                 onClick={() => onSpeedChange(1)}
                 className="px-0.5 rounded hover:bg-neutral-700"
               >
                 +
               </button>
-              <span className="ml-auto font-mono text-neutral-500">
+              <span className="ml-auto ngs-tabular text-neutral-500">
                 {cycleCount.alive}/{cycleCount.total} alive
               </span>
             </>
@@ -96,7 +96,7 @@ export const H1FiltrationControls = memo(
         </div>
         {!loading && (
           <div className="flex items-center gap-1">
-            <span className="font-mono w-8 text-right text-neutral-500">
+            <span className="ngs-tabular w-8 text-right text-neutral-500">
               {epsilon.toFixed(1)}
             </span>
             <input
@@ -108,7 +108,7 @@ export const H1FiltrationControls = memo(
               onChange={handleSlider}
               className="flex-1 h-1 accent-cyan-500"
             />
-            <span className="font-mono w-8 text-neutral-500">
+            <span className="ngs-tabular w-8 text-neutral-500">
               {epsilonMax.toFixed(1)}
             </span>
           </div>

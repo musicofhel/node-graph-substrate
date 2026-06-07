@@ -4,38 +4,8 @@ import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
 import { useDriftStore, useNodeDrift } from "../../lib/store/drift-store";
 import { Sparkline } from "./Sparkline";
-
-const FEATURE_NAMES = [
-  "H0_persistence_entropy",
-  "H1_max_lifetime",
-  "H0_total_persistence",
-  "H0_n_features",
-  "H1_persistence_entropy",
-  "H1_n_features",
-  "H2_n_features",
-  "H2_total_persistence",
-  "H2_persistence_entropy",
-  "bridge_silhouette",
-  "H0_ph_significance",
-  "H1_ph_significance",
-  "topological_sensitivity",
-] as const;
-
-const FEATURE_COLORS: Record<string, string> = {
-  H0_persistence_entropy: "#58a6ff",
-  H1_max_lifetime: "#22d3ee",
-  H0_total_persistence: "#58a6ff",
-  H0_n_features: "#58a6ff",
-  H1_persistence_entropy: "#22d3ee",
-  H1_n_features: "#22d3ee",
-  H2_n_features: "#a78bfa",
-  H2_total_persistence: "#a78bfa",
-  H2_persistence_entropy: "#a78bfa",
-  bridge_silhouette: "#ffd700",
-  H0_ph_significance: "#4ade80",
-  H1_ph_significance: "#4ade80",
-  topological_sensitivity: "#f87171",
-};
+import { FEATURES, FEATURE_META } from "../../packs/topo-confidence/features";
+import { useZoomTier } from "../../lib/hooks/useZoomTier";
 
 type FeatureData = {
   features?: Record<string, number>;
@@ -47,17 +17,43 @@ export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
   const def = NODE_REGISTRY.feature_bars;
   const drift = useNodeDrift(id);
   const history = useDriftStore((s) => s.histories.get(id));
+  const tier = useZoomTier();
+
+  const featureCount = features ? Object.keys(features).length : 0;
+  const ariaLabel = `Feature bars: ${featureCount} features`;
+
+  const shell = (children: React.ReactNode) => (
+    <BaseNodeShell
+      selected={selected}
+      label={def.label}
+      category={def.category}
+      inputs={def.inputs}
+      healthStatus={drift?.worst}
+      minWidth={240}
+      minHeight={280}
+      ariaLabel={ariaLabel}
+    >
+      {children}
+    </BaseNodeShell>
+  );
 
   if (!features) {
-    return (
-      <BaseNodeShell
-        selected={selected}
-        label={def.label}
-        category={def.category}
-        inputs={def.inputs}
-      >
-        <div className="text-xs text-neutral-500">Waiting for data...</div>
-      </BaseNodeShell>
+    return shell(
+      <div className="ngs-text-body text-neutral-500">Waiting for data...</div>
+    );
+  }
+
+  if (tier === "T0") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }} />
+    );
+  }
+
+  if (tier === "T1") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }}>
+        <span className="ngs-text-title text-white">Feature Bars</span>
+      </div>
     );
   }
 
@@ -66,30 +62,15 @@ export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
     ...Object.values(features).map((v) => Math.abs(v)),
   );
 
-  return (
-    <BaseNodeShell
-      selected={selected}
-      label={def.label}
-      category={def.category}
-      inputs={def.inputs}
-      healthStatus={drift?.worst}
-    >
-      <div className="flex w-full min-w-[240px] flex-col gap-0.5">
-        {FEATURE_NAMES.map((name) => {
+  if (tier === "T2") {
+    return shell(
+      <div className="flex w-full flex-col gap-0.5">
+        {FEATURES.map((name) => {
           const val = features[name] ?? 0;
           const pct = Math.abs(val) / maxAbs;
-          const color = FEATURE_COLORS[name] ?? "#888";
-          const shortName = name.replace(/_/g, " ").replace(/persistence /g, "p.");
-          const featureHistory = history?.map((h) => h.values[name]).filter((v): v is number => v !== undefined) ?? [];
-
+          const color = val >= 0 ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)";
           return (
-            <div key={name} className="flex items-center gap-1">
-              <span
-                className="w-[100px] truncate text-right text-[10px] text-neutral-400"
-                title={name}
-              >
-                {shortName}
-              </span>
+            <div key={name} className="flex items-center">
               <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
                 <div
                   className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
@@ -102,17 +83,52 @@ export const FeatureBarsNode = memo(({ id, selected }: NodeProps) => {
                   }}
                 />
               </div>
-              {featureHistory.length > 1 && (
-                <Sparkline values={featureHistory} width={40} height={12} color={color} />
-              )}
-              <span className="w-[40px] text-right font-mono text-[10px] text-neutral-400">
-                {val.toFixed(2)}
-              </span>
             </div>
           );
         })}
       </div>
-    </BaseNodeShell>
+    );
+  }
+
+  return shell(
+    <div className="flex w-full flex-col gap-0.5">
+      {FEATURES.map((name) => {
+        const val = features[name] ?? 0;
+        const pct = Math.abs(val) / maxAbs;
+        const color = val >= 0 ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)";
+        const meta = FEATURE_META[name];
+        const featureHistory = history?.map((h) => h.values[name]).filter((v): v is number => v !== undefined) ?? [];
+
+        return (
+          <div key={name} className="flex items-center gap-1">
+            <span
+              className="ngs-text-meta w-[100px] truncate text-right text-neutral-400"
+              title={name}
+            >
+              {meta.shortName}
+            </span>
+            <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
+              <div
+                className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
+                style={{
+                  width: `${pct * 100}%`,
+                  backgroundColor: color,
+                  left: val >= 0 ? 0 : undefined,
+                  right: val < 0 ? 0 : undefined,
+                  opacity: 0.85,
+                }}
+              />
+            </div>
+            {featureHistory.length > 1 && (
+              <Sparkline values={featureHistory} width={40} height={12} color={color} />
+            )}
+            <span className="ngs-text-meta ngs-tabular w-[40px] text-right text-neutral-400">
+              {val.toFixed(2)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 });
 FeatureBarsNode.displayName = "FeatureBarsNode";

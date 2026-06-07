@@ -20,7 +20,7 @@ class R3FErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full items-center justify-center text-xs text-red-400">
+        <div className="flex h-full items-center justify-center ngs-text-body text-red-400">
           3D render error
         </div>
       );
@@ -409,7 +409,8 @@ export const H1Cloud3D = memo(
             const bp = bridgePosRef.current;
             if (bp) tweenReq.current = { target: bp, duration: 500, id: Date.now() };
           }}
-          className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-blue-400 hover:text-blue-300 backdrop-blur-sm"
+          className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 ngs-text-meta text-blue-400 hover:text-blue-300 backdrop-blur-sm"
+          aria-label="Focus on bridge point"
         >
           Focus
         </button>

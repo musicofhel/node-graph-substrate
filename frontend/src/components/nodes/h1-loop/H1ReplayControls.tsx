@@ -34,7 +34,7 @@ export const H1ReplayControls = memo(
     const current = progress ?? 0;
 
     return (
-      <div className="nodrag flex flex-col gap-0.5 text-[9px] text-neutral-400">
+      <div className="nodrag flex flex-col gap-0.5 ngs-text-micro text-neutral-400">
         <div className="flex items-center gap-1">
           <button
             onClick={onPlayPause}
@@ -54,14 +54,14 @@ export const H1ReplayControls = memo(
           >
             −
           </button>
-          <span className="font-mono w-6 text-center">{speed}x</span>
+          <span className="ngs-tabular w-6 text-center">{speed}x</span>
           <button
             onClick={() => onSpeedChange(1)}
             className="px-0.5 rounded hover:bg-neutral-700"
           >
             +
           </button>
-          <span className="ml-auto font-mono text-neutral-500">
+          <span className="ml-auto ngs-tabular text-neutral-500">
             {current + 1}/{total}
           </span>
         </div>

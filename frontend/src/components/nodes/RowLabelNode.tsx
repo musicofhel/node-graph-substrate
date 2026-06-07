@@ -20,8 +20,9 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = 
 };
 
 export const RowLabelNode = memo(({ data }: NodeProps) => {
-  const label = (data as { label?: string }).label ?? "";
-  const colorKey = (data as { color?: string }).color ?? "blue";
+  const cfg = (data as { config?: { label?: string; color?: string } }).config;
+  const label = cfg?.label ?? "";
+  const colorKey = cfg?.color ?? "blue";
   const colors = COLOR_MAP[colorKey] ?? COLOR_MAP.blue;
 
   return (

@@ -7,7 +7,34 @@
   --ngs-grid-line: #333;
   --ngs-edge-stroke: #525252;
   --ngs-minimap-bg: oklch(20.5% 0 0);
+
+  /* Sign palette */
+  --ngs-sign-pos: #4ade80;
+  --ngs-sign-neg: #f87171;
+
+  /* Viridis 5-step (higher = better) */
+  --ngs-viridis-0: #440154;
+  --ngs-viridis-1: #3B528B;
+  --ngs-viridis-2: #21908C;
+  --ngs-viridis-3: #5DC863;
+  --ngs-viridis-4: #FDE725;
+
+  /* Reverse Viridis for drift (higher = more deviation) */
+  --ngs-drift-0: #FDE725;
+  --ngs-drift-1: #5DC863;
+  --ngs-drift-2: #21908C;
+  --ngs-drift-3: #3B528B;
+  --ngs-drift-4: #440154;
+
   color-scheme: dark;
+}
+
+@layer utilities {
+  .ngs-text-title { font-size: 11px; font-weight: 600; line-height: 1.2; }
+  .ngs-text-body  { font-size: 12px; font-weight: 400; line-height: 1.4; }
+  .ngs-text-meta  { font-size: 10px; font-weight: 400; line-height: 1.3; }
+  .ngs-text-micro { font-size:  9px; font-weight: 500; line-height: 1.2; }
+  .ngs-tabular    { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
 }
 
 [data-theme="light"] {

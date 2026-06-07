@@ -15,7 +15,7 @@ router = APIRouter(tags=["canvases"])
 @router.post("/api/graphs")
 async def create_graph(body: GraphCreate):
     try:
-        graph = await crud.create_graph(body.project_id, body.name)
+        graph = await crud.create_graph(body.project_id, body.name, body.kind, body.pack_id)
         return serialize_row(graph)
     except asyncpg.UniqueViolationError:
         existing = await crud.get_graph_by_project_and_name(body.project_id, body.name)

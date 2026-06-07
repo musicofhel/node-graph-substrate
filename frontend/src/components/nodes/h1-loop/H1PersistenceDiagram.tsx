@@ -115,7 +115,7 @@ export const H1PersistenceDiagram = memo(({
 
   if (dots.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-[10px] text-neutral-500">
+      <div className="flex h-full items-center justify-center ngs-text-meta text-neutral-500">
         No persistence features
       </div>
     );
@@ -150,13 +150,13 @@ export const H1PersistenceDiagram = memo(({
           <g key={v}>
             <text
               x={xScale(v)} y={yScale(0) + 12}
-              textAnchor="middle" fill="#777" fontSize={8} fontFamily="monospace"
+              textAnchor="middle" fill="#777" fontSize={9} style={{ fontFeatureSettings: "'tnum'" }}
             >
               {v}
             </text>
             <text
               x={xScale(0) - 4} y={yScale(v) + 3}
-              textAnchor="end" fill="#777" fontSize={8} fontFamily="monospace"
+              textAnchor="end" fill="#777" fontSize={9} style={{ fontFeatureSettings: "'tnum'" }}
             >
               {v}
             </text>
@@ -241,7 +241,7 @@ export const H1PersistenceDiagram = memo(({
         ] as const).map(([label, color], i) => (
           <g key={label} transform={`translate(${PAD.left + 6}, ${PAD.top + 6 + i * 13})`}>
             <circle cx={4} cy={0} r={3} fill={color} />
-            <text x={11} y={3} fill="#999" fontSize={8} fontFamily="monospace">
+            <text x={11} y={3} fill="#999" fontSize={9} style={{ fontFeatureSettings: "'tnum'" }}>
               {label}
             </text>
           </g>
@@ -250,7 +250,7 @@ export const H1PersistenceDiagram = memo(({
 
       {tooltip && (
         <div
-          className="fixed pointer-events-none z-50 rounded bg-neutral-900/95 border border-neutral-700 px-2 py-1 text-[10px] font-mono text-neutral-200 whitespace-nowrap"
+          className="fixed pointer-events-none z-50 rounded bg-neutral-900/95 border border-neutral-700 px-2 py-1 ngs-text-meta ngs-tabular text-neutral-200 whitespace-nowrap"
           style={{ left: tooltip.x + 12, top: tooltip.y - 8 }}
         >
           {tooltip.text}
@@ -273,17 +273,17 @@ export const H1CycleTable = memo(({ problem, highlightedCycle, onCycleHover }: C
 
   if (cycles.length === 0) {
     return (
-      <div className="text-[10px] text-neutral-600 italic p-1">
+      <div className="ngs-text-meta text-neutral-600 italic p-1">
         No H1 cycles detected
       </div>
     );
   }
 
   return (
-    <div className="overflow-y-auto max-h-[120px] text-[9px] font-mono">
+    <div className="overflow-y-auto max-h-[120px] ngs-text-micro ngs-tabular">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="text-neutral-500 uppercase tracking-wider text-[8px] sticky top-0 bg-neutral-900">
+          <tr className="text-neutral-500 uppercase tracking-wider ngs-text-micro sticky top-0 bg-neutral-900">
             <th className="text-left py-0.5 px-1">Rank</th>
             <th className="text-right py-0.5 px-1">Life</th>
             <th className="text-right py-0.5 px-1">Birth</th>

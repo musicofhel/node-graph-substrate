@@ -21,6 +21,9 @@ interface Props {
   outputs?: HandleDefinition[];
   status?: "idle" | "computing" | "error";
   healthStatus?: DriftSeverity;
+  minWidth?: number;
+  minHeight?: number;
+  ariaLabel?: string;
   children: ReactNode;
 }
 
@@ -34,29 +37,38 @@ const CATEGORY_BORDER: Record<string, string> = {
 };
 
 export const BaseNodeShell = memo(
-  ({ selected, label, category, inputs = [], outputs = [], status, healthStatus, children }: Props) => {
+  ({ selected, label, category, inputs = [], outputs = [], status, healthStatus, minWidth = 200, minHeight = 100, ariaLabel, children }: Props) => {
     const borderClass = CATEGORY_BORDER[category] ?? "border-neutral-700";
     const isBaselineMode = useDriftStore((s) => s.baselineMode === "snapshot" && s.baselines.size > 0);
-    const HEALTH_BAND: Record<DriftSeverity, string> = {
-      ok: "bg-emerald-500/60",
-      warning: "bg-amber-500/80",
-      alert: "bg-red-500 animate-pulse",
+    const HEALTH_BG: Record<DriftSeverity, string> = {
+      ok: "color-mix(in srgb, var(--ngs-sign-pos) 60%, transparent)",
+      warning: "rgb(245 158 11 / 0.8)",
+      alert: "var(--ngs-sign-neg)",
     };
-    const alertGlow = healthStatus === "alert" ? "shadow-[0_0_8px_rgba(239,68,68,0.3)]" : "";
+    const alertGlow = healthStatus === "alert"
+      ? { boxShadow: "0 0 8px color-mix(in srgb, var(--ngs-sign-neg) 30%, transparent)" }
+      : undefined;
+    const resolvedAriaLabel = ariaLabel ?? `${category} node: ${label}`;
     return (
       <div
-        className={`relative min-w-[200px] rounded-lg border ${borderClass} bg-neutral-900 shadow-lg ${alertGlow}`}
+        role="region"
+        aria-label={resolvedAriaLabel}
+        className={`relative min-w-[200px] rounded-lg border ${borderClass} bg-neutral-900 shadow-lg`}
+        style={alertGlow}
       >
         <NodeResizer
           isVisible={!!selected}
-          minWidth={200}
-          minHeight={100}
+          minWidth={minWidth}
+          minHeight={minHeight}
           color="#3b82f6"
           lineStyle={{ borderWidth: 1 }}
           handleStyle={{ width: 8, height: 8 }}
         />
         {healthStatus && (
-          <div className={`h-[3px] rounded-t-lg transition-colors duration-500 ${HEALTH_BAND[healthStatus]}`} />
+          <div
+            className={`h-[3px] rounded-t-lg transition-colors duration-500 ${healthStatus === "alert" ? "motion-safe:animate-pulse" : ""}`}
+            style={{ backgroundColor: HEALTH_BG[healthStatus] }}
+          />
         )}
         {inputs.map((h) => (
           <Handle
@@ -68,14 +80,14 @@ export const BaseNodeShell = memo(
           />
         ))}
         <div className="flex items-center gap-2 border-b border-neutral-800 px-3 py-1.5">
-          <span className="text-xs font-semibold tracking-wide text-neutral-300 uppercase">
+          <span className="ngs-text-title tracking-wide text-neutral-300 uppercase">
             {label}
           </span>
           {isBaselineMode && healthStatus && (
-            <span className="rounded bg-blue-600 px-0.5 text-[8px] font-bold text-white">B</span>
+            <span className="rounded bg-blue-600 px-0.5 ngs-text-micro font-bold text-white">B</span>
           )}
           {status === "computing" && (
-            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+            <span className="h-2 w-2 motion-safe:animate-pulse rounded-full bg-amber-400" />
           )}
           {status === "error" && (
             <span className="h-2 w-2 rounded-full bg-red-500" />

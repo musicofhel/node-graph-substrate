@@ -6,6 +6,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
+import { useZoomTier } from "../../lib/hooks/useZoomTier";
 import { LodLabel } from "../../lib/three/LodLabel";
 import { CameraTween, type CameraTweenRequest } from "../../lib/three/useCameraTween";
 import * as THREE from "three";
@@ -21,7 +22,7 @@ class R3FErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full items-center justify-center text-xs text-red-400">
+        <div className="flex h-full items-center justify-center ngs-text-body text-red-400">
           Render error
         </div>
       );
@@ -134,50 +135,102 @@ export const HiddenStateCloudNode = memo(({ id, selected }: NodeProps) => {
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.hidden_state_cloud;
   const hasData = !!data.umap_3d;
+  const tier = useZoomTier();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null);
   const tweenReq = useRef<CameraTweenRequest | null>(null);
   const bridgePosRef = useRef<[number, number, number] | null>(null);
 
-  return (
-    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="nodrag nowheel w-full min-w-[240px]" style={{ height: 220 }}>
-        {hasData ? (
-          <R3FErrorBoundary>
-            <Canvas
-              frameloop="always"
-              camera={{ position: [8, 8, 8], fov: 50 }}
-              style={{ width: "100%", height: "100%", display: "block", background: "var(--ngs-canvas-bg)", borderRadius: 4 }}
-            >
-              <ambientLight intensity={0.6} />
-              <PointCloud data={data} bridgePosRef={bridgePosRef} />
-              <OrbitControls ref={controlsRef} enablePan enableZoom enableRotate />
-              <CameraTween controlsRef={controlsRef} requestRef={tweenReq} />
-            </Canvas>
-          </R3FErrorBoundary>
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-neutral-500">
-            Waiting for hidden states...
-          </div>
-        )}
-      </div>
-      {hasData && (
-        <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-400">
-          {data.bridge_silhouette !== undefined ? (
-            <span>Bridge sil: {data.bridge_silhouette.toFixed(3)}</span>
-          ) : <span />}
-          <button
-            onClick={() => {
-              const bp = bridgePosRef.current;
-              if (bp) tweenReq.current = { target: bp, duration: 500, id: Date.now() };
-            }}
-            className="text-blue-400 hover:text-blue-300"
-          >
-            Focus
-          </button>
-        </div>
-      )}
+  const pointCount = data.umap_3d?.length ?? 0;
+  const ariaLabel = `Hidden state cloud: ${hasData ? `${pointCount} points, bridge sil ${data.bridge_silhouette?.toFixed(3) ?? "N/A"}` : "waiting"}`;
+
+  const shell = (children: ReactNode) => (
+    <BaseNodeShell
+      selected={selected}
+      label={def.label}
+      category={def.category}
+      inputs={def.inputs}
+      minWidth={240}
+      minHeight={260}
+      ariaLabel={ariaLabel}
+    >
+      {children}
     </BaseNodeShell>
+  );
+
+  if (!hasData) {
+    return shell(
+      <div className="ngs-text-body flex h-full items-center justify-center text-neutral-500">
+        Waiting for hidden states...
+      </div>
+    );
+  }
+
+  if (tier === "T0") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }} />
+    );
+  }
+
+  if (tier === "T1") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }}>
+        <span className="ngs-text-title text-white">3D Cloud</span>
+      </div>
+    );
+  }
+
+  if (tier === "T2") {
+    return shell(
+      <div className="nodrag nowheel w-full" style={{ height: 220 }}>
+        <R3FErrorBoundary>
+          <Canvas
+            frameloop="always"
+            camera={{ position: [8, 8, 8], fov: 50 }}
+            style={{ width: "100%", height: "100%", display: "block", background: "var(--ngs-canvas-bg)", borderRadius: 4 }}
+          >
+            <ambientLight intensity={0.6} />
+            <PointCloud data={data} bridgePosRef={bridgePosRef} />
+            <OrbitControls ref={controlsRef} enablePan enableZoom enableRotate />
+            <CameraTween controlsRef={controlsRef} requestRef={tweenReq} />
+          </Canvas>
+        </R3FErrorBoundary>
+      </div>
+    );
+  }
+
+  return shell(
+    <div className="w-full">
+      <div className="nodrag nowheel w-full" style={{ height: 220 }}>
+        <R3FErrorBoundary>
+          <Canvas
+            frameloop="always"
+            camera={{ position: [8, 8, 8], fov: 50 }}
+            style={{ width: "100%", height: "100%", display: "block", background: "var(--ngs-canvas-bg)", borderRadius: 4 }}
+          >
+            <ambientLight intensity={0.6} />
+            <PointCloud data={data} bridgePosRef={bridgePosRef} />
+            <OrbitControls ref={controlsRef} enablePan enableZoom enableRotate />
+            <CameraTween controlsRef={controlsRef} requestRef={tweenReq} />
+          </Canvas>
+        </R3FErrorBoundary>
+      </div>
+      <div className="mt-1 flex items-center justify-between ngs-text-meta text-neutral-400">
+        {data.bridge_silhouette !== undefined ? (
+          <span>Bridge sil: <span className="ngs-tabular">{data.bridge_silhouette.toFixed(3)}</span></span>
+        ) : <span />}
+        <button
+          onClick={() => {
+            const bp = bridgePosRef.current;
+            if (bp) tweenReq.current = { target: bp, duration: 500, id: Date.now() };
+          }}
+          className="text-blue-400 hover:text-blue-300"
+          aria-label="Focus on bridge point"
+        >
+          Focus
+        </button>
+      </div>
+    </div>
   );
 });
 HiddenStateCloudNode.displayName = "HiddenStateCloudNode";

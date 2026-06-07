@@ -2,6 +2,8 @@ import { memo, useState } from "react";
 import { useNodesData, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNodeShell } from "./BaseNodeShell";
 import { NODE_REGISTRY } from "../../lib/pack-registry";
+import { useZoomTier } from "../../lib/hooks/useZoomTier";
+import type { FeatureName } from "../../packs/topo-confidence/features";
 
 type FeatureExplain = {
   raw_value: number;
@@ -29,7 +31,7 @@ type FeatureInfo = {
   low: string;
 };
 
-const FEATURE_INFO: Record<string, FeatureInfo> = {
+const FEATURE_INFO: Record<FeatureName, FeatureInfo> = {
   H0_persistence_entropy: {
     label: "Component Entropy",
     description: "Diversity of connected components in the hidden state point cloud.",
@@ -140,14 +142,44 @@ export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
   const data = nodeData?.data ?? {};
   const def = NODE_REGISTRY.explain_waterfall;
   const [expanded, setExpanded] = useState<string | null>(null);
+  const tier = useZoomTier();
+
+  const featureCount = data.features ? Object.keys(data.features).length : 0;
+  const ariaLabel = `Explain waterfall: ${featureCount} features${data.confidence != null ? `, confidence ${(data.confidence * 100).toFixed(0)}%` : ""}`;
+
+  const shell = (children: React.ReactNode) => (
+    <BaseNodeShell
+      selected={selected}
+      label={def.label}
+      category={def.category}
+      inputs={def.inputs}
+      minWidth={280}
+      minHeight={240}
+      ariaLabel={ariaLabel}
+    >
+      {children}
+    </BaseNodeShell>
+  );
 
   if (!data.features) {
-    return (
-      <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-        <div className="py-4 text-center text-xs text-neutral-500">
-          Requires calibration
-        </div>
-      </BaseNodeShell>
+    return shell(
+      <div className="ngs-text-body py-4 text-center text-neutral-500">
+        Requires calibration
+      </div>
+    );
+  }
+
+  if (tier === "T0") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }} />
+    );
+  }
+
+  if (tier === "T1") {
+    return shell(
+      <div className="flex h-full w-full items-center justify-center rounded" style={{ background: "var(--ngs-viridis-2)", minHeight: 80 }}>
+        <span className="ngs-text-title text-white">Explain</span>
+      </div>
     );
   }
 
@@ -164,140 +196,167 @@ export const ExplainWaterfallNode = memo(({ id, selected }: NodeProps) => {
 
   const topName = data.top_contributor;
   const topFeat = topName ? data.features[topName] : null;
-  const topInfo = topName ? FEATURE_INFO[topName] : null;
+  const topInfo = topName ? FEATURE_INFO[topName as FeatureName] : null;
 
   const topLevel = topFeat ? getValueLevel(topFeat.raw_value) : null;
   const topDirection = topFeat && topFeat.contribution >= 0;
 
-  return (
-    <BaseNodeShell selected={selected} label={def.label} category={def.category} inputs={def.inputs}>
-      <div className="nodrag flex w-full min-w-[280px] flex-col gap-1">
-        {/* Summary header */}
-        <div className="mb-1 rounded bg-neutral-800/80 px-2 py-1.5">
-          <div className="flex items-center gap-2">
-            {data.correctness != null && (
-              <span
-                className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                  data.correctness
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-red-500/20 text-red-400"
-                }`}
-              >
-                {data.correctness ? "CORRECT" : "INCORRECT"}
-              </span>
-            )}
-            {data.confidence != null && (
-              <span className="text-sm font-bold text-neutral-200">
-                {(data.confidence * 100).toFixed(1)}%
-              </span>
-            )}
-            {data.subject && data.level != null && (
-              <span className="ml-auto rounded bg-neutral-700 px-1.5 py-0.5 text-[9px] text-neutral-400">
-                {data.subject} L{data.level}
-                {data.math_idx != null ? ` #${data.math_idx}` : ""}
-              </span>
-            )}
-          </div>
-          {topInfo && topFeat && (
-            <div className="mt-1 text-[10px] leading-tight text-neutral-400">
-              <span className="text-neutral-300">Top signal: </span>
-              <span className="font-medium text-amber-300">{topInfo.label}</span>
-              <span className="text-neutral-500"> ({topLevel}) </span>
-              <span className="text-neutral-500">— </span>
-              <span>{topLevel === "high" ? topInfo.high.toLowerCase() : topLevel === "low" ? topInfo.low.toLowerCase() : topInfo.description.toLowerCase()}</span>
-              {" "}
-              <span className={topDirection ? "text-emerald-400" : "text-red-400"}>
-                {topDirection ? "pushing confidence ↑" : "pulling confidence ↓"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Waterfall bars */}
-        <div className="nowheel max-h-[220px] overflow-y-auto">
+  if (tier === "T2") {
+    return shell(
+      <div className="nodrag flex w-full flex-col gap-0.5">
         {entries.map(([name, feat]) => {
           const pct = Math.abs(feat.contribution) / maxAbs;
           const isPositive = feat.contribution >= 0;
-          const isTop = name === topName;
-          const isExpanded = expanded === name;
-          const info = FEATURE_INFO[name];
-          const label = info?.label ?? name.replace(/_/g, " ");
-          const level = getValueLevel(feat.raw_value);
-
           return (
-            <div key={name}>
-              <div
-                className={`flex cursor-pointer items-center gap-1 rounded px-0.5 py-0.5 transition-colors hover:bg-neutral-700/40 ${
-                  isExpanded ? "bg-neutral-700/30" : ""
-                }`}
-                onClick={() => setExpanded(isExpanded ? null : name)}
-              >
-                <span
-                  className={`w-[110px] truncate text-right text-[10px] ${
-                    isTop ? "font-bold text-amber-300" : "text-neutral-400"
-                  }`}
-                  title={name}
-                >
-                  {label}
-                  {isTop && " ★"}
-                </span>
-                <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
-                  <div
-                    className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
-                    style={{
-                      width: `${pct * 100}%`,
-                      backgroundColor: isPositive ? "#4ade80" : "#f87171",
-                      opacity: 0.85,
-                    }}
-                  />
-                </div>
-                <span className="w-[45px] text-right font-mono text-[10px] text-neutral-400">
-                  {feat.contribution >= 0 ? "+" : ""}
-                  {feat.contribution.toFixed(3)}
-                </span>
-              </div>
-
-              {/* Expanded detail panel */}
-              {isExpanded && info && (
+            <div key={name} className="flex items-center">
+              <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
                 <div
-                  className="mb-1 ml-1 rounded border-l-2 bg-neutral-800/60 px-2.5 py-1.5"
-                  style={{ borderColor: isPositive ? "#4ade80" : "#f87171" }}
-                >
-                  <div className="text-[10px] leading-relaxed text-neutral-400">
-                    <div className="mb-1 text-neutral-300">{info.description}</div>
-                    <div className="mb-1">
-                      <span className="text-neutral-500">Value is </span>
-                      <span className={
-                        level === "high" ? "text-amber-300" : level === "low" ? "text-blue-300" : "text-neutral-300"
-                      }>
-                        {level}
-                      </span>
-                      <span className="text-neutral-500"> — </span>
-                      {level === "high" ? info.high : level === "low" ? info.low : info.description}
-                    </div>
-                    <div className="flex items-center gap-1 font-mono text-[9px] text-neutral-500">
-                      <span>raw {feat.raw_value.toFixed(2)}</span>
-                      <span>×</span>
-                      <span>coef {feat.coefficient.toFixed(3)}</span>
-                      <span>=</span>
-                      <span className={isPositive ? "text-emerald-400" : "text-red-400"}>
-                        {feat.contribution >= 0 ? "+" : ""}{feat.contribution.toFixed(4)}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 text-[9px]">
-                      <span className={isPositive ? "text-emerald-400" : "text-red-400"}>
-                        {isPositive ? "↑ Increases" : "↓ Decreases"} confidence by {Math.abs(feat.contribution).toFixed(3)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
+                  style={{
+                    width: `${pct * 100}%`,
+                    backgroundColor: isPositive ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)",
+                    opacity: 0.85,
+                  }}
+                />
+              </div>
             </div>
           );
         })}
-        </div>
       </div>
-    </BaseNodeShell>
+    );
+  }
+
+  return shell(
+    <div className="nodrag flex w-full min-w-[280px] flex-col gap-1">
+      {/* Summary header */}
+      <div className="mb-1 rounded bg-neutral-800/80 px-2 py-1.5">
+        <div className="flex items-center gap-2">
+          {data.correctness != null && (
+            <span
+              className="ngs-text-micro rounded-full px-2 py-0.5 font-bold"
+              style={{
+                backgroundColor: data.correctness
+                  ? "color-mix(in srgb, var(--ngs-sign-pos) 20%, transparent)"
+                  : "color-mix(in srgb, var(--ngs-sign-neg) 20%, transparent)",
+                color: data.correctness ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)",
+              }}
+            >
+              {data.correctness ? "CORRECT" : "INCORRECT"}
+            </span>
+          )}
+          {data.confidence != null && (
+            <span className="ngs-text-body font-bold text-neutral-200">
+              {(data.confidence * 100).toFixed(1)}%
+            </span>
+          )}
+          {data.subject && data.level != null && (
+            <span className="ngs-text-micro ml-auto rounded bg-neutral-700 px-1.5 py-0.5 text-neutral-400">
+              {data.subject} L{data.level}
+              {data.math_idx != null ? ` #${data.math_idx}` : ""}
+            </span>
+          )}
+        </div>
+        {topInfo && topFeat && (
+          <div className="ngs-text-meta mt-1 leading-tight text-neutral-400">
+            <span className="text-neutral-300">Top signal: </span>
+            <span className="font-medium text-amber-300">{topInfo.label}</span>
+            <span className="text-neutral-500"> ({topLevel}) </span>
+            <span className="text-neutral-500">— </span>
+            <span>{topLevel === "high" ? topInfo.high.toLowerCase() : topLevel === "low" ? topInfo.low.toLowerCase() : topInfo.description.toLowerCase()}</span>
+            {" "}
+            <span style={{ color: topDirection ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)" }}>
+              {topDirection ? "pushing confidence ↑" : "pulling confidence ↓"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Waterfall bars */}
+      <div className="nowheel max-h-[220px] overflow-y-auto">
+      {entries.map(([name, feat]) => {
+        const pct = Math.abs(feat.contribution) / maxAbs;
+        const isPositive = feat.contribution >= 0;
+        const isTop = name === topName;
+        const isExpanded = expanded === name;
+        const info = FEATURE_INFO[name as FeatureName];
+        const label = info?.label ?? name.replace(/_/g, " ");
+        const level = getValueLevel(feat.raw_value);
+
+        return (
+          <div key={name}>
+            <div
+              role="button"
+              aria-expanded={isExpanded}
+              className={`flex cursor-pointer items-center gap-1 rounded px-0.5 py-0.5 transition-colors hover:bg-neutral-700/40 ${
+                isExpanded ? "bg-neutral-700/30" : ""
+              }`}
+              onClick={() => setExpanded(isExpanded ? null : name)}
+            >
+              <span
+                className={`ngs-text-meta w-[110px] truncate text-right ${
+                  isTop ? "font-bold text-amber-300" : "text-neutral-400"
+                }`}
+                title={name}
+              >
+                {label}
+                {isTop && " ★"}
+              </span>
+              <div className="relative h-3 flex-1 rounded-sm bg-neutral-800">
+                <div
+                  className="absolute top-0 h-full rounded-sm transition-all duration-700 ease-out"
+                  style={{
+                    width: `${pct * 100}%`,
+                    backgroundColor: isPositive ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)",
+                    opacity: 0.85,
+                  }}
+                />
+              </div>
+              <span className="ngs-tabular ngs-text-meta w-[45px] text-right text-neutral-400">
+                {feat.contribution >= 0 ? "+" : ""}
+                {feat.contribution.toFixed(3)}
+              </span>
+            </div>
+
+            {/* Expanded detail panel */}
+            {isExpanded && info && (
+              <div
+                className="mb-1 ml-1 rounded border-l-2 bg-neutral-800/60 px-2.5 py-1.5"
+                style={{ borderColor: isPositive ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)" }}
+              >
+                <div className="ngs-text-meta leading-relaxed text-neutral-400">
+                  <div className="mb-1 text-neutral-300">{info.description}</div>
+                  <div className="mb-1">
+                    <span className="text-neutral-500">Value is </span>
+                    <span className={
+                      level === "high" ? "text-amber-300" : level === "low" ? "text-blue-300" : "text-neutral-300"
+                    }>
+                      {level}
+                    </span>
+                    <span className="text-neutral-500"> — </span>
+                    {level === "high" ? info.high : level === "low" ? info.low : info.description}
+                  </div>
+                  <div className="ngs-tabular ngs-text-micro flex items-center gap-1 text-neutral-500">
+                    <span>raw {feat.raw_value.toFixed(2)}</span>
+                    <span>×</span>
+                    <span>coef {feat.coefficient.toFixed(3)}</span>
+                    <span>=</span>
+                    <span style={{ color: isPositive ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)" }}>
+                      {feat.contribution >= 0 ? "+" : ""}{feat.contribution.toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="ngs-text-micro mt-0.5">
+                    <span style={{ color: isPositive ? "var(--ngs-sign-pos)" : "var(--ngs-sign-neg)" }}>
+                      {isPositive ? "↑ Increases" : "↓ Decreases"} confidence by {Math.abs(feat.contribution).toFixed(3)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      </div>
+    </div>
   );
 });
 ExplainWaterfallNode.displayName = "ExplainWaterfallNode";

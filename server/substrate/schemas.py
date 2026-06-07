@@ -20,6 +20,8 @@ class ProjectResponse(BaseModel):
 class GraphCreate(BaseModel):
     project_id: str
     name: str
+    kind: str = "pipeline"
+    pack_id: str = "topo-confidence"
 
 
 class NodeData(BaseModel):

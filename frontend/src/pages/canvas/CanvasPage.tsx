@@ -363,9 +363,9 @@ function CanvasPageInner() {
           setGraphMeta(canvasId, state.graphVersion || 1, urlProjectId ?? undefined);
           const defaultNodes = [
             // Row group backgrounds (rendered first = behind content nodes)
-            { id: "row-input", type: "row_label", position: { x: -20, y: -20 }, data: { label: "Input & Summary", color: "blue" }, style: { width: 1360, height: 360 }, selectable: false, draggable: false, connectable: false },
-            { id: "row-topo", type: "row_label", position: { x: -20, y: 360 }, data: { label: "Topology & Health", color: "cyan" }, style: { width: 1360, height: 340 }, selectable: false, draggable: false, connectable: false },
-            { id: "row-complex", type: "row_label", position: { x: -20, y: 700 }, data: { label: "Complex Visualizations", color: "purple" }, style: { width: 1360, height: 440 }, selectable: false, draggable: false, connectable: false },
+            { id: "row-input", type: "row_label", position: { x: -20, y: -20 }, data: { config: { label: "Input & Summary", color: "blue" } }, style: { width: 1360, height: 360 }, selectable: false, draggable: false, connectable: false },
+            { id: "row-topo", type: "row_label", position: { x: -20, y: 360 }, data: { config: { label: "Topology & Health", color: "cyan" } }, style: { width: 1360, height: 340 }, selectable: false, draggable: false, connectable: false },
+            { id: "row-complex", type: "row_label", position: { x: -20, y: 700 }, data: { config: { label: "Complex Visualizations", color: "purple" } }, style: { width: 1360, height: 440 }, selectable: false, draggable: false, connectable: false },
             // Row 0 — Input & Summary
             { id: "prompt-1", type: "prompt_input", position: { x: 0, y: 0 }, data: { config: { prompt: "" } }, style: { width: 300 } },
             { id: "gauge-1", type: "confidence_gauge", position: { x: 320, y: 0 }, data: {}, style: { width: 300 } },

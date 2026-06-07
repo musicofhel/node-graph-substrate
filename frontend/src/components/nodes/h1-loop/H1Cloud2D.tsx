@@ -272,7 +272,7 @@ export const H1Cloud2D = memo(({
                   fill="none"
                   stroke="#22d3ee"
                   strokeWidth={2}
-                  className="animate-pulse"
+                  className="motion-safe:animate-pulse"
                 />
               )}
               <circle
@@ -295,7 +295,7 @@ export const H1Cloud2D = memo(({
       {/* Floating tooltip */}
       {tooltip && (
         <div
-          className="fixed pointer-events-none z-50 rounded bg-neutral-900/95 border border-neutral-700 px-2 py-1 text-[10px] font-mono text-neutral-200 whitespace-nowrap"
+          className="fixed pointer-events-none z-50 rounded bg-neutral-900/95 border border-neutral-700 px-2 py-1 ngs-text-meta ngs-tabular text-neutral-200 whitespace-nowrap"
           style={{ left: tooltip.x + 12, top: tooltip.y - 8 }}
         >
           {tooltip.text}

@@ -135,15 +135,29 @@ export const useCanvasStore = create<CanvasState>()(
             width?: number;
             height?: number;
             config?: Record<string, unknown>;
-          }) => ({
-            id: n.id,
-            type: n.type_id,
-            position: { x: n.position_x, y: n.position_y },
-            ...(n.width && n.height
-              ? { width: n.width, height: n.height }
-              : {}),
-            data: { config: n.config || {} },
-          }),
+          }) => {
+            const base = {
+              id: n.id,
+              type: n.type_id,
+              position: { x: n.position_x, y: n.position_y },
+              ...(n.width ? { width: n.width } : {}),
+              ...(n.height ? { height: n.height } : {}),
+              data: { config: n.config || {} },
+            };
+            if (n.type_id === "row_label") {
+              return {
+                ...base,
+                selectable: false,
+                draggable: false,
+                connectable: false,
+                style: { width: n.width, height: n.height },
+              };
+            }
+            return {
+              ...base,
+              ...(n.width ? { style: { width: n.width } } : {}),
+            };
+          },
         );
 
         const edges: Edge[] = data.edges.map(
