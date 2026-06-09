@@ -74,8 +74,8 @@ Generated data files are gitignored: `data/math500_breathing_cache.json`, `front
 
 - Scoring canvas design guidelines: `frontend/DESIGN_GUIDELINES.md` — type scale, color palettes, semantic zoom tiers, accessibility, anti-patterns
 - v5 spec (canonical): `SPEC-v5.md`
-- v5 migration plan: `MIGRATION-v5.md`
-- v5 file action table: `v5-deltas.md`
+- v5 migration plan (archived): `docs/history/MIGRATION-v5.md`
+- v5 file action table (archived): `docs/history/v5-deltas.md`
 - v2 spec (archived): `docs/history/SPEC-v2.md`
 - `~/pipeline-studio/src/lib/store/pipeline-store.ts` — Zustand + zundo pattern to adapt
 - `~/pipeline-studio/src/components/canvas/PipelineCanvas.tsx` — ReactFlow wrapper to adapt
