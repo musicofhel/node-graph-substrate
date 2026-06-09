@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>node-graph-substrate · Architecture diagrams</title>
+<style>
+  :root {
+    --bg:       #11111b;
+    --panel:    #1e1e2e;
+    --panel-2:  #181825;
+    --border:   #313244;
+    --text:     #cdd6f4;
+    --muted:    #9399b2;
+    --accent:   #10b981;
+    --accent-2: #89b4fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Shell: single component, tab rail + viewer pane ---- */
+  .app { display: flex; flex-direction: column; min-height: 100%; }
+  header.top {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 16px 22px; border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+  }
+  header.top h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+  header.top h1 .dim { color: var(--muted); font-weight: 400; }
+  header.top .spacer { flex: 1; }
+  header.top a.repo { color: var(--accent-2); text-decoration: none; font-size: 13px; }
+  header.top a.repo:hover { text-decoration: underline; }
+
+  .body { display: flex; flex: 1; min-height: 0; }
+
+  /* ---- Tab rail ---- */
+  nav.rail {
+    width: 240px; flex: none; padding: 14px 10px; overflow-y: auto;
+    border-right: 1px solid var(--border); background: var(--panel-2);
+  }
+  .rail .group-label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin: 14px 10px 6px; font-weight: 700;
+  }
+  .rail .group-label:first-child { margin-top: 0; }
+  .tab {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left; cursor: pointer;
+    padding: 8px 10px; margin: 1px 0; border: 0; border-radius: 7px;
+    background: transparent; color: var(--text); font-size: 13px; font-family: inherit;
+    transition: background .12s ease;
+  }
+  .tab:hover { background: var(--panel); }
+  .tab .num {
+    font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted);
+    width: 20px; flex: none;
+  }
+  .tab.active { background: var(--panel); box-shadow: inset 2px 0 0 var(--accent); }
+  .tab.active .num { color: var(--accent); }
+
+  /* ---- Viewer pane ---- */
+  main.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .pane-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 24px 10px; flex-wrap: wrap;
+  }
+  .pane-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
+  .pane-head .kicker {
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+  }
+  .pane-head .spacer { flex: 1; }
+  .navbtns { display: flex; gap: 8px; }
+  .navbtns button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 13px;
+  }
+  .navbtns button:hover { border-color: var(--accent); color: var(--accent); }
+  .navbtns button:disabled { opacity: .4; cursor: default; border-color: var(--border); color: var(--text); }
+
+  .caption { padding: 0 24px 12px; color: var(--muted); font-size: 13.5px; max-width: 900px; line-height: 1.5; }
+  .caption code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size: 12px; color: var(--text); }
+
+  .stage {
+    flex: 1; min-height: 0; margin: 0 18px 18px; padding: 18px;
+    background: var(--panel);
+    background-image: radial-gradient(circle, #2a2a3c 1px, transparent 1px);
+    background-size: 22px 22px;
+    border: 1px solid var(--border); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; overflow: auto;
+  }
+  .stage img {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+    border-radius: 6px; cursor: zoom-in;
+    box-shadow: 0 8px 30px rgba(0,0,0,.45);
+    background: #fff;
+  }
+
+  footer.hint {
+    padding: 8px 24px 18px; color: var(--muted); font-size: 12px;
+  }
+  footer.hint kbd {
+    background: var(--panel); border: 1px solid var(--border); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 6px; font-size: 11px; font-family: inherit;
+  }
+
+  /* ---- Lightbox (click to zoom) ---- */
+  .lightbox {
+    position: fixed; inset: 0; background: rgba(0,0,0,.86);
+    display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out;
+    padding: 28px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; background: #fff; }
+
+  /* ---- Responsive: rail moves to top as a wrapping strip ---- */
+  @media (max-width: 760px) {
+    .body { flex-direction: column; }
+    nav.rail {
+      width: 100%; border-right: 0; border-bottom: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 4px; max-height: 168px;
+    }
+    .rail .group-label { width: 100%; margin: 8px 6px 2px; }
+    .tab { width: auto; }
+    .tab .num { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>node-graph-substrate <span class="dim">· architecture</span></h1>
+    <div class="spacer"></div>
+    <a class="repo" href="https://github.com/musicofhel/node-graph-substrate" target="_blank" rel="noopener">GitHub ↗</a>
+  </header>
+
+  <div class="body">
+    <nav class="rail" id="rail" aria-label="Diagram tabs"></nav>
+
+    <main class="pane">
+      <div class="pane-head">
+        <span class="kicker" id="kicker"></span>
+        <h2 id="title"></h2>
+        <div class="spacer"></div>
+        <div class="navbtns">
+          <button id="prev" aria-label="Previous diagram">‹ Prev</button>
+          <button id="next" aria-label="Next diagram">Next ›</button>
+        </div>
+      </div>
+      <p class="caption" id="caption"></p>
+      <div class="stage"><img id="diagram" alt="" /></div>
+      <footer class="hint">
+        <kbd>←</kbd>/<kbd>→</kbd> switch diagrams · <kbd>click</kbd> image to zoom · deep-linkable via <code>#id</code>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox"><img id="lightbox-img" alt="" /></div>
+
+<script>
+// Single source of truth — one entry per diagram. PNGs live alongside this file
+// (docs/diagrams + docs/mockups). Regenerate diagrams with docs/diagrams/render-all.sh.
+const DIAGRAMS = [
+  { group: "Topology", id: "system",     n: "01", title: "System Architecture",
+    src: "diagrams/01-system-architecture.png",
+    caption: "Four containers — Vite frontend (native on WSL2), FastAPI server, PostgreSQL, Redis — plus an opt-in topo-confidence daemon (<code>--profile topoconf</code>). The server never imports topo-confidence; all coupling is via Redis Streams." },
+  { group: "Topology", id: "files",      n: "11", title: "Project Structure",
+    src: "diagrams/11-file-structure.png",
+    caption: "Repo tree: pack-based <code>server/substrate/</code> (api · components · sdk · packs · observability) and <code>frontend/src/</code> (pages · components/nodes · packs · lib/store)." },
+
+  { group: "Data model", id: "db",       n: "02", title: "Database Schema",
+    src: "diagrams/02-database-schema.png",
+    caption: "Six core tables with cascade deletes — projects → graphs → graph_versions / nodes → node_configs / edges. Extended by runs, node_observations, session_state, and a search materialized view (migrations 001–010)." },
+  { group: "Data model", id: "streams",  n: "10", title: "Redis Streams",
+    src: "diagrams/10-redis-streams.png",
+    caption: "24 streams: 7 <code>topoconf:scoring:*</code>, 10 <code>linkforge:*</code>, 1 <code>linkforge:autorel:*</code>, 5 <code>topoconf:research:*</code>, and the <code>topoconf:control</code> channel. All <code>MAXLEN ~10000</code>, plain <code>XREAD</code> for broadcast." },
+
+  { group: "Realtime", id: "websocket",  n: "03", title: "WebSocket Protocol",
+    src: "diagrams/03-ws-protocol.png",
+    caption: "Single endpoint <code>ws://host:8080/ws/canvas/{graph_id}</code>. Client→server: compute_request, config_update, resubscribe. Server→client: graph_loaded, computation_result, stream_event, node_state_updated, replay_gap, error. Validated via Pydantic discriminated unions." },
+  { group: "Realtime", id: "compute",    n: "04", title: "Data Flow — Compute Path",
+    src: "diagrams/04-compute-path.png",
+    caption: "Request/response loop for COMPUTED nodes (only PromptInput today): click Analyze → WS compute_request → <code>component.build()</code> publishes to <code>topoconf:control</code> → computation_result fans features out to subscriber nodes." },
+  { group: "Realtime", id: "subscriber", n: "05", title: "Data Flow — Subscriber Path",
+    src: "diagrams/05-subscriber-path.png",
+    caption: "Sources XADD → StreamHub <code>XREAD BLOCK</code> per tier → fan-out to subscribed sockets → SubstrateWS coalesces stream_events with 500 ms throttled flushing → <code>batchUpdateNodeData()</code> → per-node <code>useNodesData(id)</code> re-render." },
+  { group: "Realtime", id: "reconnect",  n: "12", title: "WebSocket Lifecycle",
+    src: "diagrams/12-ws-reconnect.png",
+    caption: "Connect → graph_loaded → subscribe streams. Reconnect uses exponential backoff (1s→2→4→8→10s cap) then auto-resubscribes, resuming XREAD from the last cursor. Cleanup unsubscribes and destroys components." },
+
+  { group: "Frontend", id: "tree",       n: "06a", title: "Component Tree",
+    src: "diagrams/06a-component-tree.png",
+    caption: "App (React Router) → TabBar → SplitPane → SubstrateCanvas wrapping ReactFlow, NodePalette, CanvasControls, PipelineTimeline, DetailPanel (420px, 4 tabs) and EventLog. ~30 memo'd node components share BaseNodeShell." },
+  { group: "Frontend", id: "state",      n: "06b", title: "State Management",
+    src: "diagrams/06b-state-management.png",
+    caption: "Four Zustand stores — canvas-store (+ zundo, 50-level undo), ui-store, drift-store, event-log-store — plus useNodeHistory / useNodeStats hooks and the SubstrateWS client." },
+  { group: "Frontend", id: "registry",   n: "07", title: "Node Registry",
+    src: "diagrams/07-node-registry.png",
+    caption: "Node types are contributed by packs and keyed in <code>node-types.tsx</code>. Canvas kinds: Scoring (topo-confidence), Research Bridge + Ingestion (link-forge), Experiments. All nodes wrap BaseNodeShell for resize, selection and health bands." },
+
+  { group: "Backend", id: "sdk",         n: "08", title: "Component SDK",
+    src: "diagrams/08-component-sdk.png",
+    caption: "Python <code>Component</code> subclasses declare <code>type_id</code>, <code>kind</code> (COMPUTED vs SUBSCRIBER) and <code>subscribed_streams</code>. 18 components self-register via the ComponentRegistry on import; manifests are generated for the frontend." },
+  { group: "Backend", id: "crud",        n: "09", title: "Graph CRUD Lifecycle",
+    src: "diagrams/09-graph-crud.png",
+    caption: "First visit seeds per-canvas nodes and saves. Save diffs node/edge sets into ops and PATCHes with <code>expected_version</code>; the server takes <code>SELECT FOR UPDATE</code>, checks the version, applies ops, snapshots, and bumps. 409 triggers a full re-sync." },
+
+  { group: "Flagship", id: "breathing",  n: "★", title: "Layer Breathing Heatmap",
+    src: "mockups/breathing-heatmap-node.png",
+    caption: "The MATH-500 flagship node (live, not a mockup of vapor): participation-ratio \"breathing\" across 28 Qwen-2.5 layers during CoT, L19 highlighted as the signal layer. Fed by real pre-computed hidden states over <code>topoconf:scoring:breathing_profile</code>." },
+];
+
+const rail = document.getElementById('rail');
+const elTitle = document.getElementById('title');
+const elKicker = document.getElementById('kicker');
+const elCaption = document.getElementById('caption');
+const elImg = document.getElementById('diagram');
+const elPrev = document.getElementById('prev');
+const elNext = document.getElementById('next');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
+// Build the tab rail, grouped by category.
+let lastGroup = null;
+DIAGRAMS.forEach((d, i) => {
+  if (d.group !== lastGroup) {
+    const g = document.createElement('div');
+    g.className = 'group-label';
+    g.textContent = d.group;
+    rail.appendChild(g);
+    lastGroup = d.group;
+  }
+  const b = document.createElement('button');
+  b.className = 'tab';
+  b.id = 'tab-' + d.id;
+  b.innerHTML = '<span class="num">' + d.n + '</span><span>' + d.title + '</span>';
+  b.addEventListener('click', () => show(i, true));
+  rail.appendChild(b);
+});
+
+let current = -1;
+function show(i, pushHash) {
+  if (i < 0 || i >= DIAGRAMS.length || i === current) return;
+  current = i;
+  const d = DIAGRAMS[i];
+  elKicker.textContent = d.group;
+  elTitle.textContent = d.title;
+  elCaption.innerHTML = d.caption;
+  elImg.src = d.src;
+  elImg.alt = d.title + ' diagram';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + d.id).classList.add('active');
+  elPrev.disabled = i === 0;
+  elNext.disabled = i === DIAGRAMS.length - 1;
+  if (pushHash) history.replaceState(null, '', '#' + d.id);
+}
+
+elPrev.addEventListener('click', () => show(current - 1, true));
+elNext.addEventListener('click', () => show(current + 1, true));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') show(current - 1, true);
+  else if (e.key === 'ArrowRight') show(current + 1, true);
+  else if (e.key === 'Escape') lightbox.classList.remove('open');
+});
+
+elImg.addEventListener('click', () => {
+  lightboxImg.src = elImg.src;
+  lightbox.classList.add('open');
+});
+lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+
+// Open the diagram named in the URL hash, else the first.
+function fromHash() {
+  const id = location.hash.replace('#', '');
+  const idx = DIAGRAMS.findIndex(d => d.id === id);
+  return idx >= 0 ? idx : 0;
+}
+window.addEventListener('hashchange', () => show(fromHash(), false));
+show(fromHash(), false);
+</script>
+</body>
+</html>

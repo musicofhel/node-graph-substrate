@@ -72,6 +72,8 @@ Generated data files are gitignored: `data/math500_breathing_cache.json`, `front
 
 ## Key references
 
+- Architecture reference (nodes, components, streams, schema, lifecycles): `ARCHITECTURE.md`
+- Interactive diagram viewer (tabbed): `docs/architecture.html` → published at `https://musicofhel.github.io/node-graph-substrate/architecture.html` via `.github/workflows/pages.yml`
 - Scoring canvas design guidelines: `frontend/DESIGN_GUIDELINES.md` — type scale, color palettes, semantic zoom tiers, accessibility, anti-patterns
 - v5 spec (canonical): `SPEC-v5.md`
 - v5 migration plan (archived): `docs/history/MIGRATION-v5.md`
