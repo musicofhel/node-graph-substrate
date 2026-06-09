@@ -14,7 +14,7 @@ sources: "Data Sources" {
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
 
-  daemon: "TopoConf Daemon\n7-stage pipeline → 6 scoring streams" {
+  daemon: "TopoConf Daemon\nscoring pipeline → 7 scoring streams" {
     style.fill: "#1e1e2e"
     style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
@@ -33,7 +33,7 @@ sources: "Data Sources" {
   }
 }
 
-redis: "Redis Streams (23 total)" {
+redis: "Redis Streams (24 total)" {
   style.fill: "#1e1e2e"
   style.stroke: "#f38ba8"
   style.font-color: "#cdd6f4"
@@ -45,7 +45,7 @@ hub: "StreamHub" {
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
 
-  readers: "1 asyncio.Task per stream\nXREAD BLOCK 5000" {
+  readers: "Per-tier reader tasks\nXREAD BLOCK (interactive / background)" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
@@ -85,7 +85,7 @@ client: "Browser Client" {
     style.font-color: "#cdd6f4"
   }
 
-  pipeline_nodes: "Pipeline Nodes (6)\ngauge, bars, cloud, diagram\nmonitor, waterfall" {
+  pipeline_nodes: "Scoring Nodes (7)\ngauge, bars, cloud, diagram\nmonitor, waterfall, breathing" {
     style.fill: "#313244"
     style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
@@ -107,7 +107,7 @@ client: "Browser Client" {
   store -> research_nodes: "useNodesData(id)" {style.stroke-width: 2; style.font-color: "#cdd6f4"; style.stroke: "#a6e3a1"}
 }
 
-sources.daemon -> redis: "XADD × 6" {style.stroke: "#cba6f7"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
+sources.daemon -> redis: "XADD × 7" {style.stroke: "#cba6f7"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
 sources.linkforge -> redis: "XADD × 11" {style.stroke: "#fab387"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
 sources.research -> redis: "XADD × 5" {style.stroke: "#a6e3a1"; style.stroke-width: 2; style.font-color: "#cdd6f4"}
 redis -> hub.readers: "XREAD BLOCK" {style.stroke: "#f38ba8"; style.stroke-width: 2; style.font-color: "#cdd6f4"}

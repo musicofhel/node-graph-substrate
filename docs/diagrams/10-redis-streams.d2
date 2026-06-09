@@ -1,7 +1,7 @@
 direction: down
 
 title: {
-  label: "Redis Streams — 23 Streams"
+  label: "Redis Streams — 24 Streams"
   near: top-center
   shape: text
   style.font-size: 28
@@ -17,7 +17,7 @@ control: "Control Channel (1 stream)" {
   topoconf_control: "Server → Daemon: {command, prompt, run_id} ~1KB" {constraint: "→ daemon"}
 }
 
-scoring: "TopoConf Scoring (6 streams)" {
+scoring: "TopoConf Scoring (7 streams)" {
   shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#cba6f7"
@@ -28,6 +28,7 @@ scoring: "TopoConf Scoring (6 streams)" {
   confidence_scored: "{confidence, mode} ~0.5KB" {constraint: "scoring"}
   bridge_health: "{healthy, bridge_at_pos0, silhouette_by_layer} ~1KB" {constraint: "scoring"}
   explain_result: "{features: {raw, scaled, coef, contrib}} ~2KB" {constraint: "scoring"}
+  breathing_profile: "{heatmap 8x28 PR, l19_curve, correctness} ~5KB" {constraint: "scoring"}
 }
 
 linkforge: "LinkForge Ingestion (10 streams)" {
@@ -71,7 +72,7 @@ config: "Stream Configuration" {
   style.fill: "#313244"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
-  label: "Stream Configuration\n\nAll 23 streams: MAXLEN ~ 10000\nPlain XREAD (not XREADGROUP) — broadcast\nPayload field: \"data\" (JSON string)\nMax payload: 256 KB assertion"
+  label: "Stream Configuration\n\nAll streams: MAXLEN ~ 10000\nPlain XREAD (not XREADGROUP) — broadcast\nTiers: interactive (default), background (autorel sweep)\nMax payload: 256 KB assertion"
 }
 
 control -> scoring: "" {style.stroke: "#585b70"; style.stroke-width: 1}

@@ -49,7 +49,7 @@ registry: "ComponentRegistry\nregister(cls) — decorator\nget(type_id) — look
   style.font-color: "#cdd6f4"
 }
 
-impls: "Registered Implementations (13)" {
+impls: "Registered Implementations (18)" {
   shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#f38ba8"
@@ -61,12 +61,17 @@ impls: "Registered Implementations (13)" {
   ConfidenceGaugeComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
   BridgeMonitorComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
   ExplainWaterfallComponent: "SUBSCRIBER — scoring" {constraint: "topoconf"}
+  BreathingHeatmapComponent: "SUBSCRIBER — breathing_profile" {constraint: "topoconf"}
   DriftMatrixComponent: "SUBSCRIBER — scoring (local)" {constraint: "topoconf"}
   LfCoordinatorComponent: "SUBSCRIBER — coordination" {constraint: "linkforge"}
   LfStatsComponent: "SUBSCRIBER — metrics" {constraint: "linkforge"}
   LfAutoRelComponent: "SUBSCRIBER — metrics" {constraint: "linkforge"}
   ResearchBridgeComponent: "SUBSCRIBER — coordination" {constraint: "research"}
   ResearchCoordinatorComponent: "SUBSCRIBER — coordination" {constraint: "research"}
+  ExperimentCloudComponent: "SUBSCRIBER — REST" {constraint: "experiments"}
+  AlgorithmSelectorComponent: "SUBSCRIBER — REST" {constraint: "experiments"}
+  ExperimentROIComponent: "SUBSCRIBER — REST" {constraint: "experiments"}
+  FindingsSummaryComponent: "SUBSCRIBER — REST" {constraint: "experiments"}
 }
 
 enums.socket_type -> socket: "" {style.stroke-width: 2; style.stroke: "#585b70"}

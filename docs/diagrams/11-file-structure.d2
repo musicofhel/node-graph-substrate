@@ -9,13 +9,19 @@ title: {
   style.font-color: "#cdd6f4"
 }
 
-config: "Root Config\ndocker-compose.yml\nsynthetic_daemon.py\nsynthetic_linkforge.py\nCLAUDE.md, SPEC.md" {
+config: "Root\ndocker-compose.yml\nREADME.md · ARCHITECTURE.md\nCLAUDE.md · SPEC-v5.md" {
   style.fill: "#313244"
   style.stroke: "#585b70"
   style.font-color: "#cdd6f4"
 }
 
-migrations: "migrations/\n001_init.sql\n002_schema_fixes.sql" {
+scripts: "scripts/\nsynthetic_daemon.py (--math500-cache)\nsynthetic_linkforge.py\nprecompute_breathing_cache.py\ntake_screenshots.py" {
+  style.fill: "#313244"
+  style.stroke: "#fab387"
+  style.font-color: "#cdd6f4"
+}
+
+migrations: "migrations/\n001_init.sql … 010_*.sql\n(auto-applied on startup)" {
   style.fill: "#313244"
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
@@ -26,12 +32,22 @@ server: "server/substrate/" {
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
 
-  core: "Core (9 modules)\nmain.py — FastAPI + WS handler\ndb.py — asyncpg pool + migrations\ncrud.py — queries + optimistic lock\nws.py — ConnectionManager\nstreamhub.py — Redis stream readers\nsdk.py — Component base class\nregistry.py — ComponentRegistry\nschemas.py, messages.py" {
+  core: "Core modules\nmain.py — FastAPI + /ws/canvas/{id}\ndb.py — asyncpg pool + migrations\ncrud.py — queries + optimistic lock\nws.py — ConnectionManager\nstreamhub.py — tiered XREAD readers\nstream_tiers.py · registry.py\nschemas.py · messages.py" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 
-  components: "components/ (13 registered)\nprompt_input.py (COMPUTED)\n12 SUBSCRIBER components" {
+  sdk: "sdk/\ncomponent.py · pack.py\nports.py · validate.py" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  components: "components/ (18 registered)\nprompt_input.py (COMPUTED)\n17 SUBSCRIBER components" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  packs_api: "api/ — canvases, projects, runs,\n  streams, experiments, h1_loops, …\npacks/ — core, topo_confidence,\n  link_forge, experiments\nobservability/ — structlog + prometheus" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
@@ -42,37 +58,43 @@ frontend: "frontend/src/" {
   style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 
-  canvas: "components/canvas/ (6 files)\nSubstrateCanvas, TabBar, SplitPane\nCanvasControls, PipelineTimeline\nnode-types.ts (20 type mappings)" {
+  pages: "pages/\nhome, canvas, projects, packs,\nsettings, daemons, streams, login\n(App.tsx — React Router)" {
     style.fill: "#313244"
     style.font-color: "#cdd6f4"
   }
 
-  nodes: "components/nodes/ (23 files)\nBaseNodeShell + Sparkline\n8 Pipeline + 7 Research + 5 R2\nDriftMatrix + PaperPoolSection" {
+  canvas: "components/canvas/\nSubstrateCanvas, TabBar, SplitPane\nCanvasControls, PipelineTimeline\nnode-types.tsx (~30 type mappings)" {
+    style.fill: "#313244"
+    style.font-color: "#cdd6f4"
+  }
+
+  nodes: "components/nodes/ (~30 files)\nBaseNodeShell + Sparkline\nScoring · LinkForge · R2 · Experiments\n+ meta ref nodes" {
     style.fill: "#313244"
     style.stroke: "#f38ba8"
     style.font-color: "#cdd6f4"
   }
 
-  panels: "components/panels/\nDetailPanel (420px, 4 tabs)\nEventLog" {
+  packs: "packs/\ncore · topo-confidence\nlink-forge · experiments\n(manifests: nodes, streams, canvasKinds)" {
     style.fill: "#313244"
+    style.stroke: "#cba6f7"
     style.font-color: "#cdd6f4"
   }
 
-  lib: "lib/\nws/client.ts — SubstrateWS\nstore/ — 4 Zustand stores\nhooks/ — useNodeHistory, useNodeStats\ndrift/psi.ts, layout/elk-*" {
+  lib: "lib/\nws/client.ts — SubstrateWS\nstore/ — 4 Zustand stores\nhooks/ · drift/psi.ts · layout/elk-*\npack-registry.ts" {
     style.fill: "#313244"
-    style.font-color: "#cdd6f4"
-  }
-
-  linkforge: "components/linkforge/\nPaperPool, PaperCard, PaperDetail" {
-    style.fill: "#313244"
-    style.stroke: "#fab387"
     style.font-color: "#cdd6f4"
   }
 }
 
-daemons: "daemons/topoconf/\nadapter.py — TopoBridge (7 stages)\ntopoconf_daemon.py — XREAD loop" {
+daemons: "daemons/topoconf/\nadapter.py — TopoBridge\ntopoconf_daemon.py — XREAD loop" {
   style.fill: "#313244"
   style.stroke: "#cba6f7"
+  style.font-color: "#cdd6f4"
+}
+
+docs: "docs/\narchitecture.html — tabbed viewer\ndiagrams/ (13 D2 + PNG)\nscreenshots/ · mockups/ · history/" {
+  style.fill: "#313244"
+  style.stroke: "#89b4fa"
   style.font-color: "#cdd6f4"
 }
 
@@ -82,8 +104,10 @@ tests: "tests/visual/\nrun_visual_tests.py (19 specs)\nspecs/*.yaml per node" {
   style.font-color: "#cdd6f4"
 }
 
-config -> migrations: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+config -> scripts: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+scripts -> migrations: "" {style.stroke: "#585b70"; style.stroke-width: 1}
 migrations -> server: "" {style.stroke: "#585b70"; style.stroke-width: 1}
 server -> frontend: "" {style.stroke: "#585b70"; style.stroke-width: 1}
 frontend -> daemons: "" {style.stroke: "#585b70"; style.stroke-width: 1}
-daemons -> tests: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+daemons -> docs: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+docs -> tests: "" {style.stroke: "#585b70"; style.stroke-width: 1}

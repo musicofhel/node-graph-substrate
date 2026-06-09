@@ -1,7 +1,7 @@
 direction: down
 
 title: {
-  label: "Node Registry — 20 Types × 3 Canvases"
+  label: "Node Registry — Pack-Contributed Canvases"
   near: top-center
   shape: text
   style.font-size: 28
@@ -9,63 +9,69 @@ title: {
   style.font-color: "#cdd6f4"
 }
 
-pipeline: "Pipeline Canvas (8 nodes)" {
+scoring: "Scoring Canvas — topo-confidence pack (10 nodes)" {
   shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#cba6f7"
   style.font-color: "#cdd6f4"
-  prompt_input: "COMPUTED — textarea + analyze button" {constraint: "input"}
-  hidden_state_cloud: "SUBSCRIBER — topoconf:scoring:hidden_state_cloud" {constraint: "extraction"}
+  prompt_input: "COMPUTED — publishes to topoconf:control" {constraint: "input"}
   feature_bars: "SUBSCRIBER — topoconf:scoring:features_computed" {constraint: "topology"}
+  hidden_state_cloud: "SUBSCRIBER — topoconf:scoring:hidden_state_cloud" {constraint: "extraction"}
   persistence_diagram: "SUBSCRIBER — topoconf:scoring:persistence_computed" {constraint: "topology"}
   confidence_gauge: "SUBSCRIBER — topoconf:scoring:confidence_scored" {constraint: "scoring"}
   bridge_monitor: "SUBSCRIBER — topoconf:scoring:bridge_health" {constraint: "scoring"}
   explain_waterfall: "SUBSCRIBER — topoconf:scoring:explain_result" {constraint: "scoring"}
+  breathing_heatmap: "SUBSCRIBER — topoconf:scoring:breathing_profile" {constraint: "topology"}
   drift_matrix: "SUBSCRIBER — local PSI compute" {constraint: "scoring"}
+  h1_loop: "SUBSCRIBER — REST-backed H1 projections" {constraint: "topology"}
 }
 
-research: "Research Canvas (7 nodes)" {
+research_bridge: "Research Bridge Canvas — link-forge pack (4 nodes)" {
   shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#fab387"
   style.font-color: "#cdd6f4"
-  lf_coordinator: "SUBSCRIBER — linkforge:* (10 streams)" {constraint: "coordination"}
-  lf_stage: "dynamic — per-paper stage cards" {constraint: "pipeline"}
-  lf_stats: "SUBSCRIBER — linkforge:completed" {constraint: "metrics"}
-  lf_autorel: "SUBSCRIBER — linkforge:autorel:sweep_completed" {constraint: "metrics"}
-  research_coordinator: "SUBSCRIBER — topoconf:research:* (5 streams)" {constraint: "coordination"}
   research_bridge: "SUBSCRIBER — linkforge:research_bridged" {constraint: "coordination"}
-  lf_pipeline_group: "container — groups stage cards" {constraint: "container"}
+  research_coordinator: "SUBSCRIBER — topoconf:research:* (5 streams)" {constraint: "coordination"}
+  lf_autorel: "SUBSCRIBER — linkforge:autorel:sweep_completed" {constraint: "metrics"}
+  lf_stats: "SUBSCRIBER — linkforge:completed" {constraint: "metrics"}
 }
 
-r2: "Research v2 Canvas (5 nodes)" {
+ingestion: "Ingestion Canvas — link-forge pack (2 nodes)" {
+  shape: sql_table
+  style.fill: "#1e1e2e"
+  style.stroke: "#f38ba8"
+  style.font-color: "#cdd6f4"
+  lf_coordinator: "SUBSCRIBER — linkforge:* (10 streams)" {constraint: "coordination"}
+  lf_pipeline_group: "container — groups per-paper stage cards" {constraint: "container"}
+}
+
+experiments: "Experiments Canvas — experiments pack (4 nodes)" {
   shape: sql_table
   style.fill: "#1e1e2e"
   style.stroke: "#a6e3a1"
   style.font-color: "#cdd6f4"
-  r2_bridge: "SUBSCRIBER — bridge state" {constraint: "input"}
-  r2_coordinator: "SUBSCRIBER — lifecycle coordination" {constraint: "coordination"}
-  r2_stats: "SUBSCRIBER — aggregate statistics" {constraint: "metrics"}
-  r2_autorel: "SUBSCRIBER — auto-relation metrics" {constraint: "metrics"}
-  r2_state: "SUBSCRIBER — starred paper list" {constraint: "state"}
+  experiment_cloud: "SUBSCRIBER — GET /api/experiments/data" {constraint: "experiment"}
+  algorithm_selector: "SUBSCRIBER — GET /api/experiments/algorithms" {constraint: "experiment"}
+  experiment_roi: "SUBSCRIBER — REST" {constraint: "experiment"}
+  findings_summary: "SUBSCRIBER — REST" {constraint: "experiment"}
 }
 
-shared: "All 20 nodes wrap BaseNodeShell\n(NodeResizer + selection + category color + health band)" {
+core: "core pack — navigation / meta nodes" {
+  style.fill: "#313244"
+  style.stroke: "#89b4fa"
+  style.font-color: "#cdd6f4"
+  label: "core pack — navigation / meta nodes\ncanvas_ref · run_ref · node_ref · row_label\n(plus legacy research2 r2_* nodes, still registered)"
+}
+
+shared: "All nodes wrap BaseNodeShell\n(NodeResizer + selection + category color + health band)" {
   style.fill: "#313244"
   style.stroke: "#f9e2af"
   style.font-color: "#cdd6f4"
 }
 
-pipeline -> research: "" {
-  style.stroke: "#585b70"
-  style.stroke-width: 1
-}
-research -> r2: "" {
-  style.stroke: "#585b70"
-  style.stroke-width: 1
-}
-r2 -> shared: "" {
-  style.stroke: "#f9e2af"
-  style.stroke-width: 2
-  style.stroke-dash: 3
-}
+scoring -> research_bridge: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+research_bridge -> ingestion: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+ingestion -> experiments: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+experiments -> core: "" {style.stroke: "#585b70"; style.stroke-width: 1}
+core -> shared: "" {style.stroke: "#f9e2af"; style.stroke-width: 2; style.stroke-dash: 3}
